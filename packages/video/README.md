@@ -1,4 +1,4 @@
-# Music videos
+# @gizclaw/mvg-video
 
 Every song's choreography lives at `aigc/<work>/video/`. Scenes are three.js
 rendered in headless Chromium; there is no generative video model. The shared

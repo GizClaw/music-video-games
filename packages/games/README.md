@@ -1,4 +1,4 @@
-# Games
+# @gizclaw/mvg-games
 
 A game lives at `aigc/<work>/game/` beside the song's video choreography and
 reuses its scenes, colours and timing. `npm run build` turns every

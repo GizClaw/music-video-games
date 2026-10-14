@@ -12,8 +12,8 @@ can run live in a browser game.
 **Play: <https://gizclaw.github.io/music-video-games/>**
 
 <p>
-  <img src="docs/images/spectrum-game.jpg" alt="Slide Down the Spectrum game" height="420" />
-  <img src="docs/images/newtons-three-video.jpg" alt="Newton's Three music video frames" height="420" />
+  <img src=".github/images/spectrum-game.jpg" alt="Slide Down the Spectrum game" height="420" />
+  <img src=".github/images/newtons-three-video.jpg" alt="Newton's Three music video frames" height="420" />
 </p>
 
 | Song | Video | Game |
@@ -91,10 +91,10 @@ Games stream the published catalog audio from `static-volc.gizclaw.com` and
 bundle a trimmed `analysis.json` (beats, onsets, aligned lyrics), refreshed with
 `mvg-video --work <work> game-data`. `?audio=<url>` overrides the audio source.
 
-## Documentation
+## Package docs
 
-- [Music videos](docs/video.md): analysis, lyric alignment and placement, song modules, rendering and deliverables.
-- [Games](docs/games.md): game layout and the Slide Down the Spectrum chart.
+- [Music videos](packages/video/README.md): analysis, lyric alignment and placement, song modules, rendering and deliverables.
+- [Games](packages/games/README.md): game layout and the Slide Down the Spectrum chart.
 
 ## Contributing
 

@@ -22,7 +22,7 @@ Rendering also needs `ffmpeg` and `uv`. Games need nothing beyond `npm ci`.
    no unseeded randomness. Segments render in parallel.
 4. Review with `mvg-video snap`, keep `mvg-video clearance` clear, then render.
 
-See [docs/video.md](docs/video.md) for the analysis, lyric and rendering contracts.
+See [packages/video/README.md](packages/video/README.md) for the analysis, lyric and rendering contracts.
 
 ## Adding a game
 
@@ -36,7 +36,7 @@ See [docs/video.md](docs/video.md) for the analysis, lyric and rendering contrac
    commit `game/analysis.json`.
 4. Play it through with `npm run dev`, then check `npm run build`.
 
-See [docs/games.md](docs/games.md).
+See [packages/games/README.md](packages/games/README.md).
 
 ## Pull requests
 
