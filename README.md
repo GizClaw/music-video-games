@@ -1,11 +1,25 @@
 # Music Video Games
 
+[![ci](https://github.com/GizClaw/music-video-games/actions/workflows/ci.yml/badge.svg)](https://github.com/GizClaw/music-video-games/actions/workflows/ci.yml)
+[![pages](https://github.com/GizClaw/music-video-games/actions/workflows/pages.yml/badge.svg)](https://gizclaw.github.io/music-video-games/)
+[![license](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
+
 Beat-synced, code-generated music videos and playable web games for the
 haivivi AIGC song catalog. Every frame is a pure function of the song's time,
 so videos render deterministically in headless Chromium and the same scenes
 can run live in a browser game.
 
-Play: <https://gizclaw.github.io/music-video-games/>
+**Play: <https://gizclaw.github.io/music-video-games/>**
+
+<p>
+  <img src="docs/images/spectrum-game.jpg" alt="Slide Down the Spectrum game" height="420" />
+  <img src="docs/images/newtons-three-video.jpg" alt="Newton's Three music video frames" height="420" />
+</p>
+
+| Song | Video | Game |
+| --- | --- | --- |
+| Slide Down the Spectrum | ✓ | [play](https://gizclaw.github.io/music-video-games/aigc/songs/music/stem-institute/en-us/spectrum-slide/game/) |
+| Binary Boogie, Planet Parade, Prefix Power, Molecule Shapes, States of Matter, Pi Keeps Going, Polygon Party, Prime Time, Newton's Three, Energy Shapeshifter | ✓ | |
 
 ## Layout
 
@@ -81,6 +95,10 @@ bundle a trimmed `analysis.json` (beats, onsets, aligned lyrics), refreshed with
 
 - [Music videos](docs/video.md): analysis, lyric alignment and placement, song modules, rendering and deliverables.
 - [Games](docs/games.md): game layout and the Slide Down the Spectrum chart.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for adding a song video or a game.
 
 ## License
 
