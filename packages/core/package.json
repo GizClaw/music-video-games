@@ -9,6 +9,6 @@
     "./*": "./src/*"
   },
   "peerDependencies": {
-    "three": "^0.186.1"
+    "three": "0.186.1"
   }
 }
