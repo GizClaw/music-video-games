@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Beat-synced three.js music video for an AIGC song.
 //
-//   mvg-video --work songs/<category>/<album>/<lang>/<id> [--catalog <aigc catalog dir>] <command>
+//   mvg-video --work songs/<category>/<album>/<lang>/<id>|<id> [--catalog <aigc catalog dir>] <command>
 //
 // --work is the song's path in the AIGC catalog; its choreography lives at the
 // same path under this repository's aigc/ directory (aigc/<work>/video/song.js).
@@ -16,7 +16,7 @@
 //   clearance               report lyric lines whose fixed bottom band crowds foreground text
 import { spawn, execFileSync } from "node:child_process";
 import { createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { startServer } from "../serve.mjs";
@@ -42,9 +42,34 @@ const { values: opts, positionals } = parseArgs({
   },
 });
 const [command, ...rest] = positionals;
-const WORK = opts.work;
-if (!/^songs\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z-]+\/[a-z0-9-]+$/.test(WORK || "")) {
-  console.error("--work songs/<category>/<album>/<lang>/<id> is required");
+const WORK_PATH = /^songs\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z-]+\/[a-z0-9-]+$/;
+
+/** Choreographed work paths under aigc/, e.g. songs/music/stem-institute/en-us/spectrum-slide. */
+function choreographedWorks(dir = join(MVG, "aigc"), out = []) {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (!statSync(p).isDirectory()) continue;
+    if (name === "video" || name === "game") {
+      if (name === "video" && existsSync(join(p, "song.js"))) out.push(relative(join(MVG, "aigc"), dir));
+      continue;
+    }
+    choreographedWorks(p, out);
+  }
+  return out;
+}
+
+// --work takes the full catalog work path or, when it is unique, just the song id.
+let WORK = opts.work;
+if (WORK && !WORK.includes("/")) {
+  const matches = choreographedWorks().filter((w) => w.split("/").at(-1) === WORK);
+  if (matches.length === 1) WORK = matches[0];
+  else {
+    console.error(matches.length ? `song id ${WORK} is ambiguous:\n  ${matches.join("\n  ")}` : `no choreography named ${WORK}; known songs:\n  ${choreographedWorks().join("\n  ")}`);
+    process.exit(64);
+  }
+}
+if (!WORK_PATH.test(WORK || "")) {
+  console.error("--work songs/<category>/<album>/<lang>/<id> (or a unique song id) is required");
   process.exit(64);
 }
 const SONG_ID = WORK.split("/").at(-1);

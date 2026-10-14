@@ -129,11 +129,14 @@ only. The CLI reads a song from a mounted GizClaw root and writes back there:
 
 ```sh
 npx playwright install chromium
-npx mvg-video --work songs/music/stem-institute/en-us/spectrum-slide prepare
-npx mvg-video --work … snap <name> 12.6 41.9   # contact sheet under build/
-npx mvg-video --work … preview                  # live preview with audio
-npx mvg-video --work … render [--workers 4]     # clearance, frames, MP4 + WebM
+npx mvg-video --work spectrum-slide prepare           # analysis for one song
+npx mvg-video --work spectrum-slide snap look 12.6 42 # contact sheet under build/
+npx mvg-video --work spectrum-slide preview           # live preview with audio
+npx mvg-video --work spectrum-slide render            # clearance, frames, MP4 + WebM
 ```
+
+Each run builds one song. `--work` takes the song id when it is unique, or the
+full catalog work path (`songs/music/stem-institute/en-us/spectrum-slide`).
 
 `--catalog <dir>` points at the AIGC catalog source so the published title lands
 in the file metadata. Other commands: `encode`, `inspect`, `clearance` and
