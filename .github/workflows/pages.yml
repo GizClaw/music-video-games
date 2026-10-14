@@ -30,7 +30,7 @@ jobs:
       - run: npm run build
         env:
           MVG_BASE: /music-video-games/
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
   deploy:
