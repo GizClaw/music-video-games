@@ -45,4 +45,6 @@ PR by area (`video`, `song`, `game`, `core`, `pages`, `ci`). Merges are
 squash-only, and every merge to `main` redeploys the GitHub Pages site.
 
 Song audio, lyrics and rendered videos are not committed. They belong to the
-AIGC catalog and are read from, and written to, the mounted catalog root.
+AIGC catalog and are read from, and written to, the mounted catalog root. The
+README's preview images and GIFs are stored in Git LFS (`.gitattributes` routes
+every image and video extension there), so install `git lfs` before adding one.
