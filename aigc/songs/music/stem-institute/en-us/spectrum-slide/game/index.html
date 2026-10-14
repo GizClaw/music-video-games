@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Slide Down the Spectrum — the game</title>
+    <link rel="stylesheet" href="./game.css" />
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="hud" hidden>
+      <div id="progress"><i></i></div>
+      <div id="ruler"></div>
+      <div id="score"><b>0</b><span>SCORE</span></div>
+      <div id="combo"><b>0</b><span>COMBO</span><em>×1</em></div>
+      <div id="band"></div>
+      <div id="judge"></div>
+      <div id="lyric"></div>
+    </div>
+    <div id="title" class="overlay">
+      <div class="kicker">STEM INSTITUTE · No. 15</div>
+      <h1>SLIDE DOWN<br />THE SPECTRUM</h1>
+      <p class="sub">接住每一拍的光子，从 γ 闸门的缺口钻过去</p>
+      <div class="keys">
+        <div><kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> 绕隧道滑动</div>
+        <div>鼠标或手指左右拖动也可以</div>
+        <div><kbd>Esc</kbd> 暂停　<kbd>[</kbd><kbd>]</kbd> 调整音画同步</div>
+      </div>
+      <button id="start" disabled>载入中…</button>
+      <a class="back" href="../../../../../../../">← 全部游戏</a>
+    </div>
+    <div id="pause" class="overlay" hidden>
+      <h2>暂停</h2>
+      <p class="sub">按 Esc 或点击继续</p>
+    </div>
+    <div id="result" class="overlay" hidden>
+      <div class="kicker">RESULT</div>
+      <div id="grade"></div>
+      <div id="final"></div>
+      <table id="stats"></table>
+      <button id="again">再来一次 (R)</button>
+    </div>
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "music-video-games",
+  "private": true,
+  "description": "Beat-synced three.js music videos and playable web games for GizClaw AIGC songs",
+  "license": "BSD-3-Clause",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @gizclaw/mvg-games",
+    "build": "npm run build -w @gizclaw/mvg-games",
+    "preview": "npm run preview -w @gizclaw/mvg-games",
+    "check": "node scripts/check.mjs"
+  }
+}
