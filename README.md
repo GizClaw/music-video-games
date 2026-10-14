@@ -67,8 +67,8 @@ the detected beat, with forced-aligned karaoke lyrics.
 ```mermaid
 flowchart LR
   song["AIGC catalog song<br/>audio · lyrics · ASR"] --> analysis["Analysis<br/>beats · onsets · spectrum<br/>forced-aligned words"]
-  analysis --> video["aigc/&lt;work&gt;/video<br/>three.js choreography"]
-  analysis --> game["aigc/&lt;work&gt;/game<br/>chart + beat data"]
+  analysis --> video["aigc/#lt;work#gt;/video<br/>three.js choreography"]
+  analysis --> game["aigc/#lt;work#gt;/game<br/>chart + beat data"]
   core(["@gizclaw/mvg-core<br/>timing · HUD · post · intro"]) -.-> video
   core -.-> game
   video --> render["Headless Chromium<br/>parallel frames → MP4 + WebM"]
