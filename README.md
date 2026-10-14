@@ -77,6 +77,11 @@ Games stream the published catalog audio from `static-volc.gizclaw.com` and
 bundle a trimmed `analysis.json` (beats, onsets, aligned lyrics), refreshed with
 `mvg-video --work <work> game-data`. `?audio=<url>` overrides the audio source.
 
+## Documentation
+
+- [Music videos](docs/video.md): analysis, lyric alignment and placement, song modules, rendering and deliverables.
+- [Games](docs/games.md): game layout and the Slide Down the Spectrum chart.
+
 ## License
 
 BSD 3-Clause. Copyright (c) 2026, Haivivi Innovation Co., Ltd.
