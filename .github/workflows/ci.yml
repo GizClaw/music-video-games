@@ -1,0 +1,30 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      - name: Layout and syntax
+        run: npm run check
+      - name: Python syntax
+        run: python3 -m py_compile packages/video/python/*.py
+      - name: Pages build
+        run: npm run build
+        env:
+          MVG_BASE: /music-video-games/
