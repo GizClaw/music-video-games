@@ -343,6 +343,7 @@ async function boot() {
   // ---------- state ----------
   let state = "title";
   let theta = 0;
+  let prevTheta = 0;
   let omega = 0;
   let camTheta = 0;
   let score = 0;
@@ -361,7 +362,7 @@ async function boot() {
     for (const n of chart) Object.assign(n, { judged: false, best: Infinity, result: null });
     score = combo = maxCombo = 0;
     Object.keys(tally).forEach((k) => (tally[k] = 0));
-    theta = omega = camTheta = 0;
+    theta = omega = camTheta = prevTheta = 0;
     history.length = 0;
     hitFlash = crash = -9;
     lastBandSlam = countdownShown = -1;
@@ -418,7 +419,8 @@ async function boot() {
       if (n.gate) {
         if (t < n.t) continue;
         n.judged = true;
-        const pass = d < GAP - 0.12;
+        // The opening is crossed between frames; either side of the crossing counts.
+        const pass = Math.min(d, Math.abs(wrap(prevTheta - n.angle))) < GAP - 0.12;
         n.result = pass ? "pass" : "hit";
         if (pass) {
           tally.gatePass++;
@@ -567,6 +569,7 @@ async function boot() {
   const frameClock = new THREE.Clock();
   function frame() {
     requestAnimationFrame(frame);
+    prevTheta = theta;
     const dt = Math.min(0.05, frameClock.getDelta());
     let t;
     if (state === "title") {
