@@ -1,19 +1,36 @@
 name: release
 
-# Attach package tarballs to a GitHub Release. The Pages workflow only has
-# contents: read, so it cannot publish these packages.
+# Package versions belong to each workspace. The UTC tag identifies a release
+# snapshot; Deploy imports its verified npm archives and publishes them to TOS.
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: music-video-games-release
+  cancel-in-progress: false
 
 jobs:
-  pack:
+  release:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
     steps:
+      - name: Require the default branch
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]]; then
+            echo "::error::Release must run from $DEFAULT_BRANCH (got $GITHUB_REF)"
+            exit 1
+          fi
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          lfs: true
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -21,9 +38,71 @@ jobs:
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
-      - name: Pack core and games
-        run: npm pack --workspace @gizclaw/mvg-core --workspace @gizclaw/mvg-games --pack-destination "$RUNNER_TEMP/packs"
-      - name: Upload tarballs to the release
+      - run: npm run check
+      - run: python3 -m py_compile packages/video/python/*.py
+      - run: npm run build
+        env:
+          MVG_BASE: /music-video-games/
+      - name: Generate UTC release tag
+        id: identity
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" "$RUNNER_TEMP/packs"/*.tgz --clobber
+        run: |
+          release_tag="v$(date -u +%Y%m%d-%H%M%S)"
+          if gh api "repos/$GITHUB_REPOSITORY/git/refs/tags/$release_tag" >/dev/null 2>&1; then
+            echo "::error::$release_tag already exists"
+            exit 1
+          fi
+          echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
+      - name: Pack and verify all npm packages
+        env:
+          RELEASE_TAG: ${{ steps.identity.outputs.tag }}
+        run: |
+          node scripts/package-release.mjs pack "$RUNNER_TEMP/release" "$RELEASE_TAG"
+          npm run check:packages -- "$RUNNER_TEMP/release"
+      - name: Require unchanged contents for previously published package versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" > "$RUNNER_TEMP/prior-releases.json"
+          node scripts/package-release.mjs history "$RUNNER_TEMP/release" "$RUNNER_TEMP/prior-releases.json"
+      - name: Publish verified GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.identity.outputs.tag }}
+        run: |
+          set -euo pipefail
+          release_state() {
+            gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null || echo absent
+          }
+          cleanup() {
+            if [[ "$(release_state)" == true ]]; then
+              gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+            fi
+          }
+          if [[ "$(release_state)" != absent ]]; then
+            echo "::error::$RELEASE_TAG already has a Release"
+            exit 1
+          fi
+          node --input-type=module - "$RUNNER_TEMP/release/npm-index.json" > "$RUNNER_TEMP/release-notes.md" <<'JS'
+          import { readFileSync } from "node:fs";
+          const index = JSON.parse(readFileSync(process.argv[2], "utf8"));
+          console.log(`Built from commit \`${index.source_commit}\`. Package versions are independent of the UTC release tag.\n`);
+          console.log("| npm package | Version | Archive |\n| --- | --- | --- |");
+          for (const pkg of index.packages) console.log(`| \`${pkg.name}\` | ${pkg.version} | \`${pkg.tarball}\` |`);
+          console.log("\n`npm-index.json` records each archive's name, version, size and SHA-256. `SHA256SUMS` covers the archives and index. Deploy owns TOS publication.");
+          JS
+          trap cleanup EXIT
+          gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --draft --title "Music Video Games $RELEASE_TAG" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" "$RUNNER_TEMP/release/"*
+          verify_dir=$(mktemp -d "$RUNNER_TEMP/release-download.XXXXXX")
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir "$verify_dir"
+          node scripts/package-release.mjs verify "$verify_dir"
+          diff -r "$RUNNER_TEMP/release" "$verify_dir"
+          if ! gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest; then
+            test "$(release_state)" = false
+          fi
+          trap - EXIT
+          echo "https://github.com/$GITHUB_REPOSITORY/releases/tag/$RELEASE_TAG" >> "$GITHUB_STEP_SUMMARY"

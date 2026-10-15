@@ -4,7 +4,7 @@
 //   mvg-video --work songs/<category>/<album>/<lang>/<id>|<id> [--catalog <aigc catalog dir>] <command>
 //
 // --work is the song's path in the AIGC catalog; its choreography lives at the
-// same path under this repository's aigc/ directory (aigc/<work>/video/song.js).
+// same path under the project's aigc/ directory (aigc/<work>/video/song.js).
 //
 //   prepare                 analyse the catalog song's beats into the cache
 //   snap <name> <t> [t...]  render timestamps into a contact sheet under build/
@@ -23,7 +23,6 @@ import { startServer } from "../serve.mjs";
 
 const PKG = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PY = join(PKG, "python");
-const MVG = join(PKG, "..", "..");
 const GPU_ARGS = ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"];
 const W = 1080;
 const H = 1920;
@@ -33,6 +32,9 @@ const { values: opts, positionals } = parseArgs({
   options: {
     root: { type: "string", default: process.env.GIZCLAW_ROOT || "/Volumes/H002-R02T-APFS/GizClaw" },
     catalog: { type: "string", default: process.env.MVG_CATALOG },
+    project: { type: "string", default: process.cwd() },
+    help: { type: "boolean", default: false },
+    version: { type: "boolean", default: false },
     work: { type: "string" },
     workers: { type: "string", default: "4" },
     from: { type: "string" },
@@ -41,11 +43,21 @@ const { values: opts, positionals } = parseArgs({
     port: { type: "string", default: "5178" },
   },
 });
+if (opts.version) {
+  console.log(JSON.parse(readFileSync(join(PKG, "package.json"), "utf8")).version);
+  process.exit(0);
+}
+if (opts.help) {
+  console.log("usage: mvg-video [--project <choreography project>] --work <catalog work path or id> [--root <media root>] prepare|snap|preview|game-data|render|encode|inspect|clearance");
+  process.exit(0);
+}
+const MVG = resolve(opts.project);
 const [command, ...rest] = positionals;
 const WORK_PATH = /^songs\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z-]+\/[a-z0-9-]+$/;
 
 /** Choreographed work paths under aigc/, e.g. songs/music/stem-institute/en-us/spectrum-slide. */
 function choreographedWorks(dir = join(MVG, "aigc"), out = []) {
+  if (!existsSync(dir)) return out;
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
     if (!statSync(p).isDirectory()) continue;
@@ -174,7 +186,7 @@ async function openPage(browser, port) {
 
 async function withBrowser(fn) {
   const { chromium } = await import("playwright");
-  const server = await startServer(MEDIA);
+  const server = await startServer(MEDIA, 0, MVG);
   const browser = await chromium.launch({ args: GPU_ARGS });
   try {
     return await fn(browser, server.address().port);
@@ -238,7 +250,7 @@ function encoder(file, log) {
 async function clearance() {
   prepare();
   const data = JSON.parse(readFileSync(ANALYSIS, "utf8"));
-  const { Timing } = await import("../../core/src/timing.js");
+  const { Timing } = await import("@gizclaw/mvg-core/timing.js");
   const tm = new Timing(data);
   const MARGIN = 40;
   const COLUMN = [80, 950];
@@ -365,7 +377,7 @@ async function encode() {
 /** Print aligned cues, energy and beats so section boundaries and the intro drop can be chosen. */
 async function inspect() {
   prepare();
-  const { Timing } = await import("../../core/src/timing.js");
+  const { Timing } = await import("@gizclaw/mvg-core/timing.js");
   const data = JSON.parse(readFileSync(ANALYSIS, "utf8"));
   const tm = new Timing(data);
   const markEnd = 1.647;
@@ -391,7 +403,7 @@ async function inspect() {
     for (let i = first + 15; i < first + 40 && i < tm.beats.length; i++) console.log(`  drop ${tm.beatTime(i).toFixed(2)}  beats=${i - first}  low=${tm.frame("low", tm.beatTime(i)).toFixed(2)}`);
     return;
   }
-  const { deriveIntro } = await import("../../core/src/intro.js");
+  const { deriveIntro } = await import("@gizclaw/mvg-core/intro.js");
   const c = deriveIntro(tm, { drop, end: 0 });
   const mark = (t) => {
     const o = tm.onsets.reduce((a, b) => (Math.abs(b[0] - t) < Math.abs(a[0] - t) ? b : a));
@@ -404,7 +416,7 @@ async function inspect() {
 }
 
 async function preview() {
-  const server = await startServer(MEDIA, Number(opts.port));
+  const server = await startServer(MEDIA, Number(opts.port), MVG);
   console.log(`preview: http://127.0.0.1:${server.address().port}/packages/video/page/index.html?work=${WORK}&preview  (add &start=SECONDS)`);
 }
 

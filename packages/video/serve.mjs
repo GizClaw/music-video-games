@@ -1,9 +1,11 @@
 import { createReadStream, statSync } from "node:fs";
 import { createServer } from "node:http";
-import { extname, join, normalize } from "node:path";
+import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ROOT = fileURLToPath(new URL("../..", import.meta.url));
+const VIDEO = fileURLToPath(new URL(".", import.meta.url));
+const CORE = fileURLToPath(new URL("../", import.meta.resolve("@gizclaw/mvg-core/timing.js")));
+const THREE = fileURLToPath(new URL("../", import.meta.resolve("three")));
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -13,10 +15,15 @@ const TYPES = {
   ".srt": "text/plain; charset=utf-8",
   ".css": "text/css; charset=utf-8",
 };
-const ALLOWED = ["packages/core/", "packages/video/page/", "aigc/", "node_modules/three/"];
 
-/** Serve the renderer, core and song modules from the repository and `/media/<name>` from an explicit name → file map. */
-export function startServer(media, port = 0) {
+/** Serve installed renderer dependencies, project choreography and explicitly mapped media. */
+export function startServer(media, port = 0, project = process.cwd()) {
+  const routes = [
+    ["packages/core/", CORE],
+    ["packages/video/page/", join(VIDEO, "page")],
+    ["aigc/", join(resolve(project), "aigc")],
+    ["node_modules/three/", THREE],
+  ];
   const server = createServer((req, res) => {
     const url = new URL(req.url, "http://localhost");
     const rel = normalize(decodeURIComponent(url.pathname)).replace(/^[/\\]+/, "") || "index.html";
@@ -25,8 +32,9 @@ export function startServer(media, port = 0) {
       file = media[rel.slice("media/".length)];
       if (!file) return void res.writeHead(404).end();
     } else {
-      if (!ALLOWED.some((p) => rel === p || rel.startsWith(p))) return void res.writeHead(404).end();
-      file = join(ROOT, rel);
+      const route = routes.find(([prefix]) => rel.startsWith(prefix));
+      if (!route) return void res.writeHead(404).end();
+      file = join(route[1], rel.slice(route[0].length));
     }
     let size;
     try {

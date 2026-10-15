@@ -159,16 +159,44 @@ Slide Down the Spectrum's page mounts `@gizclaw/mvg-games` (`mountSpectrumSlide`
 it does not keep a second copy of the game. Games stream the published catalog
 audio from `static-volc.gizclaw.com`. `?audio=<url>` overrides the audio source.
 
-`@gizclaw/mvg-core` and `@gizclaw/mvg-games` are attached to GitHub Releases as
-tarballs. They are not published to GitHub Packages. Publishing happens in the
-`release` workflow, because the Pages deploy token cannot upload packages.
+`@gizclaw/mvg-core`, `@gizclaw/mvg-games` and `@gizclaw/mvg-video` are attached to
+GitHub Releases as npm tarballs. The manually dispatched `release` workflow
+owns packaging; Deploy owns publication to the TOS npm registry.
 
 </details>
 
 ## Package docs
 
+- [`@gizclaw/mvg-core`](packages/core/README.md): timing, HUD, opening, post-processing and shared assets.
 - [`@gizclaw/mvg-video`](packages/video/README.md): analysis, lyric alignment and placement, song modules, rendering and deliverables.
 - [`@gizclaw/mvg-games`](packages/games/README.md): game layout and the Slide Down the Spectrum chart.
+
+## Releases
+
+Run **Actions → release → Run workflow** on `main`. The workflow generates a UTC
+tag `vYYYYMMDD-HHMMSS` for the checked-out commit. Each public workspace keeps its
+own stable SemVer in `package.json`; the tag is a release snapshot, not an npm
+version. Bump only packages whose tarball contents change, and synchronize any
+workspace dependencies that pin those packages. A previously published version
+can appear in another snapshot only when its tarball is byte-for-byte identical.
+
+Every release contains the three versioned npm tarballs, `npm-index.json` and
+`SHA256SUMS`. The format-1 index records the repository, snapshot tag (`version`),
+source commit, workflow and each package's name, version, tarball, byte size and
+SHA-256. `SHA256SUMS` covers the tarballs and index. Deploy can use these inputs
+to verify an import before publishing to TOS; registering this repository and
+its package ownership in Deploy is a separate integration step.
+
+The workflow runs the repository checks and a fresh consumer install of the
+tarballs, builds the game imports, and checks the installed video CLI, Python
+files and renderer routes. It uploads a draft, downloads and compares every
+asset, then publishes. A failed upload or verification removes the draft and
+its newly created tag.
+
+```sh
+npm run check:packages     # pack and install all public workspaces in a temporary directory
+gh workflow run release.yml --ref main
+```
 
 ## Contributing
 

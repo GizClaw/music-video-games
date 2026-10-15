@@ -1,11 +1,13 @@
 # @gizclaw/mvg-games
 
-Embeddable rhythm games. Install the tarball from a GitHub Release together with `@gizclaw/mvg-core` (these packages are not published to GitHub Packages or npm). The GitHub Pages site mounts the same entry.
+Embeddable rhythm games. Install the tarball from a GitHub Release together with `@gizclaw/mvg-core`. Deploy handles subsequent publication to the TOS npm registry. The GitHub Pages site mounts the same entry. Use a bundler such as Vite to resolve the npm imports and packaged chart JSON.
 
 ```sh
+# Set this to an actual UTC snapshot tag from the Releases page.
+release_tag=vYYYYMMDD-HHMMSS
 npm install \
-  https://github.com/GizClaw/music-video-games/releases/download/v0.1.0/gizclaw-mvg-core-0.1.0.tgz \
-  https://github.com/GizClaw/music-video-games/releases/download/v0.1.0/gizclaw-mvg-games-0.1.0.tgz
+  "https://github.com/GizClaw/music-video-games/releases/download/${release_tag}/gizclaw-mvg-core-0.1.0.tgz" \
+  "https://github.com/GizClaw/music-video-games/releases/download/${release_tag}/gizclaw-mvg-games-0.1.0.tgz"
 ```
 
 ```html

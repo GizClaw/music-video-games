@@ -4,6 +4,23 @@ Every song's choreography lives at `aigc/<work>/video/`. Scenes are three.js
 rendered in headless Chromium; there is no generative video model. The shared
 haivivi opening, HUD, post-processing and timing come from `@gizclaw/mvg-core`.
 
+The GitHub Release includes this CLI as `gizclaw-mvg-video-<version>.tgz`, with
+the renderer page, Python analyzers, pinned Python requirements and license.
+Install it together with the matching `@gizclaw/mvg-core` archive listed in
+`npm-index.json`. Node.js 22.12 or newer is required; rendering also needs
+Chromium (`npx playwright install chromium`), `ffmpeg` and `uv`.
+
+Choreography belongs to the caller's project, separately from the npm package.
+By default the CLI reads `aigc/<work>/video/` in the current directory; pass
+`--project <directory>` to select another project. The preview server resolves
+core and three.js from installed dependencies. `--root` still selects the
+mounted GizClaw media/cache/build root.
+
+```sh
+mvg-video --version
+mvg-video --project /path/to/music-video-games --root /mounted/GizClaw --work spectrum-slide preview
+```
+
 | Work | Choreography |
 |------|--------------|
 | `songs/music/stem-institute/en-us/spectrum-slide` | spectrum tunnel, synthwave chorus, particle wave ocean, prism and EM-wave bridge |

@@ -28,3 +28,5 @@ jobs:
         run: npm run build
         env:
           MVG_BASE: /music-video-games/
+      - name: Install and check npm tarballs outside the workspace
+        run: npm run check:packages

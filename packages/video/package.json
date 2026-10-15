@@ -4,6 +4,10 @@
   "description": "Render beat-synced vertical music videos for AIGC catalog songs in headless Chromium",
   "license": "BSD-3-Clause",
   "type": "module",
+  "files": ["bin", "page", "python/*.py", "python/requirements*.txt", "serve.mjs", "README.md"],
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "bin": {
     "mvg-video": "bin/mvg-video.mjs"
   },
