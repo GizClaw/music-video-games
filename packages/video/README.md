@@ -57,6 +57,11 @@ mvg-video --project /path/to/music-video-games --root /mounted/GizClaw --work sp
 | `songs/music/stem-institute/en-us/prime-time` | game-show 1–100 board: sung primes light gold, chorus sieves of 2, 3, 5, 7, Ulam spiral bridge |
 | `songs/music/stem-institute/en-us/newtons-three` | function graphs drawn live above a number-line track: x–t world lines (rest, constant velocity, bending under force), v–t slopes and an F–a line for F = ma, mirrored F–t pair, 3-D world lines and helices |
 | `songs/music/stem-institute/en-us/energy-shapeshifter` | closed-loop machine whose energy orb changes form at each station, 100% energy meter, closed-system bridge |
+| `songs/music/stem-institute/en-us/elements-part-one` | chemistry lab: a periodic-table chart lights elements 1–56 as they are sung, an element card, a Bohr atom gaining one electron per element in its real shell configuration |
+| `songs/music/stem-institute/en-us/circle-words` | velvet-curtained ballroom: one circle whose centre, radius, diameter, circumference, area, arc, chord and tangent are drawn on their words, d = 2r, C = 2πr and A = πr², waltz-bar spins |
+| `songs/music/stem-institute/en-us/big-number-ladder` | a ladder made of the number: a golden 1 and one rung per three zeroes rising from Earth past the Moon, then a low-angle googol tower of 100 zeroes beside a spiral galaxy |
+| `songs/music/stem-institute/en-us/angle-gang` | desert-sunset protractor whose ray swings to each sung angle, live degree readout and angle names, quarter-to-full-turn bridge |
+| `songs/music/stem-institute/en-us/simple-machines` | construction-site scaffold holding six working machines; verse close-ups with labelled parts, chorus punch-ins on every name, welding sparks |
 
 ## Analysis
 
