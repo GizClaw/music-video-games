@@ -12,6 +12,8 @@
     "build": "npm run build -w @gizclaw/mvg-games",
     "preview": "npm run preview -w @gizclaw/mvg-games",
     "check": "node scripts/check.mjs",
-    "check:packages": "node scripts/check-packages.mjs"
+    "check:packages": "node scripts/check-packages.mjs",
+    "universe:catalog": "node scripts/universe-catalog.mjs",
+    "play": "node scripts/play.mjs"
   }
 }

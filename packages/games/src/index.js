@@ -1,2 +1,6 @@
 export { AudioClock, CATALOG_CDN, GamePostShader, glowTexture, songAudioUrl } from "./kit.js";
+export { mountBinaryBoogie } from "./binary-boogie.js";
+export { backGuard, buzz, goFullscreen, isTouch, lockGestures, wakeLock } from "./mobile.js";
+export { mountPlanetParade } from "./planet-parade.js";
+export { Sfx, sfx } from "./sfx.js";
 export { mountSpectrumSlide } from "./spectrum-slide.js";

@@ -1,5 +1,5 @@
 // Structural check: every song directory mirrors an AIGC catalog work path and
-// carries a video choreography; a game directory carries its page and data.
+// carries a video choreography; a game directory carries its beat data.
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -36,9 +36,10 @@ for (const file of walk(aigc)) {
 for (const work of works) {
   if (!existsSync(join(aigc, work, "video", "song.js"))) errors.push(`aigc/${work}: missing video/song.js`);
   const game = join(aigc, work, "game");
-  if (existsSync(game)) for (const f of ["index.html", "analysis.json"]) if (!existsSync(join(game, f))) errors.push(`aigc/${work}/game: missing ${f}`);
+  if (existsSync(game) && !existsSync(join(game, "analysis.json"))) errors.push(`aigc/${work}/game: missing analysis.json`);
 }
 for (const pkg of ["core", "video", "games"]) sources.push(...walk(join(ROOT, "packages", pkg)).filter((f) => /\.(m?js)$/.test(f)));
+sources.push(...walk(join(ROOT, "site")).filter((f) => /\.(m?js)$/.test(f)));
 for (const f of sources) {
   try {
     execFileSync(process.execPath, ["--check", f], { stdio: "pipe" });

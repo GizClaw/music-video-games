@@ -21,7 +21,7 @@ Every frame is a function of the song's time. No generative video model, no keyf
 
 <table>
   <tr>
-    <td width="290"><a href="https://gizclaw.github.io/music-video-games/aigc/songs/music/stem-institute/en-us/spectrum-slide/game/"><img src=".github/images/gameplay.gif" alt="Slide Down the Spectrum gameplay" width="270" /></a></td>
+    <td width="290"><a href="https://gizclaw.github.io/music-video-games/#/stem-institute/spectrum-slide/play"><img src=".github/images/gameplay.gif" alt="Slide Down the Spectrum gameplay" width="270" /></a></td>
     <td>
       <h3>Slide Down the Spectrum</h3>
       <p>Ride a photon down the light tunnel from the music video. The song's own beats and drum hits build the chart.</p>
@@ -33,7 +33,7 @@ Every frame is a function of the song's time. No generative video model, no keyf
         <li>Multiplier up to ×4, karaoke lyrics and an S–D grade at the end</li>
         <li>Works on phones and desktops, with no install and no sign-in</li>
       </ul>
-      <p><a href="https://gizclaw.github.io/music-video-games/aigc/songs/music/stem-institute/en-us/spectrum-slide/game/"><b>Play it →</b></a></p>
+      <p><a href="https://gizclaw.github.io/music-video-games/#/stem-institute/spectrum-slide/play"><b>Play it →</b></a></p>
     </td>
   </tr>
 </table>
@@ -93,8 +93,8 @@ music-video-games/
 ├── aigc/                            mirrors the AIGC catalog (gizclaw/catalogs/aigc/)
 │   └── songs/<category>/<album>/<lang>/<id>/
 │       ├── video/                   choreography: song.js and its scenes
-│       └── game/                    optional game: index.html, game.js, analysis.json
-├── index.html                       games gallery (site root)
+│       └── game/                    optional game data: analysis.json (the game is in packages/games)
+├── site/                            the GitHub Pages site: index.html mounts the universe; universe.json + catalog.js (galaxies, planets), scene, music
 └── scripts/check.mjs                layout and syntax check
 ```
 
@@ -165,10 +165,26 @@ models into `<root>/cache/models`; encoding needs `ffmpeg`.
 npm run build      # dist/, deployed to GitHub Pages on every push to main
 ```
 
-Each `aigc/<work>/game/index.html` becomes a page at the same path on the site.
-Slide Down the Spectrum's page mounts `@gizclaw/mvg-games` (`mountSpectrumSlide`);
-it does not keep a second copy of the game. Games stream the published catalog
-audio from `static-volc.gizclaw.com`. `?audio=<url>` overrides the audio source.
+The site root is a full-screen 3D music universe (`site/`). Every song album
+of the AIGC catalog is a galaxy on a horizontal carousel and every song a
+planet; planets with a game are coloured, the rest stay grey until their game
+ships. `npm run universe:catalog` rewrites `site/universe.json` (albums, songs,
+zh/en names) from the mounted catalog (`--catalog <dir>`, `--verify` checks the
+audio on the CDN); `site/catalog.js` adds planet looks and game entries on top. Picking a planet crossfades to its song, and clicking a playable one
+dives into it and mounts the game in place. The hash holds the route
+(`#/<series>/<work>/play`). Arrow keys or A/D, Enter and Esc drive everything;
+the mouse works throughout.
+
+Games are reached through the universe only; there are no per-game pages, and
+hosts that want a game on their own page mount it from `@gizclaw/mvg-games`
+(`mountSpectrumSlide`, `mountPlanetParade`, `mountBinaryBoogie`). A route
+straight into a game skips the opening stage, and it can carry game options:
+`#/stem-institute/binary-boogie/play?start=31&auto`. From the browser console,
+`__universe.play("binary-boogie", { start: 31, auto: true })` jumps there and
+`__universe.open("stem-institute")` flies to a galaxy. With the dev server
+running, `npm run play -- binary-boogie --start 31 --auto` opens that route
+(`--port`, `--base` or `--print` to only show the URL). Games stream the
+published catalog audio from `static-volc.gizclaw.com`.
 
 `@gizclaw/mvg-core`, `@gizclaw/mvg-games` and `@gizclaw/mvg-video` are attached to
 GitHub Releases as npm tarballs. The manually dispatched `release` workflow
@@ -180,7 +196,7 @@ owns packaging; Deploy owns publication to the TOS npm registry.
 
 - [`@gizclaw/mvg-core`](packages/core/README.md): timing, HUD, opening, post-processing and shared assets.
 - [`@gizclaw/mvg-video`](packages/video/README.md): analysis, lyric alignment and placement, song modules, rendering and deliverables.
-- [`@gizclaw/mvg-games`](packages/games/README.md): game layout and the Slide Down the Spectrum chart.
+- [`@gizclaw/mvg-games`](packages/games/README.md): game layout and the Slide Down the Spectrum, Planet Parade and Binary Boogie charts.
 
 ## Releases
 
