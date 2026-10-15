@@ -10,6 +10,8 @@ import { AudioClock, GamePostShader, glowTexture, songAudioUrl } from "./kit.js"
 import { BANDS, SECTIONS, WORD_COLORS } from "./spectrum/song.js";
 import analysis from "./spectrum/analysis.json";
 import { spectrumMarkup, spectrumStyle } from "./spectrum/style.js";
+import { backGuard, buzz, goFullscreen, lockGestures, wakeLock } from "./mobile.js";
+import { sfx } from "./sfx.js";
 
 const WORK = "songs/music/stem-institute/en-us/spectrum-slide";
 const SP = 2.6; // world units travelled per beat
@@ -66,6 +68,8 @@ export async function mountSpectrumSlide(target, options = {}) {
   if (options.auto) params.set("auto", "");
   const ac = new AbortController();
   const { signal } = ac;
+  lockGestures(root, signal);
+  const awake = wakeLock();
   let alive = true;
   let raf = 0;
   let audio;
@@ -77,6 +81,7 @@ export async function mountSpectrumSlide(target, options = {}) {
     ac.abort();
     resizeObserver?.disconnect();
     audio?.pause();
+    awake.release();
     renderer?.dispose();
     root.replaceChildren();
     root.classList.remove("mvg-game");
@@ -482,12 +487,15 @@ function makeRings() {
           combo++;
           score += 500 * mult();
           judgeText("γ GATE +500", "#7cff4f");
+          if (state === "play") sfx.collect(2);
           burst(player.position, "#7cff4f", 40, 5);
         } else {
           tally.gateHit++;
           combo = 0;
           crash = t;
           judgeText("γ HIT", GATE_COLOR);
+          if (state === "play") sfx.wrong();
+          if (state === "play") buzz(45);
           burst(player.position, GATE_COLOR, 60, 6);
         }
         maxCombo = Math.max(maxCombo, combo);
@@ -501,6 +509,7 @@ function makeRings() {
       n.result = n.best < PERFECT ? "perfect" : n.best < GOOD ? "good" : "miss";
       if (n.result === "miss") {
         tally.miss++;
+        if (state === "play") sfx.miss();
         if (combo >= 10) judgeText("MISS", "#8890b0");
         combo = 0;
       } else {
@@ -509,6 +518,11 @@ function makeRings() {
         score += (n.result === "perfect" ? 300 : 120) * mult();
         hitFlash = t;
         hitColor = noteColors[i];
+        if (state === "play") {
+          buzz(8);
+          sfx.hit(Math.round((((n.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)) % 8, n.result === "perfect");
+          if (combo >= 10 && combo % 10 === 0) sfx.combo();
+        }
         burst(notePos(n, tmpV), noteColors[i], n.result === "perfect" ? 22 : 12, n.result === "perfect" ? 4 : 3);
         if (n.result === "perfect") judgeText(combo >= 10 && combo % 10 === 0 ? `${combo} COMBO!` : "PERFECT", noteColors[i]);
         else judgeText("GOOD", "#c9d6ff");
@@ -530,6 +544,7 @@ function makeRings() {
   // ---------- input ----------
   const keys = new Set();
   window.addEventListener("keydown", (e) => {
+    sfx.unlock();
     keys.add(e.key.toLowerCase());
     if (e.key === "Escape" || e.key.toLowerCase() === "p") togglePause();
     if (e.key.toLowerCase() === "r" && state === "result") start();
@@ -544,6 +559,7 @@ function makeRings() {
   let dragX = null;
   let dragged = 0;
   root.addEventListener("pointerdown", (e) => {
+    sfx.unlock();
     dragX = e.clientX;
     dragged = 0;
   }, { signal });
@@ -556,13 +572,20 @@ function makeRings() {
     theta += (dx / Math.min(w, h)) * Math.PI * 1.6;
   }, { signal });
   root.addEventListener("pointerup", () => (dragX = null), { signal });
+  root.querySelectorAll("button").forEach((b) => b.addEventListener("pointerenter", () => sfx.hover(4), { signal }));
   $("pause").addEventListener("click", togglePause);
   $("start").addEventListener("click", start);
   $("again").addEventListener("click", start);
 
+  const guard = backGuard({ signal, playing: () => state === "play", onBack: () => togglePause() });
   function start() {
     reset();
+    sfx.unlock();
+    sfx.start();
+    goFullscreen();
     state = "play";
+    guard.arm();
+    awake.hold();
     ["title", "result", "pause"].forEach((id) => ($(id).hidden = true));
     $("hud").hidden = false;
     audio.muted = false;
@@ -574,11 +597,16 @@ function makeRings() {
   }
   function togglePause() {
     if (state === "play") {
+      sfx.click();
       state = "pause";
       audio.pause();
+      awake.release();
       $("pause").hidden = false;
     } else if (state === "pause") {
+      sfx.click();
       state = "play";
+      guard.arm();
+      awake.hold();
       $("pause").hidden = true;
       audio.play();
     }
@@ -586,6 +614,7 @@ function makeRings() {
   function finish() {
     state = "result";
     audio.pause();
+    awake.release();
     const notes = chart.filter((n) => !n.gate).length;
     const gates = chart.filter((n) => n.gate).length;
     const acc = (tally.perfect + tally.good * 0.6 + tally.gatePass) / Math.max(1, notes + gates);
@@ -595,6 +624,7 @@ function makeRings() {
     $("grade").style.color = gradeColor;
     $("grade").style.textShadow = `0 0 40px ${gradeColor}`;
     $("final").textContent = `${score.toLocaleString("en-US")} 分`;
+    sfx.result(acc >= 0.7);
     $("stats").innerHTML = [
       ["PERFECT", tally.perfect],
       ["GOOD", tally.good],
@@ -777,9 +807,11 @@ function makeRings() {
     if (left >= 1 && left <= 3 && countdownShown !== left) {
       countdownShown = left;
       slam(String(left), "#ffffff");
+      sfx.count(left);
     }
     if (left === 0 && countdownShown !== 0) {
       countdownShown = 0;
+      sfx.count(0);
       slam("SLIDE!", "#fff6a0", "radio → gamma");
     }
     const firstGate = chart.find((n) => n.gate);

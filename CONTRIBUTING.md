@@ -26,16 +26,18 @@ See [packages/video/README.md](packages/video/README.md) for the analysis, lyric
 
 ## Adding a game
 
-1. Create `aigc/<work>/game/index.html` beside the song's video directory. It
-   becomes a page at the same path on the site; add a card to the gallery in
-   `index.html`.
-2. Mount a packaged game with `mountSpectrumSlide` from `@gizclaw/mvg-games`,
-   or import shared runtime pieces from `@gizclaw/mvg-games/kit.js` (audio clock,
-   catalog audio URL, glow sprite, post shader) and scene code from
-   `../video/`.
-3. Write the trimmed beat data with `mvg-video --work <work> game-data` and
-   commit `game/analysis.json`.
-4. Play it through with `npm run dev`, then check `npm run build`.
+1. Write the game in `packages/games/src/` as a `mount<Name>(target, options)`
+   export (see `mountBinaryBoogie`), using the shared pieces in
+   `@gizclaw/mvg-games/kit.js`, `sfx.js` and `mobile.js`. There are no
+   per-game pages: the universe mounts the game in place.
+2. Create `aigc/<work>/game/`, write the trimmed beat data with
+   `mvg-video --work <work> game-data`, move it into the package and leave
+   `game/analysis.json` as a link to it.
+3. Give the work a `WORK_EXTRA` entry in `site/catalog.js` with a `game`
+   loader and `howto` so its planet lights up in the universe. New catalog
+   albums or songs appear after `npm run universe:catalog`.
+4. Play it through with `npm run dev` and `npm run play -- <work>`, then check
+   `npm run build`.
 
 See [packages/games/README.md](packages/games/README.md).
 

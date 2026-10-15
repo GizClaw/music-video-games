@@ -3,7 +3,7 @@ export const spectrumStyle = `
 .mvg-game { position: relative; width: 100%; height: 100%; overflow: hidden; background: #020208; color: #fff; font-family: "Avenir Next", "PingFang SC", sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
 .mvg-game .stage, .mvg-game .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .mvg-game kbd { display: inline-block; min-width: 1.4em; padding: 0.1em 0.4em; margin: 0 0.15em; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; font-family: Menlo, monospace; font-size: 0.85em; background: rgba(255,255,255,0.08); }
-.mvg-game .hud { position: absolute; inset: 0; pointer-events: none; }
+.mvg-game .hud { position: absolute; inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); pointer-events: none; }
 .mvg-game .progress { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.08); }
 .mvg-game .progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ff3d7f, #ff8c42, #ff2e2e, #fff6a0, #9b5cff, #3de8ff, #7cff4f); }
 .mvg-game .ruler { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; width: min(640px, 92%); }

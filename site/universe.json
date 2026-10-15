@@ -1,0 +1,1477 @@
+{
+  "series": [
+    {
+      "id": "stem-institute",
+      "category": "music",
+      "name": {
+        "zh": "STEM Institute",
+        "en": "STEM Institute"
+      },
+      "works": [
+        {
+          "id": "angle-gang",
+          "work": "songs/music/stem-institute/en-us/angle-gang",
+          "lang": "en-us",
+          "title": {
+            "zh": "The Angle Gang",
+            "en": "The Angle Gang"
+          }
+        },
+        {
+          "id": "big-number-ladder",
+          "work": "songs/music/stem-institute/en-us/big-number-ladder",
+          "lang": "en-us",
+          "title": {
+            "zh": "Big Number Ladder",
+            "en": "Big Number Ladder"
+          }
+        },
+        {
+          "id": "binary-boogie",
+          "work": "songs/music/stem-institute/en-us/binary-boogie",
+          "lang": "en-us",
+          "title": {
+            "zh": "Binary Boogie",
+            "en": "Binary Boogie"
+          }
+        },
+        {
+          "id": "bone-zone",
+          "work": "songs/music/stem-institute/en-us/bone-zone",
+          "lang": "en-us",
+          "title": {
+            "zh": "Welcome to the Bone Zone",
+            "en": "Welcome to the Bone Zone"
+          }
+        },
+        {
+          "id": "circle-words",
+          "work": "songs/music/stem-institute/en-us/circle-words",
+          "lang": "en-us",
+          "title": {
+            "zh": "Round the Circle",
+            "en": "Round the Circle"
+          }
+        },
+        {
+          "id": "elements-part-one",
+          "work": "songs/music/stem-institute/en-us/elements-part-one",
+          "lang": "en-us",
+          "title": {
+            "zh": "The Element Galop, Part One",
+            "en": "The Element Galop, Part One"
+          }
+        },
+        {
+          "id": "elements-part-two",
+          "work": "songs/music/stem-institute/en-us/elements-part-two",
+          "lang": "en-us",
+          "title": {
+            "zh": "The Element Galop, Part Two",
+            "en": "The Element Galop, Part Two"
+          }
+        },
+        {
+          "id": "energy-shapeshifter",
+          "work": "songs/music/stem-institute/en-us/energy-shapeshifter",
+          "lang": "en-us",
+          "title": {
+            "zh": "Energy Shapeshifter",
+            "en": "Energy Shapeshifter"
+          }
+        },
+        {
+          "id": "force-friends",
+          "work": "songs/music/stem-institute/en-us/force-friends",
+          "lang": "en-us",
+          "title": {
+            "zh": "Force Friends",
+            "en": "Force Friends"
+          }
+        },
+        {
+          "id": "lab-rules",
+          "work": "songs/music/stem-institute/en-us/lab-rules",
+          "lang": "en-us",
+          "title": {
+            "zh": "Lab Rules Rock",
+            "en": "Lab Rules Rock"
+          }
+        },
+        {
+          "id": "math-word-machine",
+          "work": "songs/music/stem-institute/en-us/math-word-machine",
+          "lang": "en-us",
+          "title": {
+            "zh": "Math Word Machine",
+            "en": "Math Word Machine"
+          }
+        },
+        {
+          "id": "molecule-shapes",
+          "work": "songs/music/stem-institute/en-us/molecule-shapes",
+          "lang": "en-us",
+          "title": {
+            "zh": "Shape Up, Molecule!",
+            "en": "Shape Up, Molecule!"
+          }
+        },
+        {
+          "id": "muscle-roll-call",
+          "work": "songs/music/stem-institute/en-us/muscle-roll-call",
+          "lang": "en-us",
+          "title": {
+            "zh": "Muscle Roll Call",
+            "en": "Muscle Roll Call"
+          }
+        },
+        {
+          "id": "newtons-three",
+          "work": "songs/music/stem-institute/en-us/newtons-three",
+          "lang": "en-us",
+          "title": {
+            "zh": "Newton's Three",
+            "en": "Newton's Three"
+          }
+        },
+        {
+          "id": "pi-keeps-going",
+          "work": "songs/music/stem-institute/en-us/pi-keeps-going",
+          "lang": "en-us",
+          "title": {
+            "zh": "Pi Keeps Going",
+            "en": "Pi Keeps Going"
+          }
+        },
+        {
+          "id": "planet-parade",
+          "work": "songs/music/stem-institute/en-us/planet-parade",
+          "lang": "en-us",
+          "title": {
+            "zh": "Planet Parade",
+            "en": "Planet Parade"
+          }
+        },
+        {
+          "id": "polygon-party",
+          "work": "songs/music/stem-institute/en-us/polygon-party",
+          "lang": "en-us",
+          "title": {
+            "zh": "Polygon Party",
+            "en": "Polygon Party"
+          }
+        },
+        {
+          "id": "prefix-power",
+          "work": "songs/music/stem-institute/en-us/prefix-power",
+          "lang": "en-us",
+          "title": {
+            "zh": "Prefix Power",
+            "en": "Prefix Power"
+          }
+        },
+        {
+          "id": "prime-time",
+          "work": "songs/music/stem-institute/en-us/prime-time",
+          "lang": "en-us",
+          "title": {
+            "zh": "Prime Time Countdown",
+            "en": "Prime Time Countdown"
+          }
+        },
+        {
+          "id": "science-method-shuffle",
+          "work": "songs/music/stem-institute/en-us/science-method-shuffle",
+          "lang": "en-us",
+          "title": {
+            "zh": "Scientific Method Shuffle",
+            "en": "Scientific Method Shuffle"
+          }
+        },
+        {
+          "id": "si-base-units",
+          "work": "songs/music/stem-institute/en-us/si-base-units",
+          "lang": "en-us",
+          "title": {
+            "zh": "Seven Base Units",
+            "en": "Seven Base Units"
+          }
+        },
+        {
+          "id": "simple-machines",
+          "work": "songs/music/stem-institute/en-us/simple-machines",
+          "lang": "en-us",
+          "title": {
+            "zh": "Six Machines at Work",
+            "en": "Six Machines at Work"
+          }
+        },
+        {
+          "id": "spectrum-slide",
+          "work": "songs/music/stem-institute/en-us/spectrum-slide",
+          "lang": "en-us",
+          "title": {
+            "zh": "Slide Down the Spectrum",
+            "en": "Slide Down the Spectrum"
+          }
+        },
+        {
+          "id": "states-of-matter",
+          "work": "songs/music/stem-institute/en-us/states-of-matter",
+          "lang": "en-us",
+          "title": {
+            "zh": "Solid, Liquid, Gas, Plasma",
+            "en": "Solid, Liquid, Gas, Plasma"
+          }
+        },
+        {
+          "id": "thirty-two-chompers",
+          "work": "songs/music/stem-institute/en-us/thirty-two-chompers",
+          "lang": "en-us",
+          "title": {
+            "zh": "Thirty-Two Chompers",
+            "en": "Thirty-Two Chompers"
+          }
+        }
+      ]
+    },
+    {
+      "id": "animal-dance",
+      "category": "music",
+      "name": {
+        "zh": "动物律动",
+        "en": "Animal Rhythms"
+      },
+      "works": [
+        {
+          "id": "bird-wings",
+          "work": "songs/music/animal-dance/zh-cn/bird-wings",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "小鸟飞飞",
+            "en": "Flying Little Bird"
+          }
+        },
+        {
+          "id": "cat-stretch",
+          "work": "songs/music/animal-dance/zh-cn/cat-stretch",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "小猫伸懒腰",
+            "en": "Stretching Kitten"
+          }
+        },
+        {
+          "id": "duck-waddle",
+          "work": "songs/music/animal-dance/zh-cn/duck-waddle",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "小鸭摇摇",
+            "en": "Waddling Little Duck"
+          }
+        },
+        {
+          "id": "elephant-trunk",
+          "work": "songs/music/animal-dance/zh-cn/elephant-trunk",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "大象甩鼻",
+            "en": "Waving Elephant Trunk"
+          }
+        },
+        {
+          "id": "frog-hop",
+          "work": "songs/music/animal-dance/zh-cn/frog-hop",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "青蛙跳跳",
+            "en": "Hopping Little Frog"
+          }
+        },
+        {
+          "id": "giraffe-reach",
+          "work": "songs/music/animal-dance/zh-cn/giraffe-reach",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "长颈鹿伸脖子",
+            "en": "Neck-stretching Giraffe"
+          }
+        },
+        {
+          "id": "penguin-walk",
+          "work": "songs/music/animal-dance/zh-cn/penguin-walk",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "企鹅走路",
+            "en": "Walking Penguin"
+          }
+        },
+        {
+          "id": "rabbit-hop",
+          "work": "songs/music/animal-dance/zh-cn/rabbit-hop",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "小兔蹦蹦",
+            "en": "Bouncing Little Bunny"
+          }
+        }
+      ]
+    },
+    {
+      "id": "animal-dance-en",
+      "category": "music",
+      "name": {
+        "zh": "动物律动 · 英文版",
+        "en": "Animal Moves"
+      },
+      "works": [
+        {
+          "id": "bunny-bounce",
+          "work": "songs/music/animal-dance-en/en-us/bunny-bounce",
+          "lang": "en-us",
+          "title": {
+            "zh": "Bunny Bounce",
+            "en": "Bunny Bounce"
+          }
+        },
+        {
+          "id": "elephant-sways",
+          "work": "songs/music/animal-dance-en/en-us/elephant-sways",
+          "lang": "en-us",
+          "title": {
+            "zh": "Elephant Sway Parade",
+            "en": "Elephant Sway Parade"
+          }
+        },
+        {
+          "id": "frog-hop-stop",
+          "work": "songs/music/animal-dance-en/en-us/frog-hop-stop",
+          "lang": "en-us",
+          "title": {
+            "zh": "Frog Hop Stop",
+            "en": "Frog Hop Stop"
+          }
+        },
+        {
+          "id": "giraffe-reaches-high",
+          "work": "songs/music/animal-dance-en/en-us/giraffe-reaches-high",
+          "lang": "en-us",
+          "title": {
+            "zh": "Giraffe Reach Up",
+            "en": "Giraffe Reach Up"
+          }
+        },
+        {
+          "id": "kitty-stretch",
+          "work": "songs/music/animal-dance-en/en-us/kitty-stretch",
+          "lang": "en-us",
+          "title": {
+            "zh": "Kitty Stretch Swing",
+            "en": "Kitty Stretch Swing"
+          }
+        },
+        {
+          "id": "little-duck-waddle",
+          "work": "songs/music/animal-dance-en/en-us/little-duck-waddle",
+          "lang": "en-us",
+          "title": {
+            "zh": "Quack and Waddle",
+            "en": "Quack and Waddle"
+          }
+        },
+        {
+          "id": "penguin-steps",
+          "work": "songs/music/animal-dance-en/en-us/penguin-steps",
+          "lang": "en-us",
+          "title": {
+            "zh": "Penguin Step Party",
+            "en": "Penguin Step Party"
+          }
+        },
+        {
+          "id": "sparrow-wings",
+          "work": "songs/music/animal-dance-en/en-us/sparrow-wings",
+          "lang": "en-us",
+          "title": {
+            "zh": "Sparrow Wing Fling",
+            "en": "Sparrow Wing Fling"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bug-beat-en",
+      "category": "music",
+      "name": {
+        "zh": "Bug Beat",
+        "en": "Bug Beat"
+      },
+      "works": [
+        {
+          "id": "bat-echo",
+          "work": "songs/music/bug-beat-en/en-us/bat-echo",
+          "lang": "en-us",
+          "title": {
+            "zh": "Bat Echo",
+            "en": "Bat Echo"
+          }
+        },
+        {
+          "id": "buzz-waggle-bee",
+          "work": "songs/music/bug-beat-en/en-us/buzz-waggle-bee",
+          "lang": "en-us",
+          "title": {
+            "zh": "Buzz Waggle Bee",
+            "en": "Buzz Waggle Bee"
+          }
+        },
+        {
+          "id": "crawl-change-fly",
+          "work": "songs/music/bug-beat-en/en-us/crawl-change-fly",
+          "lang": "en-us",
+          "title": {
+            "zh": "Crawl Change Fly",
+            "en": "Crawl Change Fly"
+          }
+        },
+        {
+          "id": "cricket-wing-song",
+          "work": "songs/music/bug-beat-en/en-us/cricket-wing-song",
+          "lang": "en-us",
+          "title": {
+            "zh": "Cricket Wing Song",
+            "en": "Cricket Wing Song"
+          }
+        },
+        {
+          "id": "firefly-blink",
+          "work": "songs/music/bug-beat-en/en-us/firefly-blink",
+          "lang": "en-us",
+          "title": {
+            "zh": "Firefly Blink",
+            "en": "Firefly Blink"
+          }
+        },
+        {
+          "id": "ladybug-snack",
+          "work": "songs/music/bug-beat-en/en-us/ladybug-snack",
+          "lang": "en-us",
+          "title": {
+            "zh": "Ladybug Snack",
+            "en": "Ladybug Snack"
+          }
+        },
+        {
+          "id": "six-leg-ant",
+          "work": "songs/music/bug-beat-en/en-us/six-leg-ant",
+          "lang": "en-us",
+          "title": {
+            "zh": "Six Leg Ant",
+            "en": "Six Leg Ant"
+          }
+        },
+        {
+          "id": "snail-slide",
+          "work": "songs/music/bug-beat-en/en-us/snail-slide",
+          "lang": "en-us",
+          "title": {
+            "zh": "Snail Slide",
+            "en": "Snail Slide"
+          }
+        },
+        {
+          "id": "spider-eight",
+          "work": "songs/music/bug-beat-en/en-us/spider-eight",
+          "lang": "en-us",
+          "title": {
+            "zh": "Spider Eight",
+            "en": "Spider Eight"
+          }
+        },
+        {
+          "id": "squirrel-stash",
+          "work": "songs/music/bug-beat-en/en-us/squirrel-stash",
+          "lang": "en-us",
+          "title": {
+            "zh": "Squirrel Stash",
+            "en": "Squirrel Stash"
+          }
+        }
+      ]
+    },
+    {
+      "id": "english-songs",
+      "category": "music",
+      "name": {
+        "zh": "Sing and Learn English",
+        "en": "Sing and Learn English"
+      },
+      "works": [
+        {
+          "id": "animal-sounds",
+          "work": "songs/music/english-songs/en-us/animal-sounds",
+          "lang": "en-us",
+          "title": {
+            "zh": "Who Makes That Sound?",
+            "en": "Who Makes That Sound?"
+          }
+        },
+        {
+          "id": "colors-everywhere",
+          "work": "songs/music/english-songs/en-us/colors-everywhere",
+          "lang": "en-us",
+          "title": {
+            "zh": "Color Pop!",
+            "en": "Color Pop!"
+          }
+        },
+        {
+          "id": "count-to-ten",
+          "work": "songs/music/english-songs/en-us/count-to-ten",
+          "lang": "en-us",
+          "title": {
+            "zh": "Ten, Ten, Count Again!",
+            "en": "Ten, Ten, Count Again!"
+          }
+        },
+        {
+          "id": "fruit-bowl",
+          "work": "songs/music/english-songs/en-us/fruit-bowl",
+          "lang": "en-us",
+          "title": {
+            "zh": "Fruit Bowl Boom!",
+            "en": "Fruit Bowl Boom!"
+          }
+        },
+        {
+          "id": "hello-goodbye",
+          "work": "songs/music/english-songs/en-us/hello-goodbye",
+          "lang": "en-us",
+          "title": {
+            "zh": "Hello, Friend!",
+            "en": "Hello, Friend!"
+          }
+        },
+        {
+          "id": "my-body",
+          "work": "songs/music/english-songs/en-us/my-body",
+          "lang": "en-us",
+          "title": {
+            "zh": "This Is My Body!",
+            "en": "This Is My Body!"
+          }
+        },
+        {
+          "id": "seven-days",
+          "work": "songs/music/english-songs/en-us/seven-days",
+          "lang": "en-us",
+          "title": {
+            "zh": "Seven-Day Roll Call",
+            "en": "Seven-Day Roll Call"
+          }
+        },
+        {
+          "id": "weather-window",
+          "work": "songs/music/english-songs/en-us/weather-window",
+          "lang": "en-us",
+          "title": {
+            "zh": "Weather, What Do You See?",
+            "en": "Weather, What Do You See?"
+          }
+        }
+      ]
+    },
+    {
+      "id": "everyday-words-en",
+      "category": "music",
+      "name": {
+        "zh": "Everyday Words",
+        "en": "Everyday Words"
+      },
+      "works": [
+        {
+          "id": "big-small-long-short",
+          "work": "songs/music/everyday-words-en/en-us/big-small-long-short",
+          "lang": "en-us",
+          "title": {
+            "zh": "Big Small Long Short",
+            "en": "Big Small Long Short"
+          }
+        },
+        {
+          "id": "classroom-things",
+          "work": "songs/music/everyday-words-en/en-us/classroom-things",
+          "lang": "en-us",
+          "title": {
+            "zh": "Classroom Things",
+            "en": "Classroom Things"
+          }
+        },
+        {
+          "id": "cup-bowl-plate-spoon",
+          "work": "songs/music/everyday-words-en/en-us/cup-bowl-plate-spoon",
+          "lang": "en-us",
+          "title": {
+            "zh": "Cup Bowl Plate Spoon",
+            "en": "Cup Bowl Plate Spoon"
+          }
+        },
+        {
+          "id": "family-photo",
+          "work": "songs/music/everyday-words-en/en-us/family-photo",
+          "lang": "en-us",
+          "title": {
+            "zh": "Family Photo",
+            "en": "Family Photo"
+          }
+        },
+        {
+          "id": "feelings-have-names",
+          "work": "songs/music/everyday-words-en/en-us/feelings-have-names",
+          "lang": "en-us",
+          "title": {
+            "zh": "Feelings Have Names",
+            "en": "Feelings Have Names"
+          }
+        },
+        {
+          "id": "open-close-push-pull",
+          "work": "songs/music/everyday-words-en/en-us/open-close-push-pull",
+          "lang": "en-us",
+          "title": {
+            "zh": "Open Close Push Pull",
+            "en": "Open Close Push Pull"
+          }
+        },
+        {
+          "id": "places-near-home",
+          "work": "songs/music/everyday-words-en/en-us/places-near-home",
+          "lang": "en-us",
+          "title": {
+            "zh": "Places Near Home",
+            "en": "Places Near Home"
+          }
+        },
+        {
+          "id": "rooms-at-home",
+          "work": "songs/music/everyday-words-en/en-us/rooms-at-home",
+          "lang": "en-us",
+          "title": {
+            "zh": "Rooms At Home",
+            "en": "Rooms At Home"
+          }
+        },
+        {
+          "id": "time-words",
+          "work": "songs/music/everyday-words-en/en-us/time-words",
+          "lang": "en-us",
+          "title": {
+            "zh": "Time Words",
+            "en": "Time Words"
+          }
+        },
+        {
+          "id": "where-is-the-ball",
+          "work": "songs/music/everyday-words-en/en-us/where-is-the-ball",
+          "lang": "en-us",
+          "title": {
+            "zh": "Where Is The Ball",
+            "en": "Where Is The Ball"
+          }
+        }
+      ]
+    },
+    {
+      "id": "grammar-tenses-en",
+      "category": "music",
+      "name": {
+        "zh": "Grammar Tenses",
+        "en": "Grammar Tenses"
+      },
+      "works": [
+        {
+          "id": "am-is-are-was-were",
+          "work": "songs/music/grammar-tenses-en/en-us/am-is-are-was-were",
+          "lang": "en-us",
+          "title": {
+            "zh": "Am Is Are Was Were",
+            "en": "Am Is Are Was Were"
+          }
+        },
+        {
+          "id": "boxes-buses-babies-puppies",
+          "work": "songs/music/grammar-tenses-en/en-us/boxes-buses-babies-puppies",
+          "lang": "en-us",
+          "title": {
+            "zh": "Boxes Buses Babies Puppies",
+            "en": "Boxes Buses Babies Puppies"
+          }
+        },
+        {
+          "id": "go-went-see-saw",
+          "work": "songs/music/grammar-tenses-en/en-us/go-went-see-saw",
+          "lang": "en-us",
+          "title": {
+            "zh": "Go Went See Saw",
+            "en": "Go Went See Saw"
+          }
+        },
+        {
+          "id": "mouse-mice-foot-feet",
+          "work": "songs/music/grammar-tenses-en/en-us/mouse-mice-foot-feet",
+          "lang": "en-us",
+          "title": {
+            "zh": "Mouse Mice Foot Feet",
+            "en": "Mouse Mice Foot Feet"
+          }
+        },
+        {
+          "id": "one-cat-two-cats",
+          "work": "songs/music/grammar-tenses-en/en-us/one-cat-two-cats",
+          "lang": "en-us",
+          "title": {
+            "zh": "One Cat Two Cats",
+            "en": "One Cat Two Cats"
+          }
+        },
+        {
+          "id": "play-played-jump-jumped",
+          "work": "songs/music/grammar-tenses-en/en-us/play-played-jump-jumped",
+          "lang": "en-us",
+          "title": {
+            "zh": "Play Played Jump Jumped",
+            "en": "Play Played Jump Jumped"
+          }
+        },
+        {
+          "id": "run-running-make-making",
+          "work": "songs/music/grammar-tenses-en/en-us/run-running-make-making",
+          "lang": "en-us",
+          "title": {
+            "zh": "Run Running Make Making",
+            "en": "Run Running Make Making"
+          }
+        },
+        {
+          "id": "seen-gone-eaten-made",
+          "work": "songs/music/grammar-tenses-en/en-us/seen-gone-eaten-made",
+          "lang": "en-us",
+          "title": {
+            "zh": "Seen Gone Eaten Made",
+            "en": "Seen Gone Eaten Made"
+          }
+        },
+        {
+          "id": "the-cat-runs-the-cats-run",
+          "work": "songs/music/grammar-tenses-en/en-us/the-cat-runs-the-cats-run",
+          "lang": "en-us",
+          "title": {
+            "zh": "The Cat Runs The Cats Run",
+            "en": "The Cat Runs The Cats Run"
+          }
+        },
+        {
+          "id": "verb-family-beat",
+          "work": "songs/music/grammar-tenses-en/en-us/verb-family-beat",
+          "lang": "en-us",
+          "title": {
+            "zh": "Verb Family Beat",
+            "en": "Verb Family Beat"
+          }
+        }
+      ]
+    },
+    {
+      "id": "habit-songs",
+      "category": "music",
+      "name": {
+        "zh": "好习惯儿歌",
+        "en": "Good Habit Nursery Rhymes"
+      },
+      "works": [
+        {
+          "id": "brush-teeth",
+          "work": "songs/music/habit-songs/zh-cn/brush-teeth",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "牙刷轻轻走",
+            "en": "Toothbrush Brushes Gently"
+          }
+        },
+        {
+          "id": "cross-the-road",
+          "work": "songs/music/habit-songs/zh-cn/cross-the-road",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "牵手过路口",
+            "en": "Hold Hands Crossing the Road"
+          }
+        },
+        {
+          "id": "dress-myself",
+          "work": "songs/music/habit-songs/zh-cn/dress-myself",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "衣服找朋友",
+            "en": "Clothes Find Their Friends"
+          }
+        },
+        {
+          "id": "little-bites",
+          "work": "songs/music/habit-songs/zh-cn/little-bites",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "一口尝一尝",
+            "en": "Take a Little Bite"
+          }
+        },
+        {
+          "id": "say-hello",
+          "work": "songs/music/habit-songs/zh-cn/say-hello",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "你好小笑脸",
+            "en": "Hello Little Smiling Face"
+          }
+        },
+        {
+          "id": "tidy-toys",
+          "work": "songs/music/habit-songs/zh-cn/tidy-toys",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "玩具回小家",
+            "en": "Toys Go Back Home"
+          }
+        },
+        {
+          "id": "toilet-time",
+          "work": "songs/music/habit-songs/zh-cn/toilet-time",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "厕所慢慢来",
+            "en": "Take Your Time in the Bathroom"
+          }
+        },
+        {
+          "id": "wash-hands",
+          "work": "songs/music/habit-songs/zh-cn/wash-hands",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "小手洗干净",
+            "en": "Wash Little Hands Clean"
+          }
+        }
+      ]
+    },
+    {
+      "id": "habit-songs-en",
+      "category": "music",
+      "name": {
+        "zh": "好习惯儿歌 · 英文版",
+        "en": "Good Habit Songs"
+      },
+      "works": [
+        {
+          "id": "clean-little-hands",
+          "work": "songs/music/habit-songs-en/en-us/clean-little-hands",
+          "lang": "en-us",
+          "title": {
+            "zh": "Scrub-a-Dub Hands",
+            "en": "Scrub-a-Dub Hands"
+          }
+        },
+        {
+          "id": "gentle-toothbrush",
+          "work": "songs/music/habit-songs-en/en-us/gentle-toothbrush",
+          "lang": "en-us",
+          "title": {
+            "zh": "Brush, Spit, Smile!",
+            "en": "Brush, Spit, Smile!"
+          }
+        },
+        {
+          "id": "hello-little-smile",
+          "work": "songs/music/habit-songs-en/en-us/hello-little-smile",
+          "lang": "en-us",
+          "title": {
+            "zh": "Hello, Wave Hello!",
+            "en": "Hello, Wave Hello!"
+          }
+        },
+        {
+          "id": "hold-hands-at-the-road",
+          "work": "songs/music/habit-songs-en/en-us/hold-hands-at-the-road",
+          "lang": "en-us",
+          "title": {
+            "zh": "Stop, Hold, Stay Close!",
+            "en": "Stop, Hold, Stay Close!"
+          }
+        },
+        {
+          "id": "i-can-get-dressed",
+          "work": "songs/music/habit-songs-en/en-us/i-can-get-dressed",
+          "lang": "en-us",
+          "title": {
+            "zh": "Ready, Set, Get Dressed!",
+            "en": "Ready, Set, Get Dressed!"
+          }
+        },
+        {
+          "id": "one-little-taste",
+          "work": "songs/music/habit-songs-en/en-us/one-little-taste",
+          "lang": "en-us",
+          "title": {
+            "zh": "Tiny Taste Adventure",
+            "en": "Tiny Taste Adventure"
+          }
+        },
+        {
+          "id": "take-your-time",
+          "work": "songs/music/habit-songs-en/en-us/take-your-time",
+          "lang": "en-us",
+          "title": {
+            "zh": "Toilet Time, Step by Step",
+            "en": "Toilet Time, Step by Step"
+          }
+        },
+        {
+          "id": "toys-back-home",
+          "work": "songs/music/habit-songs-en/en-us/toys-back-home",
+          "lang": "en-us",
+          "title": {
+            "zh": "Home, Toys, Home!",
+            "en": "Home, Toys, Home!"
+          }
+        }
+      ]
+    },
+    {
+      "id": "health-songs",
+      "category": "music",
+      "name": {
+        "zh": "健康歌",
+        "en": "Health Songs"
+      },
+      "works": [
+        {
+          "id": "cover-a-sneeze",
+          "work": "songs/music/health-songs/zh-cn/cover-a-sneeze",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "喷嚏躲进臂弯里",
+            "en": "Sneeze Into Your Elbow"
+          }
+        },
+        {
+          "id": "doctor-with-me",
+          "work": "songs/music/health-songs/zh-cn/doctor-with-me",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "看医生，有你陪",
+            "en": "Going to the Doctor, With You By My Side"
+          }
+        },
+        {
+          "id": "eyes-take-a-break",
+          "work": "songs/music/health-songs/zh-cn/eyes-take-a-break",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "眼睛看看远方",
+            "en": "Eyes Look Far Away"
+          }
+        },
+        {
+          "id": "little-tree-posture",
+          "work": "songs/music/health-songs/zh-cn/little-tree-posture",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "坐正站直小树苗",
+            "en": "Sit Straight, Stand Tall Like a Little Tree"
+          }
+        },
+        {
+          "id": "move-every-day",
+          "work": "songs/music/health-songs/zh-cn/move-every-day",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "每天动一动",
+            "en": "Move a Little Every Day"
+          }
+        },
+        {
+          "id": "plain-water",
+          "work": "songs/music/health-songs/zh-cn/plain-water",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "白开水，慢慢喝",
+            "en": "Plain Water, Drink It Slowly"
+          }
+        },
+        {
+          "id": "rainbow-plate",
+          "work": "songs/music/health-songs/zh-cn/rainbow-plate",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "蔬果彩虹盘",
+            "en": "Rainbow Plate of Fruits and Vegetables"
+          }
+        },
+        {
+          "id": "sleep-and-wake",
+          "work": "songs/music/health-songs/zh-cn/sleep-and-wake",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "睡饱醒来精神好",
+            "en": "Sleep Well, Wake Up Full of Energy"
+          }
+        },
+        {
+          "id": "sun-safe-play",
+          "work": "songs/music/health-songs/zh-cn/sun-safe-play",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "太阳下，护好我",
+            "en": "Stay Protected Under the Sun"
+          }
+        },
+        {
+          "id": "tell-a-grown-up",
+          "work": "songs/music/health-songs/zh-cn/tell-a-grown-up",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "不舒服，告诉大人",
+            "en": "If You Feel Unwell, Tell a Grown-Up"
+          }
+        }
+      ]
+    },
+    {
+      "id": "health-songs-en",
+      "category": "music",
+      "name": {
+        "zh": "健康歌 · 英文版",
+        "en": "Healthy Me Songs"
+      },
+      "works": [
+        {
+          "id": "colors-on-my-plate",
+          "work": "songs/music/health-songs-en/en-us/colors-on-my-plate",
+          "lang": "en-us",
+          "title": {
+            "zh": "Rainbow Plate Parade",
+            "en": "Rainbow Plate Parade"
+          }
+        },
+        {
+          "id": "eyes-look-far",
+          "work": "songs/music/health-songs-en/en-us/eyes-look-far",
+          "lang": "en-us",
+          "title": {
+            "zh": "Look Away, Look Far",
+            "en": "Look Away, Look Far"
+          }
+        },
+        {
+          "id": "move-and-rest",
+          "work": "songs/music/health-songs-en/en-us/move-and-rest",
+          "lang": "en-us",
+          "title": {
+            "zh": "Move, Pause, Play",
+            "en": "Move, Pause, Play"
+          }
+        },
+        {
+          "id": "ready-for-the-sun",
+          "work": "songs/music/health-songs-en/en-us/ready-for-the-sun",
+          "lang": "en-us",
+          "title": {
+            "zh": "Shade, Hat, Ready!",
+            "en": "Shade, Hat, Ready!"
+          }
+        },
+        {
+          "id": "rest-for-the-night",
+          "work": "songs/music/health-songs-en/en-us/rest-for-the-night",
+          "lang": "en-us",
+          "title": {
+            "zh": "Cozy Night Routine",
+            "en": "Cozy Night Routine"
+          }
+        },
+        {
+          "id": "sneeze-in-my-sleeve",
+          "work": "songs/music/health-songs-en/en-us/sneeze-in-my-sleeve",
+          "lang": "en-us",
+          "title": {
+            "zh": "Cover It Quick",
+            "en": "Cover It Quick"
+          }
+        },
+        {
+          "id": "stand-like-a-tree",
+          "work": "songs/music/health-songs-en/en-us/stand-like-a-tree",
+          "lang": "en-us",
+          "title": {
+            "zh": "Easy Tree Groove",
+            "en": "Easy Tree Groove"
+          }
+        },
+        {
+          "id": "tell-a-grown-up-now",
+          "work": "songs/music/health-songs-en/en-us/tell-a-grown-up-now",
+          "lang": "en-us",
+          "title": {
+            "zh": "Tell Them Right Away",
+            "en": "Tell Them Right Away"
+          }
+        },
+        {
+          "id": "the-doctor-and-me",
+          "work": "songs/music/health-songs-en/en-us/the-doctor-and-me",
+          "lang": "en-us",
+          "title": {
+            "zh": "Doctor Visit, Feelings Welcome",
+            "en": "Doctor Visit, Feelings Welcome"
+          }
+        },
+        {
+          "id": "water-break",
+          "work": "songs/music/health-songs-en/en-us/water-break",
+          "lang": "en-us",
+          "title": {
+            "zh": "Sit and Sip",
+            "en": "Sit and Sip"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lullabies",
+      "category": "music",
+      "name": {
+        "zh": "晚安摇篮曲",
+        "en": "Goodnight Lullabies"
+      },
+      "works": [
+        {
+          "id": "animals-goodnight",
+          "work": "songs/music/lullabies/zh-cn/animals-goodnight",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "晚安小动物",
+            "en": "Goodnight Little Animals"
+          }
+        },
+        {
+          "id": "counting-sheep",
+          "work": "songs/music/lullabies/zh-cn/counting-sheep",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "小羊慢慢数",
+            "en": "Counting Lambs Slowly"
+          }
+        },
+        {
+          "id": "dream-boat",
+          "work": "songs/music/lullabies/zh-cn/dream-boat",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "梦的小船",
+            "en": "The Little Boat of Dreams"
+          }
+        },
+        {
+          "id": "little-stars",
+          "work": "songs/music/lullabies/zh-cn/little-stars",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "星光轻轻闪",
+            "en": "Starlight Twinkles Softly"
+          }
+        },
+        {
+          "id": "moon-window",
+          "work": "songs/music/lullabies/zh-cn/moon-window",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "月光在窗边",
+            "en": "Moonlight by the Window"
+          }
+        },
+        {
+          "id": "paper-boat",
+          "work": "songs/music/lullabies/zh-cn/paper-boat",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "纸船停在画里",
+            "en": "Paper Boat Rests in the Painting"
+          }
+        },
+        {
+          "id": "soft-rain",
+          "work": "songs/music/lullabies/zh-cn/soft-rain",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "雨声在窗外",
+            "en": "Rain Outside the Window"
+          }
+        },
+        {
+          "id": "warm-hug",
+          "work": "songs/music/lullabies/zh-cn/warm-hug",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "抱抱好梦来",
+            "en": "Warm Hug for Sweet Dreams"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lullabies-en",
+      "category": "music",
+      "name": {
+        "zh": "晚安摇篮曲 · 英文版",
+        "en": "Goodnight Lullabies"
+      },
+      "works": [
+        {
+          "id": "a-hug-for-bedtime",
+          "work": "songs/music/lullabies-en/en-us/a-hug-for-bedtime",
+          "lang": "en-us",
+          "title": {
+            "zh": "One More Hug",
+            "en": "One More Hug"
+          }
+        },
+        {
+          "id": "animal-friends-at-night",
+          "work": "songs/music/lullabies-en/en-us/animal-friends-at-night",
+          "lang": "en-us",
+          "title": {
+            "zh": "Goodnight, Picture Friends",
+            "en": "Goodnight, Picture Friends"
+          }
+        },
+        {
+          "id": "boat-of-dreams",
+          "work": "songs/music/lullabies-en/en-us/boat-of-dreams",
+          "lang": "en-us",
+          "title": {
+            "zh": "Sail, Dream Boat",
+            "en": "Sail, Dream Boat"
+          }
+        },
+        {
+          "id": "count-the-sleepy-sheep",
+          "work": "songs/music/lullabies-en/en-us/count-the-sleepy-sheep",
+          "lang": "en-us",
+          "title": {
+            "zh": "Sheep Drift By",
+            "en": "Sheep Drift By"
+          }
+        },
+        {
+          "id": "moonlight-by-my-window",
+          "work": "songs/music/lullabies-en/en-us/moonlight-by-my-window",
+          "lang": "en-us",
+          "title": {
+            "zh": "Moon Ribbon",
+            "en": "Moon Ribbon"
+          }
+        },
+        {
+          "id": "paper-boat-at-rest",
+          "work": "songs/music/lullabies-en/en-us/paper-boat-at-rest",
+          "lang": "en-us",
+          "title": {
+            "zh": "Paper Boat, Goodnight",
+            "en": "Paper Boat, Goodnight"
+          }
+        },
+        {
+          "id": "rain-beyond-the-window",
+          "work": "songs/music/lullabies-en/en-us/rain-beyond-the-window",
+          "lang": "en-us",
+          "title": {
+            "zh": "Rain Says Goodnight",
+            "en": "Rain Says Goodnight"
+          }
+        },
+        {
+          "id": "starlight-far-away",
+          "work": "songs/music/lullabies-en/en-us/starlight-far-away",
+          "lang": "en-us",
+          "title": {
+            "zh": "Faraway Glow",
+            "en": "Faraway Glow"
+          }
+        }
+      ]
+    },
+    {
+      "id": "science-songs",
+      "category": "music",
+      "name": {
+        "zh": "Science Nursery Rhymes",
+        "en": "Science Nursery Rhymes"
+      },
+      "works": [
+        {
+          "id": "day-and-night",
+          "work": "songs/music/science-songs/zh-cn/day-and-night",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "Day and Night",
+            "en": "Day and Night"
+          }
+        },
+        {
+          "id": "four-seasons",
+          "work": "songs/music/science-songs/zh-cn/four-seasons",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "Four Seasons Round and Round",
+            "en": "Four Seasons Cycle Around"
+          }
+        },
+        {
+          "id": "heart-beat",
+          "work": "songs/music/science-songs/zh-cn/heart-beat",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "Thumping Heartbeat",
+            "en": "Thumping Heartbeat"
+          }
+        },
+        {
+          "id": "moon-changes",
+          "work": "songs/music/science-songs/zh-cn/moon-changes",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "Moon Changes and Changes",
+            "en": "The Changing Moon"
+          }
+        },
+        {
+          "id": "rainbow-colors",
+          "work": "songs/music/science-songs/zh-cn/rainbow-colors",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "Colors of the Rainbow",
+            "en": "Colors of the Rainbow"
+          }
+        },
+        {
+          "id": "seed-sprouts",
+          "work": "songs/music/science-songs/zh-cn/seed-sprouts",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "Seed Sprouting",
+            "en": "Sprouting Seeds"
+          }
+        },
+        {
+          "id": "shadow-follows",
+          "work": "songs/music/science-songs/zh-cn/shadow-follows",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "Shadow Follows Me",
+            "en": "Shadow Follows Me"
+          }
+        },
+        {
+          "id": "water-travels",
+          "work": "songs/music/science-songs/zh-cn/water-travels",
+          "lang": "zh-cn",
+          "title": {
+            "zh": "Water's Journey",
+            "en": "Water's Journey"
+          }
+        }
+      ]
+    },
+    {
+      "id": "science-songs-en",
+      "category": "music",
+      "name": {
+        "zh": "Science Nursery Rhymes · 英文版",
+        "en": "Little Science Songs"
+      },
+      "works": [
+        {
+          "id": "day-turns-into-night",
+          "work": "songs/music/science-songs-en/en-us/day-turns-into-night",
+          "lang": "en-us",
+          "title": {
+            "zh": "Turn, Earth, Turn!",
+            "en": "Turn, Earth, Turn!"
+          }
+        },
+        {
+          "id": "moon-faces",
+          "work": "songs/music/science-songs-en/en-us/moon-faces",
+          "lang": "en-us",
+          "title": {
+            "zh": "Moonlight Shape Show",
+            "en": "Moonlight Shape Show"
+          }
+        },
+        {
+          "id": "my-busy-heart",
+          "work": "songs/music/science-songs-en/en-us/my-busy-heart",
+          "lang": "en-us",
+          "title": {
+            "zh": "Pump, Pump, Busy Heart!",
+            "en": "Pump, Pump, Busy Heart!"
+          }
+        },
+        {
+          "id": "my-changing-shadow",
+          "work": "songs/music/science-songs-en/en-us/my-changing-shadow",
+          "lang": "en-us",
+          "title": {
+            "zh": "Shadow Switch!",
+            "en": "Shadow Switch!"
+          }
+        },
+        {
+          "id": "rainbow-in-the-rain",
+          "work": "songs/music/science-songs-en/en-us/rainbow-in-the-rain",
+          "lang": "en-us",
+          "title": {
+            "zh": "Rainbow, Bend and Shine!",
+            "en": "Rainbow, Bend and Shine!"
+          }
+        },
+        {
+          "id": "seasons-on-the-move",
+          "work": "songs/music/science-songs-en/en-us/seasons-on-the-move",
+          "lang": "en-us",
+          "title": {
+            "zh": "Tilt into the Seasons",
+            "en": "Tilt into the Seasons"
+          }
+        },
+        {
+          "id": "wake-up-little-seed",
+          "work": "songs/music/science-songs-en/en-us/wake-up-little-seed",
+          "lang": "en-us",
+          "title": {
+            "zh": "Root Down, Shoot Up!",
+            "en": "Root Down, Shoot Up!"
+          }
+        },
+        {
+          "id": "water-goes-around",
+          "work": "songs/music/science-songs-en/en-us/water-goes-around",
+          "lang": "en-us",
+          "title": {
+            "zh": "Up, Cloud, Down!",
+            "en": "Up, Cloud, Down!"
+          }
+        }
+      ]
+    }
+  ]
+}
