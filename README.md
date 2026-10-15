@@ -87,7 +87,7 @@ music-video-games/
 ├── packages/
 │   ├── core/    @gizclaw/mvg-core   timing, HUD, post-processing, haivivi intro (shared)
 │   ├── video/   @gizclaw/mvg-video  mvg-video CLI, renderer page, beat/lyric analysis (Python)
-│   └── games/   @gizclaw/mvg-games  shared game kit and the GitHub Pages build
+│   └── games/   @gizclaw/mvg-games  embeddable games; Pages mounts this package
 ├── aigc/                            mirrors the AIGC catalog (gizclaw/catalogs/aigc/)
 │   └── songs/<category>/<album>/<lang>/<id>/
 │       ├── video/                   choreography: song.js and its scenes
@@ -155,9 +155,13 @@ npm run build      # dist/, deployed to GitHub Pages on every push to main
 ```
 
 Each `aigc/<work>/game/index.html` becomes a page at the same path on the site.
-Games stream the published catalog audio from `static-volc.gizclaw.com` and
-bundle a trimmed `analysis.json` (beats, onsets, aligned lyrics), refreshed with
-`mvg-video --work <work> game-data`. `?audio=<url>` overrides the audio source.
+Slide Down the Spectrum's page mounts `@gizclaw/mvg-games` (`mountSpectrumSlide`);
+it does not keep a second copy of the game. Games stream the published catalog
+audio from `static-volc.gizclaw.com`. `?audio=<url>` overrides the audio source.
+
+`@gizclaw/mvg-core` and `@gizclaw/mvg-games` are attached to GitHub Releases as
+tarballs. They are not published to GitHub Packages. Publishing happens in the
+`release` workflow, because the Pages deploy token cannot upload packages.
 
 </details>
 

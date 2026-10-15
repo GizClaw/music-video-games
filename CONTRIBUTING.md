@@ -29,7 +29,8 @@ See [packages/video/README.md](packages/video/README.md) for the analysis, lyric
 1. Create `aigc/<work>/game/index.html` beside the song's video directory. It
    becomes a page at the same path on the site; add a card to the gallery in
    `index.html`.
-2. Import shared runtime pieces from `@gizclaw/mvg-games/kit.js` (audio clock,
+2. Mount a packaged game with `mountSpectrumSlide` from `@gizclaw/mvg-games`,
+   or import shared runtime pieces from `@gizclaw/mvg-games/kit.js` (audio clock,
    catalog audio URL, glow sprite, post shader) and scene code from
    `../video/`.
 3. Write the trimmed beat data with `mvg-video --work <work> game-data` and

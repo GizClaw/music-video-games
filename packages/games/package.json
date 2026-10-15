@@ -4,7 +4,10 @@
   "description": "Playable web games for AIGC catalog songs and the GitHub Pages site that hosts them",
   "license": "BSD-3-Clause",
   "type": "module",
+  "files": ["src", "README.md"],
   "exports": {
+    ".": "./src/index.js",
+    "./kit.js": "./src/kit.js",
     "./*": "./src/*"
   },
   "scripts": {

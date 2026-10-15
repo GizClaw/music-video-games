@@ -6,13 +6,12 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { StarStreaks } from "@gizclaw/mvg-core/fx.js";
 import { Timing, clamp, easeInOut, hash, lerp, smooth } from "@gizclaw/mvg-core/timing.js";
-import { AudioClock, GamePostShader, glowTexture, songAudioUrl } from "@gizclaw/mvg-games/kit.js";
-import { BANDS, SECTIONS } from "../video/constants.js";
-import { WORD_COLORS } from "../video/hud.js";
-import analysis from "./analysis.json";
+import { AudioClock, GamePostShader, glowTexture, songAudioUrl } from "./kit.js";
+import { BANDS, SECTIONS, WORD_COLORS } from "./spectrum/song.js";
+import analysis from "./spectrum/analysis.json";
+import { spectrumMarkup, spectrumStyle } from "./spectrum/style.js";
 
-// Slide Down the Spectrum as a rhythm game: the video's light tunnel, a photon
-// the player steers round the wall, and a chart generated from the song's beats.
+const WORK = "songs/music/stem-institute/en-us/spectrum-slide";
 const SP = 2.6; // world units travelled per beat
 const RINGS = 44;
 const RING_R = 2.3;
@@ -24,16 +23,67 @@ const PERFECT = 0.17;
 const GOOD = 0.38;
 const WINDOW = 0.075; // seconds either side of a note's arrival
 const GAP = 2.6 * LANE; // half-width of a gate's opening
-const ATTRACT = [SECTIONS.chorus1, SECTIONS.chorus1 + 22];
 const RING_N = [3, 5, 8, 12, 18, 26, 40];
 const RING_AMP = [0.14, 0.11, 0.085, 0.065, 0.05, 0.04, 0.03];
 const BAND_COLOR = BANDS.map((b) => (b.id === "visible" ? "#fff6a0" : b.color));
 const GATE_COLOR = "#ff2a55";
-const WORK = "songs/music/stem-institute/en-us/spectrum-slide";
-const params = new URLSearchParams(location.search);
-
+const ATTRACT = [SECTIONS.chorus1, SECTIONS.chorus1 + 22];
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
-const $ = (id) => document.getElementById(id);
+
+let styleMounted = false;
+function ensureStyle() {
+  if (styleMounted) return;
+  const el = document.createElement("style");
+  el.dataset.mvg = "spectrum-slide";
+  el.textContent = spectrumStyle;
+  document.head.appendChild(el);
+  styleMounted = true;
+}
+
+/**
+ * Mount Slide Down the Spectrum into `target` (an element or a selector).
+ * The chart, HUD and canvas are created inside that element. `options.audio`,
+ * `options.start`, `options.play` and `options.auto` override the page query.
+ * `options.backHref` shows a link back to a gallery; omit it when embedding.
+ * @param {Element | string} target
+ * @param {{ audio?: string, start?: number | string, play?: boolean, auto?: boolean, backHref?: string, search?: string }} [options]
+ * @returns {Promise<{ destroy: () => void, chart: unknown, tally: () => object }>}
+ */
+export async function mountSpectrumSlide(target, options = {}) {
+  const root = typeof target === "string" ? document.querySelector(target) : target;
+  if (!root) throw new Error("mountSpectrumSlide: target not found");
+  ensureStyle();
+  root.classList.add("mvg-game");
+  root.innerHTML = spectrumMarkup;
+  const back = root.querySelector("a.back");
+  if (options.backHref) back.href = options.backHref;
+  else back.remove();
+  const $ = (id) => root.querySelector("#" + id);
+  const params = new URLSearchParams(options.search ?? location.search);
+  if (options.audio != null) params.set("audio", options.audio);
+  if (options.start != null) params.set("start", String(options.start));
+  if (options.play) params.set("play", "");
+  if (options.auto) params.set("auto", "");
+  const ac = new AbortController();
+  const { signal } = ac;
+  let alive = true;
+  let raf = 0;
+  let audio;
+  let renderer;
+  let resizeObserver;
+  function destroy() {
+    alive = false;
+    cancelAnimationFrame(raf);
+    ac.abort();
+    resizeObserver?.disconnect();
+    audio?.pause();
+    renderer?.dispose();
+    root.replaceChildren();
+    root.classList.remove("mvg-game");
+    if (root.mvgGame) delete root.mvgGame;
+    if (window.__game?.destroy === destroy) delete window.__game;
+  }
+
 
 // ---------- chart ----------
 
@@ -168,7 +218,8 @@ function makeRings() {
 
 // ---------- game ----------
 
-async function boot() {
+  try {
+
   const tm = new Timing(analysis);
   tm.setDownbeat(SECTIONS.drop);
   const chart = buildChart(tm);
@@ -202,7 +253,7 @@ async function boot() {
   const bandSlams = [...verse1, ...verse2].map(([t, b]) => ({ t, b }));
 
   // Renderer
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -214,15 +265,19 @@ async function boot() {
   const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.6, 0.4, 0.2);
   const post = new ShaderPass(GamePostShader);
   [new RenderPass(scene, camera), bloom, post, new OutputPass()].forEach((p) => composer.addPass(p));
+  function box() {
+    const rect = root.getBoundingClientRect();
+    return { w: Math.max(1, rect.width), h: Math.max(1, rect.height) };
+  }
   function resize() {
-    const w = innerWidth;
-    const h = innerHeight;
+    const { w, h } = box();
     renderer.setSize(w, h, false);
     composer.setPixelRatio(renderer.getPixelRatio());
     composer.setSize(w, h);
     camera.aspect = w / h;
   }
-  addEventListener("resize", resize);
+  resizeObserver = new ResizeObserver(resize);
+  resizeObserver.observe(root);
   resize();
 
   const rings = makeRings();
@@ -333,7 +388,7 @@ async function boot() {
   }
 
   // ---------- audio clock ----------
-  const audio = new Audio(params.get("audio") || songAudioUrl(WORK));
+  audio = new Audio(params.get("audio") || songAudioUrl(WORK));
   audio.preload = "auto";
   const clock = new AudioClock(audio);
   let offset = Number(localStorage.getItem("spectrum-game-offset") || 0);
@@ -474,7 +529,7 @@ async function boot() {
 
   // ---------- input ----------
   const keys = new Set();
-  addEventListener("keydown", (e) => {
+  window.addEventListener("keydown", (e) => {
     keys.add(e.key.toLowerCase());
     if (e.key === "Escape" || e.key.toLowerCase() === "p") togglePause();
     if (e.key.toLowerCase() === "r" && state === "result") start();
@@ -484,22 +539,23 @@ async function boot() {
       localStorage.setItem("spectrum-game-offset", String(offset));
       judgeText(`SYNC ${offset >= 0 ? "+" : ""}${Math.round(offset * 1000)} ms`, "#ffffff");
     }
-  });
-  addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
+  }, { signal });
+  window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()), { signal });
   let dragX = null;
   let dragged = 0;
-  addEventListener("pointerdown", (e) => {
+  root.addEventListener("pointerdown", (e) => {
     dragX = e.clientX;
     dragged = 0;
-  });
-  addEventListener("pointermove", (e) => {
+  }, { signal });
+  root.addEventListener("pointermove", (e) => {
     if (dragX === null || state !== "play") return;
     const dx = e.clientX - dragX;
     dragX = e.clientX;
     dragged += Math.abs(dx);
-    theta += (dx / Math.min(innerWidth, innerHeight)) * Math.PI * 1.6;
-  });
-  addEventListener("pointerup", () => (dragX = null));
+    const { w, h } = box();
+    theta += (dx / Math.min(w, h)) * Math.PI * 1.6;
+  }, { signal });
+  root.addEventListener("pointerup", () => (dragX = null), { signal });
   $("pause").addEventListener("click", togglePause);
   $("start").addEventListener("click", start);
   $("again").addEventListener("click", start);
@@ -568,7 +624,8 @@ async function boot() {
   // ---------- frame ----------
   const frameClock = new THREE.Clock();
   function frame() {
-    requestAnimationFrame(frame);
+    if (!alive) return;
+    raf = requestAnimationFrame(frame);
     prevTheta = theta;
     const dt = Math.min(0.05, frameClock.getDelta());
     let t;
@@ -736,10 +793,15 @@ async function boot() {
   $("start").textContent = "开始";
   if (params.has("play")) start();
   frame();
-  window.__game = { chart, tally: () => ({ ...tally, score, combo, maxCombo }) };
+  const api = { chart, tally: () => ({ ...tally, score, combo, maxCombo }), destroy };
+  root.mvgGame = api;
+  window.__game = api;
+  return api;
+  } catch (e) {
+    console.error(e);
+    const start = $("start");
+    if (start) start.textContent = `出错了：${e.message}`;
+    destroy();
+    throw e;
+  }
 }
-
-boot().catch((e) => {
-  console.error(e);
-  $("start").textContent = `出错了：${e.message}`;
-});
