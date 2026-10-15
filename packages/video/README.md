@@ -16,6 +16,29 @@ By default the CLI reads `aigc/<work>/video/` in the current directory; pass
 core and three.js from installed dependencies. `--root` still selects the
 mounted GizClaw media/cache/build root.
 
+## Run with npx
+
+The CLI can run directly from the release archives, without a manual `npm install`
+or global package installation. Each new GitHub Release includes exact npx
+commands with its pinned tarball URLs. Supply both the core and video archives
+from that release: core is an internal package dependency, and does not need to
+be available on the public npm registry for this route to work.
+
+```sh
+npx --yes \
+  --package="<core .tgz URL from the release>" \
+  --package="<video .tgz URL from the same release>" \
+  mvg-video --project /path/to/music-video-games --root /mounted/GizClaw \
+  --work spectrum-slide --subtitles embed --format mp4 render
+```
+
+Replace the two URLs with assets from [GitHub Releases](https://github.com/GizClaw/music-video-games/releases).
+npx downloads into its cache and leaves the caller's project dependencies alone.
+Node.js 22.12+, Chromium, ffmpeg and uv are still rendering prerequisites; the
+choreography and catalog media remain supplied by the caller. Once both packages
+are published to a configured npm registry, `npx --yes @gizclaw/mvg-video@<version>`
+is the shorter equivalent. A registry publication is separate from GitHub Releases.
+
 ```sh
 mvg-video --version
 mvg-video --project /path/to/music-video-games --root /mounted/GizClaw --work spectrum-slide preview
@@ -91,6 +114,68 @@ lyric-free frames per line and lists, in `build/aigc/<work>/lyric-clearance.txt`
 every line whose block comes within 40 px of such a rectangle. Fix those by
 moving the scene's text up, not by moving the lyrics.
 
+### Chinese subtitles
+
+An optional `<work>.zh-CN.json` beside the catalog audio supplies Simplified
+Chinese translations, keyed by the exact English cue text (repeated lines
+reuse one translation):
+
+```json
+{
+  "version": 1,
+  "language": "zh-CN",
+  "lines": {
+    "One wide family, wave by wave,": "一个大家族，波浪接着波浪，"
+  }
+}
+```
+
+Provide a nonempty translation for every sung cue; missing lines fail the
+preview/render so an edited lyric cannot silently get the wrong translation.
+The track stays with the catalog media, outside this code repository. It uses
+the same aligned cue windows as the English lyrics, including song-specific
+timing corrections and omitted unsung lines.
+
+Write the intended meaning in natural, concise Chinese for children, rather
+than mirroring English word order or rhyme filler. Scientific terms, numbers,
+sequences and relationships must stay accurate. Read each subtitle aloud and
+review it in context before exporting the translation track.
+
+```sh
+mvg-video --work spectrum-slide subtitles            # generate an editable SRT under build/
+mvg-video --work spectrum-slide --subtitles embed --format mp4 render # Chinese in the picture
+mvg-video --work spectrum-slide --subtitles external render # video + companion Chinese SRT
+mvg-video --work spectrum-slide --subtitles none render # omit the Chinese translation
+```
+
+Generated SRT files stay at `build/aigc/<work>/subtitles.zh-CN.srt` for editing.
+An optional hand-authored `<work>.zh-CN.srt` beside the catalog audio takes
+precedence; otherwise the renderer uses the generated SRT or the JSON track.
+`subtitles` explicitly regenerates the SRT from the aligned JSON. Reload the
+preview to pick up SRT edits, then rerender to apply them to the video.
+
+`--subtitles embed` is the default. Chinese is rendered in static 36 px type at
+y = 1660 below the animated lyrics, with at most two lines. A final composition
+pass avoids flashes, glitches, grain and colour shifts. The master, MP4 and
+WebM contain Chinese directly in the picture, so every player shows the same
+size and position. Chinese only changes at cue boundaries, with no movement
+or karaoke effects. Editing files stay under build/; a previous companion SRT
+is preserved there when switching modes, so players do not load it twice.
+
+`--subtitles external` keeps Chinese out of the video pixels and writes a
+companion `<work>.zh-CN.srt` beside the MP4/WebM. It requires an existing Chinese
+SRT or JSON translation track. Partial renders get a companion SRT clipped to
+the selected interval, starting at zero. Preview and snap show the video pixels
+for the selected mode, so only `embed` displays the Chinese overlay.
+
+`--subtitles none` skips Chinese entirely, including translation loading.
+English karaoke remains part of the animation in all modes. Songs without a
+translation retain their existing layout in the default `embed` mode.
+`--format mp4`, `--format webm` or the default `--format both` selects deliverables.
+New full renders record the subtitle mode in `build/aigc/<work>/master.json`;
+`encode` preserves it. Older masters without metadata retain the legacy `embed`
+default. `encode --subtitles ...` is rejected: rerender to change the pixels.
+
 ## Song modules
 
 `aigc/<work>/video/song.js` exports `createSong(ctx)`, returning its scenes, a
@@ -117,11 +202,11 @@ boot. Parallel workers therefore render contiguous frame ranges independently.
 Each worker pipes JPEG frames into its own libx264 encoder with a fixed
 two-second GOP and identical profile, so segments concatenate without
 re-encoding into `build/…/master.mp4` with 256 kbit/s AAC audio. The MP4
-deliverable copies the master's streams with `+faststart`; the WebM is a
+deliverable copies the master's video/audio streams with `+faststart`; the WebM is a
 two-pass libvpx-vp9 encode with 128 kbit/s Opus. VP9 smooths the film grain, so
 its SSIM against the master sits near 0.94 even when frames look identical.
 
 Both deliverables are 1080×1920, 30 fps, limited-range yuv420p, BT.709; the MP4
-is H.264 High 4.1 at about 10 Mbit/s. Lyrics, labels and rulers stay inside the
+is H.264 High 4.1 at about 10 Mbit/s. Animated English lyrics, labels and rulers stay inside the
 short-video safe area: clear of the top 250 px, the bottom 440 px and the
 right-hand action column.

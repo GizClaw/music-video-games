@@ -2,7 +2,7 @@
 // not hide missing files, unresolved dependencies or renderer path assumptions.
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,6 +13,7 @@ const temporary = mkdtempSync(join(tmpdir(), "mvg-consumer-"));
 const consumer = join(temporary, "consumer");
 const project = join(temporary, "choreography");
 const media = join(temporary, "media");
+const npxConsumer = join(temporary, "npx-consumer");
 const work = "songs/music/test/en-us/smoke";
 let preview;
 try {
@@ -48,6 +49,21 @@ try {
   const videoVersion = index.packages.find((pkg) => pkg.name === "@gizclaw/mvg-video").version;
   assert.equal(execFileSync(process.execPath, [cli, "--version"], { cwd: consumer, encoding: "utf8" }).trim(), videoVersion);
   assert.match(execFileSync(process.execPath, [cli, "--help"], { cwd: consumer, encoding: "utf8" }), /--project/);
+  assert.match(execFileSync(process.execPath, [cli, "--help"], { cwd: consumer, encoding: "utf8" }), /--subtitles embed\|external\|none/);
+
+  // npx must fetch the release archives into its own cache, without an install
+  // step, package.json or node_modules in the caller's directory.
+  mkdirSync(npxConsumer);
+  const npxPackages = ["@gizclaw/mvg-core", "@gizclaw/mvg-video"].map((name) => {
+    const pkg = index.packages.find((pkg) => pkg.name === name);
+    return `--package=${join(directory, pkg.tarball)}`;
+  });
+  const npxVersion = execFileSync("npx", ["--yes", ...npxPackages, "mvg-video", "--version"], {
+    cwd: npxConsumer, encoding: "utf8", timeout: 120000,
+    env: { ...process.env, npm_config_cache: join(temporary, "npx-cache"), npm_config_ignore_scripts: "true", PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1" },
+  }).trim();
+  assert.equal(npxVersion, videoVersion);
+  for (const file of ["package.json", "package-lock.json", "node_modules"]) assert(!existsSync(join(npxConsumer, file)), `npx wrote ${file} into the caller's directory`);
   for (const file of ["analyze.py", "align_vocals.py", "requirements.txt", "requirements-align.txt"]) {
     assert(readFileSync(join(consumer, "node_modules/@gizclaw/mvg-video/python", file)).length > 0);
   }
@@ -67,6 +83,8 @@ try {
   for (const [path, pattern] of [
     ["/packages/video/page/index.html", /type="importmap"/],
     ["/packages/video/page/main.js", /__video/],
+    ["/packages/video/page/subtitles.js", /class StaticSubtitles/],
+    ["/packages/video/page/captions.js", /function parseSrt/],
     ["/packages/core/src/timing.js", /class Timing/],
     ["/packages/core/assets/haivivi-wordmark.svg", /<svg/],
     ["/node_modules/three/build/three.module.js", /WebGLRenderer/],
@@ -78,7 +96,7 @@ try {
     assert.match(await response.text(), pattern);
   }
   assert.equal((await fetch(`${base}/package.json`)).status, 404);
-  console.log(`Verified ${index.packages.length} installed npm tarballs: game build, core assets, video CLI and renderer routes`);
+  console.log(`Verified ${index.packages.length} npm tarballs: game build, core assets, video CLI, renderer routes and npx without a project install`);
 } finally {
   if (preview) {
     const closed = new Promise((resolve) => preview.once("close", resolve));

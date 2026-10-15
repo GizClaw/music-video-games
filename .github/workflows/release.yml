@@ -91,6 +91,14 @@ jobs:
           console.log("| npm package | Version | Archive |\n| --- | --- | --- |");
           for (const pkg of index.packages) console.log(`| \`${pkg.name}\` | ${pkg.version} | \`${pkg.tarball}\` |`);
           console.log("\n`npm-index.json` records each archive's name, version, size and SHA-256. `SHA256SUMS` covers the archives and index. Deploy owns TOS publication.");
+          const base = `https://github.com/${index.repository}/releases/download/${index.version}`;
+          const core = index.packages.find((pkg) => pkg.name === "@gizclaw/mvg-core");
+          const video = index.packages.find((pkg) => pkg.name === "@gizclaw/mvg-video");
+          console.log("\n### Run with npx\n\nNo manual npm install is needed. npx caches these two archives and resolves their other dependencies. Rendering still needs Node.js 22.12+, Chromium, ffmpeg, uv, a choreography project and its catalog media.\n");
+          console.log("```sh");
+          console.log(`npx --yes --package=${base}/${core.tarball} --package=${base}/${video.tarball} mvg-video --version`);
+          console.log(`npx --yes --package=${base}/${core.tarball} --package=${base}/${video.tarball} mvg-video --project /path/to/music-video-games --root /mounted/GizClaw --work spectrum-slide --subtitles embed --format mp4 render`);
+          console.log("```\n\n`--subtitles embed` burns static Chinese into the picture (default). `--subtitles external` writes a companion `.zh-CN.srt`. `--subtitles none` omits Chinese.");
           JS
           trap cleanup EXIT
           gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \

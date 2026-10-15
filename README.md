@@ -41,7 +41,9 @@ Every frame is a function of the song's time. No generative video model, no keyf
 ## The videos
 
 Eleven songs from the STEM Institute album, each 1080×1920 at 30 fps and cut to
-the detected beat, with forced-aligned karaoke lyrics.
+the detected beat, with forced-aligned karaoke lyrics. Optional catalog
+translation tracks add small, static Chinese subtitles beneath the animation,
+burned into the picture by default or delivered as companion SRT files.
 
 <table>
   <tr>
@@ -137,6 +139,15 @@ npx mvg-video --work spectrum-slide render            # clearance, frames, MP4 +
 
 Each run builds one song. `--work` takes the song id when it is unique, or the
 full catalog work path (`songs/music/stem-institute/en-us/spectrum-slide`).
+`--subtitles embed` burns static Chinese into the picture (default);
+`--subtitles external` writes a companion `.zh-CN.srt` beside the video;
+`--subtitles none` omits Chinese from a new render.
+
+For users without a package install, the release's core and video tarballs can
+be passed directly to `npx --yes --package=<core-url> --package=<video-url> mvg-video`.
+New [GitHub Release notes](https://github.com/GizClaw/music-video-games/releases)
+include complete commands; see the [video package guide](packages/video/README.md#run-with-npx)
+for prerequisites and command options. npx caches the tool without adding project dependencies.
 
 `--catalog <dir>` points at the AIGC catalog source so the published title lands
 in the file metadata. Other commands: `encode`, `inspect`, `clearance` and

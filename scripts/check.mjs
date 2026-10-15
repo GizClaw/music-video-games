@@ -51,3 +51,4 @@ if (errors.length) {
   process.exit(1);
 }
 console.log(`${works.size} songs, ${sources.length} modules ok`);
+await import("./check-subtitles.mjs");

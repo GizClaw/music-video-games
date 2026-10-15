@@ -7,21 +7,37 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { FinalShader, H, HudShader, W, seededRandom } from "@gizclaw/mvg-core/fx.js";
 import { FONT_COND, FONT_HEAVY, FONT_MONO, Hud, LYRIC_Y } from "@gizclaw/mvg-core/hud.js";
 import { Timing, smooth } from "@gizclaw/mvg-core/timing.js";
+import { StaticSubtitles, SUBTITLE_FONT, SubtitleShader } from "./subtitles.js";
+import { parseSrt } from "./captions.js";
 
 Math.random = seededRandom(20261014);
 
 const params = new URLSearchParams(location.search);
 
+async function loadSubtitles() {
+  if (["none", "external"].includes(params.get("subtitles"))) return null;
+  if (params.get("subtitle-source") !== "json") {
+    const srt = await fetch("/media/subtitles.zh-CN.srt");
+    if (srt.ok) return parseSrt(await srt.text());
+    if (srt.status !== 404) throw new Error(`Chinese SRT: HTTP ${srt.status}`);
+  }
+  const json = await fetch("/media/subtitles.zh-CN.json");
+  if (json.status === 404) return null;
+  if (!json.ok) throw new Error(`Chinese subtitles: HTTP ${json.status}`);
+  return json.json();
+}
+
 async function boot() {
   const work = params.get("work");
   if (!/^songs\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z-]+\/[a-z0-9-]+$/.test(work || "")) throw new Error("missing ?work=songs/<category>/<album>/<lang>/<id>");
-  const [analysis, logoSvg, songModule] = await Promise.all([
+  const [analysis, logoSvg, songModule, subtitleTrack] = await Promise.all([
     fetch("/media/analysis.json").then((r) => r.json()),
     fetch("/packages/core/assets/haivivi-wordmark.svg").then((r) => r.text()),
     import(`/aigc/${work}/video/song.js`),
+    loadSubtitles(),
   ]);
   await Promise.all(
-    [`800 64px ${FONT_HEAVY}`, `600 64px ${FONT_HEAVY}`, `800 64px ${FONT_COND}`, `600 30px ${FONT_MONO}`, `700 30px ${FONT_MONO}`].map((f) => document.fonts.load(f)),
+    [`800 64px ${FONT_HEAVY}`, `600 64px ${FONT_HEAVY}`, `800 64px ${FONT_COND}`, `600 30px ${FONT_MONO}`, `700 30px ${FONT_MONO}`, `500 36px ${SUBTITLE_FONT}`].map((f) => document.fonts.load(f)),
   );
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: "high-performance" });
@@ -43,6 +59,12 @@ async function boot() {
 
   const ctx = { renderer, timing, hud, assets: { logoSvg } };
   const song = songModule.createSong(ctx);
+  const subtitles = new StaticSubtitles(timing, subtitleTrack, song.intro.end);
+  const subtitleTex = new THREE.CanvasTexture(subtitles.canvas);
+  subtitleTex.colorSpace = THREE.NoColorSpace;
+  subtitleTex.premultiplyAlpha = true;
+  subtitleTex.minFilter = THREE.LinearFilter;
+  subtitleTex.generateMipmaps = false;
   const lyricY = song.lyricY ?? LYRIC_Y;
   const { scenes, pick } = song;
 
@@ -56,13 +78,18 @@ async function boot() {
   const hudPass = new ShaderPass(HudShader);
   hudPass.uniforms.tHud.value = hudTex;
   [renderPass, bloom, finalPass, outputPass, hudPass].forEach((p) => composer.addPass(p));
+  if (subtitleTrack) {
+    const subtitlePass = new ShaderPass(SubtitleShader);
+    subtitlePass.uniforms.tSubtitles.value = subtitleTex;
+    composer.addPass(subtitlePass);
+  }
 
   // Warm every scene once so shader compilation does not land inside a timed frame.
   for (const s of Object.values(scenes)) renderer.compile(s.scene, s.camera);
 
   const POST_DEFAULT = { bloom: [1.1, 0.5, 0.1], ca: 0.2, flash: 0, flashColor: "#ffffff", shock: undefined, glitch: 0, mirror: 0, invert: 0, pixel: 0, zoom: 1, sat: 1, fade: 0, vignette: 0.4, grain: 0.022, hudCA: 0, scan: 0 };
 
-  function renderAt(t, frame = Math.round(t * 30), { lyrics = true } = {}) {
+  function renderAt(t, frame = Math.round(t * 30), { lyrics = true, chinese = true } = {}) {
     const [key, section] = pick(t);
     const s = scenes[key];
     hud.clear();
@@ -73,6 +100,7 @@ async function boot() {
       hud.lyric(t, timing, { y: lyricY, opacity: 1 - smooth(song.intro.build - 0.08, song.intro.build + 0.22, t) });
     }
     hudTex.needsUpdate = true;
+    if (subtitles.renderAt(t, lyrics && chinese && section !== "end")) subtitleTex.needsUpdate = true;
 
     renderPass.scene = s.scene;
     renderPass.camera = s.camera;
@@ -112,6 +140,7 @@ async function boot() {
     },
     renderAt,
     lyricY,
+    subtitleCues: subtitles.cues,
     /** Screen rectangles of the foreground text drawn at t, rendered without lyrics. */
     keepouts(t) {
       renderAt(t, Math.round(t * 30), { lyrics: false });
