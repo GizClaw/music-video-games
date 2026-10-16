@@ -193,6 +193,23 @@ export class Sfx {
     if (perfect) this.tone(t + 0.02, { f0: note(i) * 4, dur: 0.14, gain: 0.03, pan });
   }
 
+  /** A button or tile pressed down: a sharp click over a short thump. */
+  press() {
+    const t = this.at();
+    if (t == null) return;
+    this.noise(t, { f0: 3200, f1: 1200, dur: 0.035, gain: 0.12, q: 1.4, attack: 0.001 });
+    this.tone(t, { type: "triangle", f0: 1500, f1: 700, dur: 0.03, gain: 0.05 });
+    this.tone(t + 0.005, { f0: 190, f1: 70, dur: 0.11, gain: 0.24 });
+  }
+
+  /** A stamp: something knocked down for the player, a dull thud with a papery slap. */
+  stamp() {
+    const t = this.at();
+    if (t == null) return;
+    this.tone(t, { f0: 130, f1: 55, dur: 0.16, gain: 0.2 });
+    this.noise(t, { f0: 900, f1: 400, dur: 0.06, gain: 0.07, q: 0.8, type: "lowpass" });
+  }
+
   /** An 8-bit square blip at step `i`, with a quick octave chirp when `perfect`. */
   chip(i = 0, perfect = true) {
     const t = this.at();

@@ -11,6 +11,44 @@ import { PARADES, PLANETS, PLUTO, SECTIONS, SUN_WORDS, WORD_COLORS } from "./pla
 import analysis from "./planet/analysis.json";
 import { makeRings, makeStars, makeSun, planetMaterial } from "./planet/scene.js";
 import { planetMarkup, planetStyle } from "./planet/style.js";
+import { COMMON, gameLang } from "./lang.js";
+
+const TEXT = {
+  zh: {
+    simpleSub: "跟着节奏点一下，让八大行星排好队",
+    simpleKeys: ["光圈收到下面的大按钮上时，点屏幕任意位置", "唱到哪颗行星时点中，就把它收进队伍", "别乱点，太早点会断连击"],
+    lineup: "按 1–8 给行星点名",
+    parade: "从左到右 1 → 8",
+    pluto: "它出现时按 9",
+    finale: "最后一次点名",
+    space: "空格",
+    wrongSun: "✗ 是太阳",
+    wrongPlanet: (k, name) => `✗ 是 ${k} ${name}`,
+    wrongTaps: "点错",
+    named: "行星点名",
+    planets: "集齐行星",
+    plutoRow: "冥王星",
+    found: "找到了",
+    missed: "错过了",
+  },
+  en: {
+    simpleSub: "Tap on the beat and line up the eight planets",
+    simpleKeys: ["Tap anywhere as the ring reaches the big button below", "Hit each planet as it is sung to bring it into line", "Don't tap early: it breaks the combo"],
+    lineup: "Press 1–8 to call each planet",
+    parade: "Left to right, 1 → 8",
+    pluto: "Press 9 when it shows up",
+    finale: "The last roll call",
+    space: "Space",
+    wrongSun: "✗ That was the Sun",
+    wrongPlanet: (k, name) => `✗ That was ${k} ${name}`,
+    wrongTaps: "Wrong hits",
+    named: "Planets named",
+    planets: "Planets lined up",
+    plutoRow: "Pluto",
+    found: "found",
+    missed: "missed",
+  },
+};
 import { backGuard, buzz, goFullscreen, isTouch, lockGestures, wakeLock } from "./mobile.js";
 import { sfx } from "./sfx.js";
 
@@ -150,7 +188,8 @@ function ringTexture() {
  * `options.start`, `options.play` and `options.auto` override the page query.
  * `options.backHref` shows a link back to a gallery; omit it when embedding.
  * @param {Element | string} target
- * @param {{ audio?: string, start?: number | string, play?: boolean, auto?: boolean, backHref?: string, search?: string }} [options]
+ * `options.lang` (`zh` or `en`) picks the language, else the universe hub's choice.
+ * @param {{ audio?: string, start?: number | string, play?: boolean, auto?: boolean, backHref?: string, search?: string, lang?: "zh" | "en" }} [options]
  * @returns {Promise<{ destroy: () => void, chart: unknown, tally: () => object }>}
  */
 export async function mountPlanetParade(target, options = {}) {
@@ -158,7 +197,10 @@ export async function mountPlanetParade(target, options = {}) {
   if (!root) throw new Error("mountPlanetParade: target not found");
   ensureStyle();
   root.classList.add("mvg-game", "planet");
-  root.innerHTML = planetMarkup;
+  const lang = gameLang(options.lang);
+  const ui = COMMON[lang];
+  const T = TEXT[lang];
+  root.innerHTML = planetMarkup(lang);
   const back = root.querySelector("a.back");
   if (options.backHref) back.href = options.backHref;
   else back.remove();
@@ -176,12 +218,9 @@ export async function mountPlanetParade(target, options = {}) {
   const simple = isTouch() || params.has("simple");
   if (simple) {
     root.classList.add("simple");
-    root.querySelector("#title .sub").textContent = "跟着节奏点一下，让八大行星排好队";
-    root.querySelector("#title .keys").innerHTML = `
-      <div>光圈收到下面的大按钮上时，点屏幕任意位置</div>
-      <div>唱到哪颗行星时点中，就把它收进队伍</div>
-      <div>别乱点，太早点会断连击</div>`;
-    if (isTouch()) root.querySelector("#pause .sub").textContent = "点击继续 · 再按一次返回退出";
+    root.querySelector("#title .sub").textContent = T.simpleSub;
+    root.querySelector("#title .keys").innerHTML = T.simpleKeys.map((k) => `<div>${k}</div>`).join("");
+    if (isTouch()) root.querySelector("#pause .sub").textContent = ui.resumeTouch;
   }
   let alive = true;
   let raf = 0;
@@ -410,11 +449,11 @@ export async function mountPlanetParade(target, options = {}) {
     const pitch = (k) => (k === SUN_T ? 0 : k === PLUTO_T ? 9 : k);
     const firstNote = chart[0]?.t ?? SECTIONS.lineup;
     const calls = [
-      { t: SECTIONS.lineup, text: "STEP INTO LINE!", color: SUN_COLOR, sub: "按 1–8 给行星点名" },
-      { t: SECTIONS.chorus1, text: "PLANET PARADE!", color: SUN_COLOR, sub: "从左到右 1 → 8" },
-      { t: SECTIONS.chorus2, text: "PLANET PARADE!", color: SUN_COLOR, sub: "从左到右 1 → 8" },
-      { t: SECTIONS.bridge, text: "WHERE IS PLUTO?", color: PLUTO.color, sub: "它出现时按 9" },
-      { t: SECTIONS.finale, text: "ALL EIGHT!", color: "#ffffff", sub: "最后一次点名" },
+      { t: SECTIONS.lineup, text: "STEP INTO LINE!", color: SUN_COLOR, sub: T.lineup },
+      { t: SECTIONS.chorus1, text: "PLANET PARADE!", color: SUN_COLOR, sub: T.parade },
+      { t: SECTIONS.chorus2, text: "PLANET PARADE!", color: SUN_COLOR, sub: T.parade },
+      { t: SECTIONS.bridge, text: "WHERE IS PLUTO?", color: PLUTO.color, sub: T.pluto },
+      { t: SECTIONS.finale, text: "ALL EIGHT!", color: "#ffffff", sub: T.finale },
     ];
 
     $("lineup").innerHTML = [...PLANETS, PLUTO]
@@ -435,7 +474,7 @@ export async function mountPlanetParade(target, options = {}) {
       $("tap").appendChild(el);
       return el;
     });
-    const keyLabel = (k) => (k === SUN_T ? (isTouch() ? "☀" : "空格") : String(k === PLUTO_T ? 9 : k + 1));
+    const keyLabel = (k) => (k === SUN_T ? (isTouch() ? "☀" : T.space) : String(k === PLUTO_T ? 9 : k + 1));
 
     function reset() {
       for (const n of chart) Object.assign(n, { judged: false, result: null });
@@ -545,7 +584,7 @@ export async function mountPlanetParade(target, options = {}) {
       combo = 0;
       wrongAt = t;
       const want = BODIES[open.target];
-      judgeText(open.target === SUN_T ? "✗ 是太阳" : `✗ 是 ${open.target === PLUTO_T ? 9 : open.target + 1} ${want.name}`, "#ff6b8a");
+      judgeText(open.target === SUN_T ? T.wrongSun : T.wrongPlanet(open.target === PLUTO_T ? 9 : open.target + 1, want.name), "#ff6b8a");
       updateScore();
     }
 
@@ -678,18 +717,18 @@ export async function mountPlanetParade(target, options = {}) {
       $("grade").textContent = grade;
       $("grade").style.color = gradeColor;
       $("grade").style.textShadow = `0 0 40px ${gradeColor}`;
-      $("final").textContent = `${score.toLocaleString("en-US")} 分`;
+      $("final").textContent = ui.points(score.toLocaleString("en-US"));
       sfx.result(acc >= 0.7);
       $("stats").innerHTML = [
         ["PERFECT", tally.perfect],
         ["GOOD", tally.good],
         ["MISS", tally.miss],
-        ["点错", tally.wrong],
-        ["行星点名", `${tally.named} / ${namedTotal}`],
-        ["集齐行星", `${tally.planets} / 8`],
-        ["冥王星", tally.pluto ? "找到了" : "错过了"],
-        ["最大连击", maxCombo],
-        ["命中率", `${(acc * 100).toFixed(1)}%`],
+        [T.wrongTaps, tally.wrong],
+        [T.named, `${tally.named} / ${namedTotal}`],
+        [T.planets, `${tally.planets} / 8`],
+        [T.plutoRow, tally.pluto ? T.found : T.missed],
+        [ui.maxCombo, maxCombo],
+        [ui.accuracy, `${(acc * 100).toFixed(1)}%`],
       ]
         .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
         .join("");
@@ -893,7 +932,7 @@ export async function mountPlanetParade(target, options = {}) {
     }
 
     $("start").disabled = false;
-    $("start").textContent = "开始";
+    $("start").textContent = ui.start;
     if (params.has("play")) start();
     frame();
     const api = { chart, tally: () => ({ ...tally, score, combo, maxCombo }), destroy };
@@ -903,7 +942,7 @@ export async function mountPlanetParade(target, options = {}) {
   } catch (e) {
     console.error(e);
     const startBtn = $("start");
-    if (startBtn) startBtn.textContent = `出错了：${e.message}`;
+    if (startBtn) startBtn.textContent = ui.error(e.message);
     destroy();
     throw e;
   }

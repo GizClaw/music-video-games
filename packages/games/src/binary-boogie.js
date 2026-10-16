@@ -9,6 +9,7 @@ import { AudioClock, GamePostShader, glowTexture, songAudioUrl } from "./kit.js"
 import { BRIDGE_VALUES, GRAY, NES, NES_CYCLE, PLACES, SECTIONS, VERSE2_VALUES, WORD_COLORS } from "./binary/song.js";
 import analysis from "./binary/analysis.json";
 import { binaryMarkup, binaryStyle } from "./binary/style.js";
+import { COMMON, gameLang } from "./lang.js";
 import { backGuard, buzz, goFullscreen, isTouch, lockGestures, wakeLock } from "./mobile.js";
 import { sfx } from "./sfx.js";
 
@@ -27,15 +28,55 @@ const LIVES = 3;
 const MAX_LIVES = 5;
 const LESSON_MARCH = 16; // lessons come down this slowly, then wait on the line
 const LESSONS = [
-  { value: 1, tip: "拨出 1：打开最右边的「1」开关" },
-  { value: 2, tip: "拨出 2 = 0010：照着闪的开关按" },
-  { value: 3, tip: "3 = 2 + 1：「2」和「1」一起亮" },
-  { value: 8, tip: "最左边是 8：打开「8」" },
-  { value: 4, tip: "打完会自动清零，拨错了按空格重来" },
-  { value: 5, tip: "5 = 4 + 1" },
-  { value: 6, tip: "6 = 4 + 2" },
-  { value: 7, tip: "7 = 4 + 2 + 1" },
+  { value: 1, tip: { zh: "拨出 1：打开最右边的「1」开关", en: "Dial 1: flip on the rightmost “1” switch" } },
+  { value: 2, tip: { zh: "拨出 2 = 0010：照着闪的开关按", en: "2 = 0010: flip the switch that blinks" } },
+  { value: 3, tip: { zh: "3 = 2 + 1：「2」和「1」一起亮", en: "3 = 2 + 1: light “2” and “1” together" } },
+  { value: 8, tip: { zh: "最左边是 8：打开「8」", en: "The leftmost is 8: flip on “8”" } },
+  { value: 4, tip: { zh: "打完会自动清零，拨错了按空格重来", en: "The switches clear after each shot; Space starts over" } },
+  { value: 5, tip: { zh: "5 = 4 + 1", en: "5 = 4 + 1" } },
+  { value: 6, tip: { zh: "6 = 4 + 2", en: "6 = 4 + 2" } },
+  { value: 7, tip: { zh: "7 = 4 + 2 + 1", en: "7 = 4 + 2 + 1" } },
 ];
+const TEXT = {
+  zh: {
+    touchKeys: ["下面四个开关是 8 · 4 · 2 · 1，点一下开、再点一下关，红色键一键清零", "拨出外星人身上的数字，下一拍就开火打爆它", "3 条命，溜走一只扣一条；无限循环，越来越快 · 横屏玩更舒服"],
+    training: "先学会拨开关",
+    ready: "它会等你，拨对下一拍就开火",
+    oneFlip: "每只只差一个开关",
+    allFour: "四个开关全用上",
+    boss: "boogie 时打 15 号 Boss",
+    lights: "8 · 4 · 2 · 1 一盏盏点亮",
+    lastWave: "最后一波",
+    faster: "越来越快",
+    clear: "清零",
+    space: "空格",
+    nice: "✓ 打得好！",
+    want: (v, bits) => `要拨 ${v} = ${bits}`,
+    shot: "打爆",
+    shotN: (n) => `${n} 只`,
+    through: "溜走",
+    collected: "集齐 0–15",
+  },
+  en: {
+    touchKeys: ["The four switches below are 8 · 4 · 2 · 1: tap to flip, the red one clears", "Spell the number an invader carries and it is shot on the next beat", "Three lives, one lost for each that gets through; loops for ever, faster each time · best played sideways"],
+    training: "learn the switches first",
+    ready: "it waits; spell it and it is shot on the next beat",
+    oneFlip: "each one a single flip away",
+    allFour: "all four switches now",
+    boss: "a 15 boss on “boogie”",
+    lights: "8 · 4 · 2 · 1, one light at a time",
+    lastWave: "the last wave",
+    faster: "faster and faster",
+    clear: "CLEAR",
+    space: "Space",
+    nice: "✓ Nice shot!",
+    want: (v, bits) => `That was ${v} = ${bits}`,
+    shot: "Shot down",
+    shotN: (n) => `${n}`,
+    through: "Got through",
+    collected: "Collected 0–15",
+  },
+};
 const DRILLS = [4, 9, 12, 10, 15, 11, 13, 14];
 const xOf = (v) => (v - 7.5) * XS;
 const bitsOf = (v) => PLACES.map((p) => (v & p ? 1 : 0));
@@ -131,7 +172,8 @@ function sectionAt(t) {
  * `options.play` and `options.auto` override the page query.
  * `options.backHref` shows a link back to a gallery; omit it when embedding.
  * @param {Element | string} target
- * @param {{ audio?: string, start?: number | string, play?: boolean, auto?: boolean, backHref?: string, search?: string }} [options]
+ * `options.lang` (`zh` or `en`) picks the language, else the universe hub's choice.
+ * @param {{ audio?: string, start?: number | string, play?: boolean, auto?: boolean, backHref?: string, search?: string, lang?: "zh" | "en" }} [options]
  * @returns {Promise<{ destroy: () => void, history: unknown, tally: () => object }>}
  */
 export async function mountBinaryBoogie(target, options = {}) {
@@ -139,7 +181,10 @@ export async function mountBinaryBoogie(target, options = {}) {
   if (!root) throw new Error("mountBinaryBoogie: target not found");
   ensureStyle();
   root.classList.add("mvg-game", "binary");
-  root.innerHTML = binaryMarkup;
+  const lang = gameLang(options.lang);
+  const ui = COMMON[lang];
+  const T = TEXT[lang];
+  root.innerHTML = binaryMarkup(lang);
   const back = root.querySelector("a.back");
   if (options.backHref) back.href = options.backHref;
   else back.remove();
@@ -154,11 +199,8 @@ export async function mountBinaryBoogie(target, options = {}) {
   lockGestures(root, signal);
   const awake = wakeLock();
   if (isTouch()) {
-    root.querySelector("#title .keys").innerHTML = `
-      <div>下面四个开关是 8 · 4 · 2 · 1，点一下开、再点一下关，红色键一键清零</div>
-      <div>拨出外星人身上的数字，下一拍就开火打爆它</div>
-      <div>3 条命，溜走一只扣一条；无限循环，越来越快 · 横屏玩更舒服</div>`;
-    root.querySelector("#pause .sub").textContent = "点击继续 · 再按一次返回退出";
+    root.querySelector("#title .keys").innerHTML = T.touchKeys.map((k) => `<div>${k}</div>`).join("");
+    root.querySelector("#pause .sub").textContent = ui.resumeTouch;
   }
   let alive = true;
   let raf = 0;
@@ -383,21 +425,21 @@ export async function mountBinaryBoogie(target, options = {}) {
     const loud = () => state === "play";
     const guard = backGuard({ signal, playing: () => state === "play", onBack: () => togglePause() });
     const calls = [
-      { t: 0.3, text: "TRAINING", color: NES.yellow, sub: "先学会拨开关" },
-      { t: TUTOR_END, text: "READY?", color: NES.green, sub: "它会等你，拨对下一拍就开火" },
-      { t: SECTIONS.chorus1, text: "INVADERS!", color: NES.pink, sub: "每只只差一个开关" },
-      { t: SECTIONS.verse2, text: "8 → 15", color: NES.orange, sub: "四个开关全用上" },
-      { t: SECTIONS.chorus2, text: "INVADERS!", color: NES.pink, sub: "boogie 时打 15 号 Boss" },
-      { t: SECTIONS.bridge, text: "LIGHTS ON", color: NES.green, sub: "8 · 4 · 2 · 1 一盏盏点亮" },
-      { t: SECTIONS.chorus3, text: "BOOGIE!", color: NES.pink, sub: "最后一波" },
-      { t: SECTIONS.outro, text: "FINAL WAVE", color: NES.yellow, sub: "越来越快" },
+      { t: 0.3, text: "TRAINING", color: NES.yellow, sub: T.training },
+      { t: TUTOR_END, text: "READY?", color: NES.green, sub: T.ready },
+      { t: SECTIONS.chorus1, text: "INVADERS!", color: NES.pink, sub: T.oneFlip },
+      { t: SECTIONS.verse2, text: "8 → 15", color: NES.orange, sub: T.allFour },
+      { t: SECTIONS.chorus2, text: "INVADERS!", color: NES.pink, sub: T.boss },
+      { t: SECTIONS.bridge, text: "LIGHTS ON", color: NES.green, sub: T.lights },
+      { t: SECTIONS.chorus3, text: "BOOGIE!", color: NES.pink, sub: T.lastWave },
+      { t: SECTIONS.outro, text: "FINAL WAVE", color: NES.yellow, sub: T.faster },
     ];
 
     $("nums").innerHTML = Array.from({ length: 16 }, (_, v) => `<i>${v}</i>`).join("");
     const numChips = [...$("nums").children];
     $("switches").innerHTML =
       PLACES.map((p, l) => `<button class="sw" data-lane="${l}"><small>${p}</small><b>0</b><em>${KEY_LABELS[l]}</em></button>`).join("") +
-      `<button class="sw clr"><small>清零</small><b>0</b><em>空格</em></button>` +
+      `<button class="sw clr"><small>${T.clear}</small><b>0</b><em>${T.space}</em></button>` +
       `<div class="readout"><small>VALUE</small><span>= 0</span></div>`;
     const switches = [...$("switches").querySelectorAll(".sw:not(.clr)")];
     const clearBtn = $("switches").querySelector(".clr");
@@ -506,9 +548,9 @@ export async function mountBinaryBoogie(target, options = {}) {
      */
     function pick(t, landing, lessonTime) {
       if (lessonTime) {
-        const L = LESSONS[lesson] ?? { value: DRILLS[(lesson - LESSONS.length) % DRILLS.length], tip: "" };
+        const L = LESSONS[lesson] ?? { value: DRILLS[(lesson - LESSONS.length) % DRILLS.length], tip: null };
         lesson++;
-        return { ...L, lesson: true };
+        return { value: L.value, tip: L.tip?.[lang] ?? "", lesson: true };
       }
       const s = sectionAt(t);
       const next = (key, list) => {
@@ -601,7 +643,7 @@ export async function mountBinaryBoogie(target, options = {}) {
         showLives();
       }
       judgeText(n.boss ? "BOSS DOWN! +1 ♥" : combo >= 6 && combo % 5 === 0 ? `${combo} COMBO!` : `${n.value} = ${bits}`, n.boss ? NES.pink : NES_CYCLE[n.value % NES_CYCLE.length]);
-      if (n.lesson) setTip(lesson >= LESSONS.length ? "" : "✓ 打得好！");
+      if (n.lesson) setTip(lesson >= LESSONS.length ? "" : T.nice);
       updateScore();
     }
 
@@ -615,7 +657,7 @@ export async function mountBinaryBoogie(target, options = {}) {
       burst(xOf(n.value), LINE_Y, 16, NES.red, 3);
       buzz(45);
       if (loud()) sfx.wrong();
-      judgeText(`要拨 ${n.value} = ${n.value.toString(2).padStart(4, "0")}`, NES.red);
+      judgeText(T.want(n.value, n.value.toString(2).padStart(4, "0")), NES.red);
       updateScore();
       if (lives <= 0 && state === "play") finish();
     }
@@ -700,7 +742,7 @@ export async function mountBinaryBoogie(target, options = {}) {
       pass++;
       picks = {};
       lastCall = -1;
-      slam(`第 ${pass} 轮`, NES.yellow, "加速！");
+      slam(ui.round(pass), NES.yellow, ui.faster);
       return to;
     }
 
@@ -717,16 +759,16 @@ export async function mountBinaryBoogie(target, options = {}) {
       $("grade").textContent = grade;
       $("grade").style.color = gradeColor;
       $("grade").style.textShadow = `0 6px 0 #1d2b53, 0 0 40px ${gradeColor}`;
-      $("final").textContent = `${score.toLocaleString("en-US")} 分`;
+      $("final").textContent = ui.points(score.toLocaleString("en-US"));
       sfx.result(grade <= "B");
       $("stats").innerHTML = [
-        ["打爆", `${tally.hits} 只`],
-        ["溜走", `${tally.misses} / ${played}`],
+        [T.shot, T.shotN(tally.hits)],
+        [T.through, `${tally.misses} / ${played}`],
         ["Boss", `${tally.bosses} / ${tally.bossTotal}`],
-        ["坚持到", `第 ${pass} 轮`],
-        ["存活", `${Math.floor(secs / 60)} 分 ${secs % 60} 秒`],
-        ["集齐 0–15", `${got.size} / 16`],
-        ["最大连击", maxCombo],
+        [ui.lasted, ui.round(pass)],
+        [ui.survived, ui.duration(secs)],
+        [T.collected, `${got.size} / 16`],
+        [ui.maxCombo, maxCombo],
       ]
         .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
         .join("");
@@ -866,7 +908,7 @@ export async function mountBinaryBoogie(target, options = {}) {
     showReg();
     showLives();
     $("start").disabled = false;
-    $("start").textContent = "开始";
+    $("start").textContent = ui.start;
     if (params.has("play")) start();
     frame();
     const api = { history, tally: () => ({ ...tally, score, combo, maxCombo, collected: got.size, reg, lives, pass, beatBase, current: cur && { value: cur.value, done: cur.done, lesson: !!cur.lesson } }), destroy };
@@ -876,7 +918,7 @@ export async function mountBinaryBoogie(target, options = {}) {
   } catch (e) {
     console.error(e);
     const startBtn = $("start");
-    if (startBtn) startBtn.textContent = `出错了：${e.message}`;
+    if (startBtn) startBtn.textContent = ui.error(e.message);
     destroy();
     throw e;
   }

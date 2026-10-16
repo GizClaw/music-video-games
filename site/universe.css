@@ -46,7 +46,7 @@
 .uv-go:hover { transform: scale(1.08); }
 .uv-soon { font: 700 12px Menlo, monospace; letter-spacing: 4px; padding: 6px 14px; border-radius: 999px; border: 1px solid rgba(170,178,192,0.4); color: #aab2c0; }
 .uv-panel.live .uv-soon, .uv-panel:not(.live) .uv-go, .uv-panel:not(.live) .uv-howto { display: none; }
-.uv-howto { margin: 0; padding: 0 24px; text-align: center; font-size: 14px; letter-spacing: 1px; opacity: 0.75; text-shadow: 0 1px 6px #000; }
+.uv-howto { margin: 0; padding: 0 24px; max-width: min(560px, 92vw); display: flex; flex-direction: column; gap: 4px; text-align: center; font-size: 14px; line-height: 1.5; letter-spacing: 1px; opacity: 0.8; text-shadow: 0 1px 6px #000; }
 .uv-tip { position: absolute; top: 26px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 13px; letter-spacing: 1px; opacity: 0; pointer-events: none !important; transition: opacity 0.6s; text-shadow: 0 1px 6px #000; }
 .uv[data-level="galaxy"]:not(.uv-tipped) .uv-tip { opacity: 0.8; }
 .uv kbd { display: inline-block; min-width: 1.2em; padding: 0 0.35em; border: 1px solid rgba(255,255,255,0.4); border-radius: 5px; font: 600 0.85em Menlo, monospace; text-align: center; }
@@ -66,6 +66,15 @@
 @keyframes uv-portal { 0% { transform: scale(0); opacity: 1; } 80% { opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
 .uv-quit { position: absolute; top: 14px; left: 14px; z-index: 6; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.3); background: rgba(10,12,30,0.6); font-size: 18px; }
 .uv-quit:hover { border-color: #fff; box-shadow: 0 0 16px rgba(120,180,255,0.6); }
+.uv-langplay { position: absolute; top: 14px; right: 14px; z-index: 6; height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); background: rgba(10,12,30,0.6); font: 800 13px "Avenir Next", "PingFang SC", sans-serif; letter-spacing: 1px; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+.uv-langplay.show { opacity: 1; pointer-events: auto; }
+.uv-langplay:hover { border-color: #fff; box-shadow: 0 0 16px rgba(120,180,255,0.6); }
+@media (pointer: coarse) {
+  .uv-quit, .uv-langplay { top: max(14px, env(safe-area-inset-top, 0px)); }
+  .uv-quit { width: 52px; height: 52px; font-size: 22px; }
+  .uv-langplay { height: 52px; padding: 0 22px; font-size: 17px; }
+  .uv-exit { font-size: 16px; padding: 13px 28px; bottom: max(22px, env(safe-area-inset-bottom, 0px)); }
+}
 .uv-play[hidden] { display: none; }
 .uv-game { position: absolute; inset: 0; }
 .uv-exit { position: absolute; left: 50%; bottom: 22px; letter-spacing: 1px; transform: translateX(-50%); z-index: 5; padding: 9px 22px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.3); background: rgba(10,12,30,0.75); font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
@@ -89,8 +98,10 @@
 .uv-fallback a { color: #fff; }
 .uv-fallback .soon { opacity: 0.5; }
 
-@media (max-aspect-ratio: 4/5) {
+@media (max-width: 1100px), (pointer: coarse) {
   .uv-tip { display: none; }
+}
+@media (max-aspect-ratio: 4/5) {
   .uv-panel { bottom: 9vh; }
   .uv-arrow { top: auto; bottom: calc(9vh + 14px); transform: none; }
 }

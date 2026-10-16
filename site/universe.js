@@ -70,6 +70,7 @@ const MARKUP = `
   <div class="uv-flash"></div>
   <div class="uv-play" hidden>
     <button class="uv-quit" data-title="quit">←</button>
+    <button class="uv-langplay"></button>
     <button class="uv-exit" data-t="back"></button>
   </div>
   <div class="uv-portal"></div>
@@ -235,17 +236,21 @@ export function mountUniverse(target, { series }) {
     root.querySelectorAll("[data-t]").forEach((el) => (el.textContent = S(el.dataset.t)));
     root.querySelectorAll("[data-html]").forEach((el) => (el.innerHTML = S(el.dataset.html)));
     root.querySelectorAll("[data-title]").forEach((el) => (el.title = S(el.dataset.title)));
-    $(".uv-lang").textContent = S("switch");
-    $(".uv-lang").title = S("switchTitle");
+    $(".uv-lang").textContent = $(".uv-langplay").textContent = S("switch");
+    $(".uv-lang").title = $(".uv-langplay").title = S("switchTitle");
     for (const g of galaxies) g.label.firstChild.textContent = local(g.s.name, lang);
     music.onchange(music.want);
     hud();
   }
-  $(".uv-lang").addEventListener("click", () => {
+  const toggleLang = () => {
     lang = lang === "zh" ? "en" : "zh";
     saveLang(lang);
     relabel();
-  }, { signal });
+    // A game renders its text when it mounts, so it is mounted again in the new language.
+    if (state.level === "game" && gameHost) remountGame();
+  };
+  $(".uv-lang").addEventListener("click", toggleLang, { signal });
+  $(".uv-langplay").addEventListener("click", toggleLang, { signal });
 
   // ---------- music ----------
   const music = new Music();
@@ -441,6 +446,8 @@ export function mountUniverse(target, { series }) {
   const flash = $(".uv-flash");
   const portal = $(".uv-portal");
   let game = null;
+  /** Options the current game was mounted with, so a language switch can mount it again the same way. */
+  let mountedOpts = {};
   let gameHost = null;
   let gameToken = 0;
   let exitPoll = 0;
@@ -462,13 +469,18 @@ export function mountUniverse(target, { series }) {
       playEl.prepend(gameHost);
       openPlay();
       flash.classList.remove("on");
-      exitPoll = setInterval(() => $(".uv-exit").classList.toggle("show", !!gameHost?.querySelector(".overlay:not([hidden])")), 250);
+      exitPoll = setInterval(() => {
+        const reading = !!gameHost?.querySelector(".overlay:not([hidden])");
+        $(".uv-exit").classList.toggle("show", reading);
+        $(".uv-langplay").classList.toggle("show", reading);
+      }, 250);
       try {
         const mount = await modulePromise;
         if (token !== gameToken) return;
         const opts = pendingGame;
         pendingGame = {};
-        const g = await mount(gameHost, { search: "", ...opts });
+        mountedOpts = opts;
+        const g = await mount(gameHost, { search: "", lang, ...opts });
         if (token !== gameToken) g.destroy();
         else game = g;
       } catch (e) {
@@ -490,6 +502,24 @@ export function mountUniverse(target, { series }) {
     clearTimeout(coverTimer);
     coverTimer = setTimeout(() => (covering = playEl.classList.contains("open")), 900);
   }
+  /** Mount the current game again, in the language just chosen. It starts over from its title. */
+  async function remountGame() {
+    const token = ++gameToken;
+    const host = gameHost;
+    game?.destroy();
+    game = null;
+    try {
+      const mount = await galaxies[state.si].planets[state.sel].w.game();
+      if (token !== gameToken) return;
+      const g = await mount(host, { search: "", lang, ...mountedOpts });
+      if (token !== gameToken) g.destroy();
+      else game = g;
+    } catch (e) {
+      console.error(e);
+      if (token === gameToken) toast(S("failed"));
+    }
+  }
+
   /** Close the portal over the game, then tear it down; the camera pulls back out meanwhile. */
   function exitGame() {
     gameToken++;
@@ -540,7 +570,7 @@ export function mountUniverse(target, { series }) {
     panel.classList.toggle("live", !!w.game);
     panel.style.setProperty("--accent", w.game ? w.colors[0] : GREY);
     panel.querySelector("h1").textContent = local(w.title, lang);
-    panel.querySelector(".uv-howto").textContent = local(w.howto, lang) ?? "";
+    panel.querySelector(".uv-howto").replaceChildren(...[local(w.howto, lang) ?? []].flat().map((line) => Object.assign(document.createElement("span"), { textContent: line })));
   }
   $(".uv-go").addEventListener("click", () => activate(state.sel), { signal });
   $(".uv-back").addEventListener("click", () => up(), { signal });

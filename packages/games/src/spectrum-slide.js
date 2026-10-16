@@ -10,6 +10,7 @@ import { AudioClock, GamePostShader, glowTexture, songAudioUrl } from "./kit.js"
 import { BANDS, SECTIONS, WORD_COLORS } from "./spectrum/song.js";
 import analysis from "./spectrum/analysis.json";
 import { spectrumMarkup, spectrumStyle } from "./spectrum/style.js";
+import { COMMON, gameLang } from "./lang.js";
 import { backGuard, buzz, goFullscreen, lockGestures, wakeLock } from "./mobile.js";
 import { sfx } from "./sfx.js";
 
@@ -47,8 +48,9 @@ function ensureStyle() {
  * The chart, HUD and canvas are created inside that element. `options.audio`,
  * `options.start`, `options.play` and `options.auto` override the page query.
  * `options.backHref` shows a link back to a gallery; omit it when embedding.
+ * `options.lang` (`zh` or `en`) picks the language, else the universe hub's choice.
  * @param {Element | string} target
- * @param {{ audio?: string, start?: number | string, play?: boolean, auto?: boolean, backHref?: string, search?: string }} [options]
+ * @param {{ audio?: string, start?: number | string, play?: boolean, auto?: boolean, backHref?: string, search?: string, lang?: "zh" | "en" }} [options]
  * @returns {Promise<{ destroy: () => void, chart: unknown, tally: () => object }>}
  */
 export async function mountSpectrumSlide(target, options = {}) {
@@ -56,7 +58,9 @@ export async function mountSpectrumSlide(target, options = {}) {
   if (!root) throw new Error("mountSpectrumSlide: target not found");
   ensureStyle();
   root.classList.add("mvg-game");
-  root.innerHTML = spectrumMarkup;
+  const lang = gameLang(options.lang);
+  const ui = COMMON[lang];
+  root.innerHTML = spectrumMarkup(lang);
   const back = root.querySelector("a.back");
   if (options.backHref) back.href = options.backHref;
   else back.remove();
@@ -623,15 +627,15 @@ function makeRings() {
     $("grade").textContent = grade;
     $("grade").style.color = gradeColor;
     $("grade").style.textShadow = `0 0 40px ${gradeColor}`;
-    $("final").textContent = `${score.toLocaleString("en-US")} 分`;
+    $("final").textContent = ui.points(score.toLocaleString("en-US"));
     sfx.result(acc >= 0.7);
     $("stats").innerHTML = [
       ["PERFECT", tally.perfect],
       ["GOOD", tally.good],
       ["MISS", tally.miss],
-      ["γ 闸门", `${tally.gatePass} / ${gates}`],
-      ["最大连击", maxCombo],
-      ["命中率", `${(acc * 100).toFixed(1)}%`],
+      [lang === "zh" ? "γ 闸门" : "γ gates", `${tally.gatePass} / ${gates}`],
+      [ui.maxCombo, maxCombo],
+      [ui.accuracy, `${(acc * 100).toFixed(1)}%`],
     ]
       .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
       .join("");
@@ -817,12 +821,12 @@ function makeRings() {
     const firstGate = chart.find((n) => n.gate);
     if (firstGate && countdownShown !== "gate" && t >= firstGate.t - 3.2 && t < firstGate.t - 2.6) {
       countdownShown = "gate";
-      slam("γ GATE", GATE_COLOR, "钻过缺口");
+      slam("γ GATE", GATE_COLOR, lang === "zh" ? "钻过缺口" : "slip through the gap");
     }
   }
 
   $("start").disabled = false;
-  $("start").textContent = "开始";
+  $("start").textContent = ui.start;
   if (params.has("play")) start();
   frame();
   const api = { chart, tally: () => ({ ...tally, score, combo, maxCombo }), destroy };
@@ -832,7 +836,7 @@ function makeRings() {
   } catch (e) {
     console.error(e);
     const start = $("start");
-    if (start) start.textContent = `出错了：${e.message}`;
+    if (start) start.textContent = ui.error(e.message);
     destroy();
     throw e;
   }

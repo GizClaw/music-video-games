@@ -1,3 +1,4 @@
+import { COMMON, overlays } from "../lang.js";
 import { spectrumStyle } from "../spectrum/style.js";
 
 /** Layout for a mounted Binary Boogie: the shared game HUD plus the bit switches and number strip. Scoped to `.mvg-game.binary`. */
@@ -44,7 +45,30 @@ export const binaryStyle = `${spectrumStyle}
 @media (max-width: 560px), (max-height: 500px) { .mvg-game .nums i { width: 16px; height: 16px; font-size: 8px; } .mvg-game.binary .lyric { top: 40px; } }
 `;
 
-export const binaryMarkup = `
+const TITLE = {
+  zh: {
+    sub: "用四个开关拨出数字，炮台就对准那只外星人",
+    keys: [
+      "<kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd> 开关 8 · 4 · 2 · 1，<kbd>空格</kbd> 一键清零，也可以点下面的开关",
+      "拨出外星人身上的数字，下一拍就开火打爆它，打完自动清零",
+      "3 条命，溜走一只扣一条；歌曲无限循环，越来越快",
+    ],
+  },
+  en: {
+    sub: "Dial a number with four switches and the cannon locks onto that invader",
+    keys: [
+      "<kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd> flip the 8 · 4 · 2 · 1 switches, <kbd>Space</kbd> clears them, or click the switches below",
+      "Spell the number an invader carries and it is shot on the next beat; the switches clear after each shot",
+      "Three lives, one lost for each invader that gets through; the song loops for ever, faster each time",
+    ],
+  },
+};
+
+/** The HUD and overlays of a mounted Binary Boogie, in `lang`. */
+export const binaryMarkup = (lang) => {
+  const c = COMMON[lang];
+  const t = TITLE[lang];
+  return `
   <div class="stage" id="stage"></div>
   <div class="hud" id="hud" hidden>
     <div class="progress" id="progress"><i></i></div>
@@ -60,25 +84,14 @@ export const binaryMarkup = `
   <div class="overlay" id="title">
     <div class="kicker">STEM INSTITUTE · No. 23</div>
     <h1>BINARY<br />BOOGIE</h1>
-    <p class="sub">用四个开关拨出数字，炮台就对准那只外星人</p>
+    <p class="sub">${t.sub}</p>
     <div class="keys">
-      <div><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd> 开关 8 · 4 · 2 · 1，<kbd>空格</kbd> 一键清零，也可以点下面的开关</div>
-      <div>拨出外星人身上的数字，下一拍就开火打爆它，打完自动清零</div>
-      <div>3 条命，溜走一只扣一条；歌曲无限循环，越来越快</div>
-      <div><kbd>Esc</kbd> 暂停　<kbd>[</kbd><kbd>]</kbd> 调整音画同步</div>
+      ${t.keys.map((k) => `<div>${k}</div>`).join("")}
+      <div>${c.keysPause}</div>
     </div>
-    <button id="start" disabled>载入中…</button>
-    <a class="back" href="">← 全部游戏</a>
+    <button id="start" disabled>${c.loading}</button>
+    <a class="back" href="">${c.back}</a>
   </div>
-  <div class="overlay" id="pause" hidden>
-    <h2>暂停</h2>
-    <p class="sub">按 Esc 或点击继续</p>
-  </div>
-  <div class="overlay" id="result" hidden>
-    <div class="kicker">RESULT</div>
-    <div class="grade" id="grade"></div>
-    <div class="final" id="final"></div>
-    <table class="stats" id="stats"></table>
-    <button id="again">再来一次 (R)</button>
-  </div>
+  ${overlays(c)}
 `;
+};
