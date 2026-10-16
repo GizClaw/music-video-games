@@ -439,7 +439,7 @@ export class SeedJar {
     this.bean.rotation.set(0.25, 0, -0.08);
     this.bean.scale.set(0.09, 0.09, 0.06);
     this.group.add(this.bean);
-    this.coat = mesh(beanGeometry(), new THREE.MeshPhysicalMaterial({ map: seedTexture(), color: new THREE.Color(0.8, 0.8, 0.8), roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.2 }), this.bean);
+    this.coat = mesh(beanGeometry(), new THREE.MeshPhysicalMaterial({ map: seedTexture(), color: new THREE.Color(0.72, 0.72, 0.72), roughness: 0.45, clearcoat: 0.4, clearcoatRoughness: 0.35 }), this.bean);
     mesh(new THREE.SphereGeometry(1, 32, 16).scale(0.42, 0.07, 0.16), new THREE.MeshStandardMaterial({ color: "#5a3a22", roughness: 0.5 }), this.bean, 0, -0.66, 0.08);
     mesh(new THREE.TorusGeometry(1, 0.05, 8, 40).scale(0.46, 0.12, 1).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: "#f4ecd8", roughness: 0.6 }), this.bean, 0, -0.66, 0.08);
     this.crack = mesh(taperTube([[-0.3, -0.62, 0.62], [-0.45, -0.1, 0.72], [-0.3, 0.45, 0.66], [0.1, 0.8, 0.5]], 0.05, 0.03, 40, 6), new THREE.MeshStandardMaterial({ color: "#5a3a1e", roughness: 0.6 }), this.bean);
@@ -488,10 +488,10 @@ export class Clipboard {
     parent.add(this.group);
     const wood = new THREE.MeshStandardMaterial({ map: woodTexture("#a8784a", 9, 256, 64), roughness: 0.65 });
     for (const s of [1, -1]) {
-      const leg = mesh(rbox(0.04, 1.3, 0.035, 0.012), wood, this.group, s * 0.3, 0.63, 0.06);
+      const leg = mesh(rbox(0.04, 1.3, 0.035, 0.012), wood, this.group, s * 0.3, 0.63, -0.06);
       leg.rotation.set(-0.16, 0, s * 0.05);
     }
-    const back = mesh(rbox(0.035, 1.15, 0.035, 0.012), wood, this.group, 0, 0.55, -0.2);
+    const back = mesh(rbox(0.035, 1.15, 0.035, 0.012), wood, this.group, 0, 0.55, -0.4);
     back.rotation.x = 0.33;
     mesh(rbox(0.72, 0.045, 0.07, 0.014), wood, this.group, 0, 0.32, 0.03);
     this.board = new THREE.Group();
@@ -504,7 +504,7 @@ export class Clipboard {
     mesh(new THREE.PlaneGeometry(W - 0.02, H - 0.03), new THREE.MeshStandardMaterial({ color: "#9c978c", roughness: 0.9 }), this.board, 0.008, H / 2 + 0.005, 0.012);
     this.paper = mesh(new THREE.PlaneGeometry(W - 0.04, H - 0.04), new THREE.MeshStandardMaterial({ map: paperTex, color: new THREE.Color(0.62, 0.62, 0.62), roughness: 0.85 }), this.board, 0, H / 2, 0.014, { cast: false });
     this.size = [W - 0.04, H - 0.04];
-    const steel = new THREE.MeshStandardMaterial({ color: "#8a8e94", metalness: 0.8, roughness: 0.35 });
+    const steel = new THREE.MeshStandardMaterial({ color: "#6a6e74", metalness: 0.7, roughness: 0.45 });
     mesh(rbox(0.26, 0.07, 0.014, 0.012), steel, this.board, 0, H + 0.01, 0.022);
     mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.26, 16).rotateZ(Math.PI / 2), steel, this.board, 0, H + 0.05, 0.024);
     const lever = mesh(rbox(0.16, 0.06, 0.01, 0.01), steel, this.board, 0, H + 0.07, 0.036);
@@ -530,85 +530,13 @@ export class Clipboard {
     this.pencil.position.set((pen.u - 0.5) * w, h / 2 + 0.02 + (0.5 - pen.v) * h, 0.02 + (1 - pen.down) * 0.06);
   }
 
+  /** The sheet's facing direction in world space. */
+  paperNormal(v) {
+    return v.set(0, 0, 1).transformDirection(this.paper.matrixWorld);
+  }
+
   /** World point on the sheet; u, v in 0..1 from the top-left. */
   paperWorld(v, u, w) {
     return v.set((u - 0.5) * this.size[0], (0.5 - w) * this.size[1], 0).applyMatrix4(this.paper.matrixWorld);
   }
 }
-
-/** The hero magnifier: knurled brass rim, a glass that magnifies the scene behind it, turned and varnished handle. */
-export class Magnifier {
-  constructor(parent, behind) {
-    this.group = new THREE.Group();
-    parent.add(this.group);
-    this.inner = new THREE.Group();
-    this.group.add(this.inner);
-    const R = 0.72;
-    const brass = brassMaterial();
-    const knurl = brassMaterial(true);
-    mesh(lathe([[R, -0.05], [R + 0.03, -0.055], [R + 0.06, -0.035], [R + 0.065, 0.0], [R + 0.06, 0.035], [R + 0.03, 0.055], [R, 0.05]], 128).rotateX(Math.PI / 2), brass, this.inner, 0, 0, 0, { cast: false });
-    mesh(new THREE.CylinderGeometry(R + 0.068, R + 0.068, 0.05, 160, 1, true).rotateX(Math.PI / 2), knurl, this.inner, 0, 0, 0, { cast: false });
-    for (const z of [-0.03, 0.03]) mesh(new THREE.TorusGeometry(R + 0.068, 0.006, 6, 160), brass, this.inner, 0, 0, z, { cast: false });
-    this.uniforms = {
-      tBehind: { value: behind },
-      tQ: { value: canvasTexture(256, 256, (g, w) => {
-        g.fillStyle = "#fff";
-        g.font = `800 200px ${FONT_COND}`;
-        g.textAlign = "center";
-        g.textBaseline = "middle";
-        g.fillText("?", w / 2, w / 2 + 10);
-      }, false) },
-      uCenter: { value: new THREE.Vector2() },
-      uRegion: { value: 200 },
-      uMag: { value: 2.3 },
-      uQ: { value: 0 },
-      uGlint: { value: 0 },
-      uSweep: { value: -1 },
-    };
-    const lens = mesh(new THREE.CircleGeometry(R, 96), new THREE.ShaderMaterial({ uniforms: this.uniforms, vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }", fragmentShader: LENS }), this.inner, 0, 0, 0.01, { cast: false, receive: false });
-    lens.renderOrder = 4;
-    const dir = new THREE.Vector3(Math.cos(0.7), Math.sin(0.7), 0);
-    const yoke = new THREE.Group();
-    yoke.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-    yoke.position.copy(dir).multiplyScalar(R + 0.05);
-    this.inner.add(yoke);
-    mesh(lathe([[0.05, 0], [0.055, 0.02], [0.045, 0.08], [0.04, 0.14], [0.05, 0.16], [0.052, 0.19], [0.0, 0.19]], 32), brass, yoke, 0, 0, 0, { cast: false });
-    const wood = new THREE.MeshPhysicalMaterial({ map: woodTexture("#7a3e1c", 21, 256, 64), roughness: 0.45, clearcoat: 0.8, clearcoatRoughness: 0.15 });
-    wood.map.rotation = Math.PI / 2;
-    const handle = [[0.045, 0.19], [0.062, 0.2], [0.07, 0.22], [0.062, 0.25], [0.066, 0.3], [0.078, 0.55], [0.085, 0.75], [0.08, 0.85], [0.07, 0.88], [0.08, 0.92], [0.088, 0.98], [0.085, 1.04], [0.07, 1.08], [0.0, 1.1]];
-    mesh(lathe(handle, 40), wood, yoke, 0, 0, 0, { cast: false });
-    mesh(lathe([[0.05, 1.075], [0.072, 1.08], [0.06, 1.12], [0.03, 1.14], [0, 1.145]], 32), brass, yoke, 0, 0, 0, { cast: false });
-  }
-}
-
-// tBehind holds the square patch of the frame under the lens (uRegion screen px
-// across, centred on uCenter, rendered without the magnifier at high resolution);
-// the glass shows it enlarged about its centre.
-const LENS = /* glsl */ `
-  uniform sampler2D tBehind, tQ; uniform vec2 uCenter; uniform float uRegion, uMag, uQ, uGlint, uSweep; varying vec2 vUv;
-  void main() {
-    vec2 p = vUv * 2.0 - 1.0;
-    float r = length(p);
-    vec2 d = gl_FragCoord.xy - uCenter;
-    // Stronger in the middle, gently barrelled toward the rim, fringed at the edge.
-    float k = (1.0 + 0.28 * r * r) / uMag / uRegion;
-    float ca = 0.012 * r * r * r;
-    vec3 col = vec3(texture2D(tBehind, 0.5 + d * k * (1.0 + ca)).r, texture2D(tBehind, 0.5 + d * k).g, texture2D(tBehind, 0.5 + d * k * (1.0 - ca)).b);
-    if (uQ > 0.01) {
-      vec3 acc = col;
-      for (int i = 0; i < 12; i++) {
-        float a = float(i) * 2.39996;
-        float s = sqrt(float(i + 1) / 12.0) * uQ * 0.06;
-        acc += texture2D(tBehind, 0.5 + d * k + vec2(cos(a), sin(a)) * s).rgb;
-      }
-      col = mix(col, acc / 13.0 * 0.8 + vec3(0.06), uQ);
-      col += vec3(1.0, 0.95, 0.75) * texture2D(tQ, vUv).r * uQ * 0.55;
-    }
-    col *= 1.0 - 0.35 * smoothstep(0.86, 1.0, r);
-    col += vec3(0.7, 0.85, 1.0) * pow(smoothstep(0.84, 1.0, r), 2.0) * 0.16;
-    float spot = exp(-length(p - vec2(-0.45, 0.48)) * 7.0) * 0.12;
-    float band = smoothstep(0.05, 0.0, abs(length(p - vec2(0.4, -0.4)) - 1.05)) * 0.04;
-    float streak = exp(-pow((p.x + p.y - uSweep) * 4.0, 2.0)) * (1.0 - r * r) * uGlint * 0.3;
-    col += vec3(1.0, 0.97, 0.9) * (spot + band + streak);
-    gl_FragColor = vec4(col, 1.0);
-  }`;

@@ -1,12 +1,11 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { makeRibbon } from "@gizclaw/mvg-core/fx.js";
 import { FONT_COND, FONT_MONO, SAFE } from "@gizclaw/mvg-core/hud.js";
 import { clamp, easeInOut, easeOutBack, easeOutCubic, hash, lerp, smooth } from "@gizclaw/mvg-core/timing.js";
 import { BRIDGE, CHORUSES, DAYS, OUTRO, POTS, PRE, SECTIONS, STEPS, TABLE_DAYS, VERSE1, VERSE2 } from "./constants.js";
 import { BENCH_Y, CLIP_AT, Garden, JAR_AT, POT_X, POT_Z, SKY } from "./garden.js";
 import { Notebook, PAGE_H, PAGE_W } from "./notebook.js";
-import { BeanPot, Clipboard, Magnifier, POT_H, SeedJar, WateringCan } from "./props.js";
+import { BeanPot, Clipboard, POT_H, SeedJar, WateringCan } from "./props.js";
 
 const FOV = 30;
 const VIEW = { y: 2.4, z: 15.5, look: 1.75 };
@@ -15,16 +14,11 @@ const TITLE_Y = 330;
 const SUB_Y = 404;
 const TRACK_Y = 468;
 const STAMP_Y = 600;
-/** Distance of the magnifier from the camera, and where on screen it may go. */
-const LENS_DIST = 11;
-const LENS_BOX = [170, 910, 700, 1070];
-/** How far the camera leans toward the subject, so edge subjects come within the lens's reach. */
-const PAN = 0.35;
-const LENS_RT = 1024;
-const LENS_R = 0.72 * 0.78;
-/** What the lens looks at for each step; the notebook stations name a spot on the clipboard page (0..1 from the top-left). */
+/** The close-up each step cuts to; notebook shots name a spot on the page (0..1 from the top-left) and a distance. */
 const STATION = ["seed", "hypo", "soil", "leaf", "table", "chart", "check"];
-const PAGE_AT = { hypo: [0.5, 0.19], table: [0.5, 0.47], chart: [0.5, 0.77], check: [0.62, 0.92], paper: [0.5, 0.5] };
+const PAGE_AT = { hypo: [0.5, 0.2, 2.0], table: [0.5, 0.46, 2.3], chart: [0.5, 0.77, 2.1], check: [0.6, 0.91, 1.7], paper: [0.5, 0.5, 3.4] };
+/** Seconds a verse close-up is held before the camera pulls back to the whole bench. */
+const HOLD = 2.8;
 
 const growth = (day) => {
   const L = (d) => 1 / (1 + Math.exp(-(d - 6.5) / 2));
@@ -142,8 +136,11 @@ export class ShuffleScene {
     sun.shadow.bias = -0.0004;
     sun.shadow.normalBias = 0.02;
     this.scene.add(sun, new THREE.HemisphereLight("#bcd8ff", "#5a7a3a", 0.8));
+    // Depth haze that closes in for close-ups, standing in for a shallow focus.
+    this.scene.fog = new THREE.Fog("#4f6457", 60, 400);
 
-    this.bgU = { uTime: { value: 0 }, uGlow: { value: 0 }, uHorizon: { value: 0.5 } };
+    this.focusU = { value: 0 };
+    this.bgU = { uTime: { value: 0 }, uGlow: { value: 0 }, uHorizon: { value: 0.5 }, uFocus: this.focusU };
     const bg = new THREE.Mesh(
       new THREE.PlaneGeometry(2, 2),
       new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: this.bgU, vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }", fragmentShader: SKY }),
@@ -152,7 +149,7 @@ export class ShuffleScene {
     bg.frustumCulled = false;
     this.scene.add(bg);
 
-    this.garden = new Garden(this.scene);
+    this.garden = new Garden(this.scene, this.focusU);
     this.bench = new THREE.Group();
     this.bench.position.y = BENCH_Y;
     this.scene.add(this.bench);
@@ -166,23 +163,9 @@ export class ShuffleScene {
     this.clipboard = new Clipboard(this.bench, this.notebook.texture);
     this.clipboard.group.position.set(CLIP_AT[0], 0, CLIP_AT[1]);
     this.clipboard.group.rotation.y = 0.15;
-    this.behind = new THREE.WebGLRenderTarget(LENS_RT, LENS_RT, { type: THREE.HalfFloatType, samples: 4 });
-    this.lensCam = new THREE.PerspectiveCamera();
-    this.lens = new Magnifier(this.scene, this.behind.texture);
-    this.lens.group.scale.setScalar(LENS_R / 0.72);
-
-    this.trail = makeRibbon({
-      segments: 96,
-      width: 0.03,
-      color: "#ffffff",
-      uniforms: { uA: { value: new THREE.Vector3() }, uB: { value: new THREE.Vector3() }, uH: { value: 1 } },
-      path: "vec3 p = mix(uA, uB, u); p.y += sin(u * 3.14159) * uH; return p;",
-    });
-    this.scene.add(this.trail);
 
     this.dot = dotTexture();
     this.drops = this.points(90, "#9fd8ff", 0.14);
-    this.burst = this.points(40, "#ffffff", 0.14);
     this.motes = this.points(160, "#fff2c0", 0.12);
     this.moteSeed = Array.from({ length: 160 }, (_, i) => [hash(i * 1.7), hash(i * 3.1), hash(i * 5.3), 0.3 + hash(i * 7.9) * 0.7]);
     this.petals = this.points(220, "#ffd6e6", 0.42, true);
@@ -253,7 +236,7 @@ export class ShuffleScene {
       step(w(ci + 1, "record"), 4, true);
       step(w(ci + 2, "evidence"), 5, true);
       step(w(ci + 2, "conclusion"), 6, true);
-      step(w(ci + 3, "shuffle"), 0, true);
+      step(w(ci + 3, "shuffle"), 0, true, "wide");
       for (const [word, k] of [["ask", 0], ["hypothesize", 1], ["test", 2], ["see", 3]]) step(w(ci + 4, word), k, true);
       step(w(ci + 5, "conclusions"), 6, true);
       this.pings.push({ t: w(ci + 5, "question"), k: 0 });
@@ -304,7 +287,6 @@ export class ShuffleScene {
         step(w(ci, "watch"), 3);
         step(w(ci, "write"), 4);
       } else {
-        if (word === "conclusion") step(w(ci, "evidence"), 5);
         this.asks.push({ t0: cue(ci).start, t1: answer, text: cue(ci).text.replace(/\s*\(.*$/, "").toUpperCase() });
       }
       step(answer, k);
@@ -320,15 +302,22 @@ export class ShuffleScene {
     sub(this.finale, "ask · test · observe · conclude", SECTIONS.end);
 
     ev.sort((a, b) => a.t - b.t);
-    ev.forEach((e, i) => {
-      const prev = ev[i - 1];
-      e.from = prev ? prev.k : e.k;
-      e.fromStation = prev ? prev.station : e.station;
-      const gap = prev ? e.t - prev.t : 1;
-      e.dur = Math.max(0.12, Math.min(e.chorus ? 0.2 : 0.45, gap * 0.4));
-      e.lift = e.chorus ? 40 : 90;
-    });
     this.events = ev;
+
+    // Shots: every step word lands a close-up of its subject (snapped in choruses); verse
+    // close-ups are held, then the camera pulls back to the bench; bridge questions are asked wide.
+    const shots = [{ t0: -1, dur: 0.01, station: "wide" }];
+    ev.forEach((e, i) => {
+      const next = ev[i + 1];
+      const prev = shots.at(-1);
+      const dur = e.chorus ? (e.station === "wide" ? 0.35 : 0.18) : clamp((e.t - prev.t0) * 0.5, 0.3, 0.8);
+      shots.push({ t0: Math.max(e.t - dur * 0.75, prev.t0 + 0.05, SECTIONS.verse1), dur, station: e.station, snap: e.chorus });
+      const gap = next ? next.t - e.t : 99;
+      if (gap > HOLD + 1) shots.push({ t0: e.t + (e.chorus ? 1.8 : HOLD), dur: 1.0, station: "wide" });
+    });
+    for (const a of this.asks) shots.push({ t0: a.t0 - 0.15, dur: 0.5, station: "wide" });
+    shots.sort((a, b) => a.t0 - b.t0);
+    this.shots = shots;
     this.subs.sort((a, b) => a.t0 - b.t0);
     this.subs.forEach((s, i) => (s.t1 ??= this.subs[i + 1]?.t0 ?? SECTIONS.end));
   }
@@ -342,66 +331,65 @@ export class ShuffleScene {
     return e;
   }
 
-  /** Where the lens is headed: the current event, the one it is gliding toward, and how far along. */
-  lensState(t) {
-    const last = this.lastEvent(t);
-    const next = this.events.find((e) => e.t > t);
-    if (next && t >= next.t - next.dur) return { last, glide: next, u: (t - (next.t - next.dur)) / next.dur };
-    return { last, glide: null, u: 1 };
-  }
-
-  /** Screen point of a station's subject on the bench. */
-  target(station, day) {
-    const v = this.tmp;
-    if (station === "seed") this.jar.seedWorld(v, this.germNow);
-    else if (station === "soil") this.pots[1].soilWorld(v);
-    else if (station === "ruler") this.pots[2].rulerWorld(v, heightAt(2, day));
-    else if (station.startsWith("leaf")) {
+  /** Camera framing for a station at time t: position, look target and how close-up it is. */
+  pose(station, t, day) {
+    if (station === "wide") {
+      const sway = Math.sin(t * 0.31) * 0.2;
+      return { pos: new THREE.Vector3(sway, VIEW.y + Math.sin(t * 0.23) * 0.05, VIEW.z), look: new THREE.Vector3(sway * 0.6, VIEW.look, 0), focus: 0, d: VIEW.z };
+    }
+    const S = new THREE.Vector3();
+    const dir = new THREE.Vector3(0, 0.22, 1);
+    let d;
+    if (station === "seed") {
+      this.jar.seedWorld(S, this.germNow);
+      d = 1.9 + this.germNow.root * 0.6;
+    } else if (station === "soil") {
+      const h = heightAt(1, day);
+      S.set(POT_X[1], SOIL_Y + 0.22 + h * 0.45, POT_Z);
+      d = 3.0 + h * 1.6;
+    } else if (station === "ruler") {
+      this.pots[2].rulerWorld(S, heightAt(2, day));
+      d = 1.5;
+    } else if (station.startsWith("leaf")) {
       const k = Number(station[4] ?? 2);
-      this.pots[k].leafWorld(v, heightAt(k, day));
-    } else this.clipboard.paperWorld(v, ...PAGE_AT[station]);
-    const [x, y] = this.screen(v);
-    return [clamp(x, LENS_BOX[0], LENS_BOX[1]), clamp(y, LENS_BOX[2], LENS_BOX[3])];
+      this.pots[k].leafWorld(S, heightAt(k, day));
+      d = lerp(1.5, 0.8, this.zoomNow);
+    } else {
+      const [u, v, dist] = PAGE_AT[station];
+      this.clipboard.paperWorld(S, u, v);
+      this.clipboard.paperNormal(dir).y += 0.1;
+      d = dist;
+    }
+    dir.normalize();
+    // The subject sits a little above frame centre, clear of the lyric band.
+    return { pos: S.clone().addScaledVector(dir, d), look: S.clone().setY(S.y - 0.03 * d), focus: 1, d };
   }
 
-  /** World point at the lens distance from the camera under a screen point. */
-  unproject(x, y, out) {
-    out.set((x / 1080) * 2 - 1, 1 - (y / 1920) * 2, 0.5).unproject(this.camera).sub(this.camera.position).normalize();
-    return out.multiplyScalar(LENS_DIST).add(this.camera.position);
-  }
-
-  stationX(station) {
-    if (station === "seed") return JAR_AT[0];
-    if (station === "soil") return POT_X[1];
-    if (station === "ruler") return POT_X[2];
-    if (station.startsWith("leaf")) return POT_X[Number(station[4] ?? 2)];
-    return CLIP_AT[0];
+  /** Blend of shot i's transition at time t, starting from wherever the previous shot had got to. */
+  shotAt(i, t, day, depth = 0) {
+    const s = this.shots[i];
+    const to = this.pose(s.station, t, day);
+    if (i === 0) return to;
+    const u = clamp((t - s.t0) / s.dur, 0, 1);
+    if (u >= 1) return to;
+    const prev = this.shots[i - 1];
+    const from = depth < 3 && s.t0 < prev.t0 + prev.dur ? this.shotAt(i - 1, s.t0, day, depth + 1) : this.pose(prev.station, t, day);
+    const e = s.snap ? easeOutCubic(u) : easeInOut(u);
+    return { pos: from.pos.lerp(to.pos, e), look: from.look.lerp(to.look, e), focus: lerp(from.focus, to.focus, e), d: lerp(from.d, to.d, e) };
   }
 
   update(t, section) {
-    const { timing, renderer } = this.ctx;
+    const { timing } = this.ctx;
     const kick = timing.pulse(t, 0.12);
     const bf = timing.beatFloat(t);
     const loud = section.startsWith("chorus") || section === "outro";
     const day = dayAt(t);
-    const ls = this.lensState(t);
-    const cur = ls.last ? ls.last.k : -1;
-    const landed = ls.last ? t - ls.last.t : 9;
-    const punch = ls.last?.chorus ? Math.exp(-landed / 0.18) : 0;
-    const e = ls.glide;
-    const fromSt = e ? e.fromStation : ls.last ? ls.last.station : "seed";
-    const toSt = e ? e.station : fromSt;
-    const glideU = e ? clamp(ls.u, 0, 1) : 1;
+    const last = this.lastEvent(t);
+    const cur = last ? last.k : -1;
+    const landed = last ? t - last.t : 9;
+    const punch = last?.chorus ? Math.exp(-landed / 0.18) : 0;
 
-    // Camera first, leaning toward the subject; the lens is then placed in screen space.
-    const sway = Math.sin(t * 0.31) * 0.2;
-    const pan = lerp(this.stationX(fromSt), this.stationX(toSt), easeInOut(glideU)) * PAN;
-    this.camera.position.set(pan + sway, VIEW.y + Math.sin(t * 0.23) * 0.05, VIEW.z - kick * (loud ? 0.18 : 0.08) - punch * 0.4);
-    this.camera.lookAt(pan + sway * 0.6, VIEW.look, 0);
-    this.camera.updateProjectionMatrix();
-    this.camera.updateMatrixWorld();
-
-    // Bench props.
+    // Bench props first; the close-ups frame them where they are now.
     const groove = loud ? Math.sin(Math.PI * bf) * 0.08 : Math.sin(Math.PI * bf * 0.5) * 0.015;
     const rulerOn = this.rulers.reduce((m, [a, b]) => Math.max(m, smooth(a, a + 0.4, t) * (1 - smooth(b - 0.3, b, t))), 0);
     const kept = t >= this.kept ? Math.exp(-(t - this.kept) / 0.2) : 0;
@@ -429,58 +417,31 @@ export class ShuffleScene {
     this.updateCan(t);
     this.scene.updateMatrixWorld();
 
-    // The magnifier glides (or snaps, in choruses) over each step's subject on its word.
-    const u = e ? (e.chorus ? easeOutBack(glideU) : easeInOut(glideU)) : 1;
-    const [ax, ay] = this.target(fromSt, day);
-    const [bx, by] = this.target(toSt, day);
-    const lift = e ? Math.sin(Math.PI * glideU) * e.lift : 0;
-    const bob = Math.abs(Math.sin(Math.PI * bf)) * (loud ? 16 : 4);
-    const sx = lerp(ax, bx, u);
-    const sy = lerp(ay, by, u) - lift - bob;
-    this.unproject(sx, sy, this.lens.group.position);
-    this.lens.group.lookAt(this.camera.position);
-    let tilt = Math.sin(Math.PI * bf * 0.5) * 0.03 - Math.sign(bx - ax) * 0.25 * Math.sin(Math.PI * glideU) * (e ? 1 : 0);
-    if (!e && ls.last && landed < 1) tilt += Math.sign(this.target(ls.last.station, day)[0] - this.target(ls.last.fromStation, day)[0]) * 0.18 * Math.exp(-landed / 0.16) * Math.cos(landed * 16);
-    this.lens.inner.rotation.set(0, 0, tilt);
-    this.lens.group.updateMatrixWorld();
-    const lu = this.lens.uniforms;
-    // Magnification, stronger while we look "closely".
-    const mag = lerp(2.3, 3.3, smooth(this.zoom[0] - 0.2, this.zoom[0] + 0.6, t) * (1 - smooth(this.zoom[1], this.zoom[1] + 0.5, t)));
-    lu.uGlint.value = landed < 0.7 ? Math.exp(-landed / 0.35) : 0;
-    lu.uSweep.value = lerp(-1.2, 1.2, clamp(landed / 0.45, 0, 1));
+    // The camera: wide on the bench, or dollied (snapped, in choruses) to the step's subject.
+    this.zoomNow = smooth(this.zoom[0] - 0.2, this.zoom[0] + 0.6, t) * (1 - smooth(this.zoom[1], this.zoom[1] + 0.5, t));
+    let i = 0;
+    while (i < this.shots.length - 1 && this.shots[i + 1].t0 <= t) i++;
+    const shot = this.shotAt(i, t, day);
+    const push = kick * (loud ? 0.04 : 0.015) * shot.d + punch * 0.03 * shot.d;
+    this.camera.position.copy(shot.pos).addScaledVector(this.tmp.subVectors(shot.look, shot.pos).normalize(), push);
+    this.camera.lookAt(shot.look);
+    this.camera.updateProjectionMatrix();
+    this.camera.updateMatrixWorld();
+    const focus = shot.focus;
+    this.focusU.value = focus;
+    this.scene.fog.near = lerp(60, shot.d * 2.2, focus);
+    this.scene.fog.far = lerp(400, shot.d * 9, focus);
     const ask = this.asks.find((a) => t >= a.t0 - 0.1 && t < a.t1 - 0.05);
-    lu.uQ.value = this.asks.reduce((m, a) => Math.max(m, smooth(a.t0 - 0.1, a.t0 + 0.2, t) * (1 - smooth(a.t1 - 0.05, a.t1 + 0.2, t))), 0);
 
-    // Back sweeps leave a trail; every arrival throws a ring of glints round the rim.
-    const back = e && e.from - e.k >= 3 ? e : !e && ls.last && ls.last.from - ls.last.k >= 3 && landed < 0.6 ? ls.last : null;
-    this.trail.visible = !!back;
-    if (back) {
-      const tu = this.trail.material.uniforms;
-      this.unproject(...this.target(back.fromStation, day), tu.uA.value);
-      this.unproject(...this.target(back.station, day), tu.uB.value);
-      tu.uH.value = 0.6;
-      tu.uColor.value.set(STEPS[back.k].color);
-      tu.uReveal.value = e ? glideU : 1;
-      tu.uOpacity.value = e ? 0.8 : 0.8 * (1 - landed / 0.6);
-    }
-    const bp = this.burst.geometry.attributes.position;
-    const c = this.lens.group.position;
-    for (let i = 0; i < 40; i++) {
-      const a = (i / 40) * Math.PI * 2 + hash(i) * 0.2;
-      const r = 0.6 + easeOutCubic(landed / 0.6) * (0.25 + hash(i * 2.1) * 0.3);
-      this.tmp.set(Math.cos(a) * r, Math.sin(a) * r, 0).applyQuaternion(this.lens.group.quaternion);
-      bp.setXYZ(i, c.x + this.tmp.x, c.y + this.tmp.y, c.z + this.tmp.z);
-    }
-    bp.needsUpdate = true;
-    this.burst.material.opacity = landed < 0.6 ? (1 - landed / 0.6) * (ls.last?.chorus ? 0.9 : 0.5) : 0;
-    if (cur >= 0) this.burst.material.color.set(STEPS[cur].color);
-
-    // Sun motes, chorus petals.
+    // Sun motes, chorus petals; none right in front of the camera.
+    const near = (x, y, z) => this.tmp.set(x, y, z).distanceTo(this.camera.position) < 1.2;
     const clap = timing.onsetPulse(t, 0.3, 0.1);
     const mp = this.motes.geometry.attributes.position;
-    this.moteSeed.forEach(([mx, my, mz, msp], i) => {
+    this.moteSeed.forEach(([mx, my, mz, msp], k) => {
+      const x = (mx - 0.5) * 8 + Math.sin(t * 0.4 * msp + k) * 0.2;
       const y = 1.2 + ((((my * 4 + t * 0.05 * msp) % 4) + 4) % 4);
-      mp.setXYZ(i, (mx - 0.5) * 8 + Math.sin(t * 0.4 * msp + i) * 0.2, y, (mz - 0.5) * 3 + 0.5);
+      const z = (mz - 0.5) * 3 + 0.5;
+      mp.setXYZ(k, x, near(x, y, z) ? -99 : y, z);
     });
     mp.needsUpdate = true;
     this.motes.material.opacity = 0.35 + clap * 0.5;
@@ -488,9 +449,11 @@ export class ShuffleScene {
     this.petals.visible = petalsOn > 0;
     if (petalsOn > 0) {
       const pp = this.petals.geometry.attributes.position;
-      this.petalSeed.forEach(([px, py, pz, psp], i) => {
+      this.petalSeed.forEach(([px, py, pz, psp], k) => {
+        const x = (px - 0.5) * 9 + Math.sin(t * 1.3 * psp + k) * 0.4;
         const y = 6.5 - ((((py * 7 + t * 0.6 * psp) % 7) + 7) % 7);
-        pp.setXYZ(i, (px - 0.5) * 9 + Math.sin(t * 1.3 * psp + i) * 0.4, y, (pz - 0.5) * 4 + 1);
+        const z = (pz - 0.5) * 4 + 1;
+        pp.setXYZ(k, x, near(x, y, z) ? -99 : y, z);
       });
       pp.needsUpdate = true;
       this.petals.material.opacity = petalsOn * 0.85;
@@ -502,30 +465,12 @@ export class ShuffleScene {
     this.bgU.uGlow.value = (loud ? 1 : 0.3) + kick * 0.3;
     this.garden.update(t);
 
-    // The patch of the frame under the lens, without the magnifier, at several times
-    // screen resolution so that what the glass enlarges keeps its detail.
-    const radius = (LENS_R * 960) / (LENS_DIST * Math.tan((FOV / 2) * (Math.PI / 180)));
-    const region = (2 * radius * 1.3) / mag;
-    const over = LENS_RT / region;
-    lu.uCenter.value.set(sx, 1920 - sy);
-    lu.uRegion.value = region;
-    lu.uMag.value = mag;
-    this.lensCam.copy(this.camera);
-    this.lensCam.setViewOffset(1080 * over, 1920 * over, (sx - region / 2) * over, (sy - region / 2) * over, LENS_RT, LENS_RT);
-    this.lensCam.updateProjectionMatrix();
-    this.lensCam.updateMatrixWorld();
-    this.lens.group.visible = false;
-    renderer.setRenderTarget(this.behind);
-    renderer.render(this.scene, this.lensCam);
-    renderer.setRenderTarget(null);
-    this.lens.group.visible = true;
-
-    const post = { bloom: [loud ? 0.55 : 0.42, 0.4, 0.82], ca: 0.08 + kick * (loud ? 0.2 : 0.1), vignette: 0.32, grain: 0.022, zoom: 1 + punch * 0.02 };
+    const post = { bloom: [loud ? 0.55 : 0.42, 0.4, 0.82], ca: 0.08 + kick * (loud ? 0.2 : 0.1), vignette: lerp(0.32, 0.6, focus), grain: 0.022, zoom: 1 + punch * 0.02 };
     const start = SECTIONS[section];
     if (start !== undefined && t - start < 0.3) post.flash = Math.exp(-(t - start) / 0.1) * 0.3;
     if (punch > 0) post.flash = Math.max(post.flash || 0, punch * 0.08);
     for (const s of this.stamps) if (t >= s.t0 && t < s.t0 + 0.15) post.flash = Math.max(post.flash || 0, 0.12 * (1 - (t - s.t0) / 0.15));
-    this.drawHud(t, section, day, cur, landed, rulerOn, ask, [sx, sy]);
+    this.drawHud(t, section, day, cur, landed, rulerOn * (1 - focus), ask, PAGE_AT[this.shots[i].station] ? focus : 0);
     return post;
   }
 
@@ -615,14 +560,16 @@ export class ShuffleScene {
     g.restore();
   }
 
-  drawHud(t, section, day, cur, landed, rulerOn, ask, lensAt) {
+  /** paper: how much the shot is a notebook close-up, whose writing runs on below the subject. */
+  drawHud(t, section, day, cur, landed, rulerOn, ask, paper) {
     const { hud } = this.ctx;
     const g = hud.ctx;
     // The lawn behind the lyric band is bright; shade it so the words stay crisp.
     const band = g.createLinearGradient(0, 1240, 0, 1700);
     band.addColorStop(0, "rgba(6,14,8,0)");
-    band.addColorStop(0.35, "rgba(6,14,8,0.42)");
-    band.addColorStop(0.7, "rgba(6,14,8,0.42)");
+    const shade = 0.42 + 0.33 * paper;
+    band.addColorStop(0.35, `rgba(6,14,8,${shade})`);
+    band.addColorStop(0.7, `rgba(6,14,8,${shade})`);
     band.addColorStop(1, "rgba(6,14,8,0)");
     g.fillStyle = band;
     g.fillRect(0, 1240, 1080, 460);
@@ -670,7 +617,6 @@ export class ShuffleScene {
         const h = heightAt(k, day);
         if (h < 0.05) return;
         const [x, y] = this.screen(pot.markWorld(this.markPos));
-        if (Math.hypot(x - lensAt[0], y - lensAt[1]) < 230) return;
         hud.text(`${Math.round(h * 10)} cm`, x + 58, y - 6, { size: 30, weight: 800, family: FONT_COND, color: "#ffe36b", alpha: smooth(0.5, 0.9, rulerOn), glow: 10 });
       });
     }

@@ -20,7 +20,7 @@ const NOISE = /* glsl */ `
 `;
 
 export const SKY = /* glsl */ `
-  uniform float uTime, uGlow, uHorizon; varying vec2 vUv;
+  uniform float uTime, uGlow, uHorizon, uFocus; varying vec2 vUv;
   ${NOISE}
   void main() {
     vec2 uv = vUv;
@@ -48,12 +48,14 @@ export const SKY = /* glsl */ `
       col = mix(col, vec3(0.62, 0.74, 0.82), 0.35);
     }
     if (uv.y < uHorizon) col = vec3(0.4, 0.55, 0.36);
+    // Close-ups push the far background back: duller and darker.
+    col = mix(col, vec3(dot(col, vec3(0.3, 0.59, 0.11))), 0.45 * uFocus) * (1.0 - 0.4 * uFocus);
     // Output is sRGB-encoded afterwards; keep the sky soft so the garden reads first.
     gl_FragColor = vec4(col * 0.47, 1.0);
   }`;
 
 const GROUND = /* glsl */ `
-  varying vec3 vW;
+  uniform float uFocus; varying vec3 vW;
   ${NOISE}
   void main() {
     vec2 p = vW.xz;
@@ -77,6 +79,7 @@ const GROUND = /* glsl */ `
     col *= 1.0 - 0.5 * under;
     float d = distance(vW, cameraPosition);
     col = mix(col, vec3(0.5, 0.62, 0.5), smoothstep(20.0, 120.0, d));
+    col = mix(col, vec3(dot(col, vec3(0.3, 0.59, 0.11))), 0.4 * uFocus) * (1.0 - 0.35 * uFocus);
     gl_FragColor = vec4(col * 0.5, 1.0);
   }`;
 
@@ -115,13 +118,13 @@ function brickTexture() {
 }
 
 export class Garden {
-  constructor(scene) {
+  constructor(scene, focusU) {
     this.group = new THREE.Group();
     scene.add(this.group);
 
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(500, 500).rotateX(-Math.PI / 2),
-      new THREE.ShaderMaterial({ vertexShader: "varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }", fragmentShader: GROUND }),
+      new THREE.ShaderMaterial({ uniforms: { uFocus: focusU }, vertexShader: "varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }", fragmentShader: GROUND }),
     );
     this.group.add(ground);
     const catcher = mesh(new THREE.PlaneGeometry(10, 5).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ opacity: 0.35 }), this.group, 0, 0.003, 0.6, { cast: false });

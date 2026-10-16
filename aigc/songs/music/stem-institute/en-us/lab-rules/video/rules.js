@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { BRAND, clamp, easeInOut, easeOutBack, easeOutCubic, hash, lerp, smooth } from "@gizclaw/mvg-core/timing.js";
 import { FONT_COND, FONT_MONO } from "@gizclaw/mvg-core/hud.js";
-import { Bench, CLOCK, FRONT, RISER } from "./bench.js";
+import { Bench, CLOCK, FRONT, ROW_X, TIERS } from "./bench.js";
 import { lathe } from "./craft.js";
 import { PROPS } from "./props.js";
 import { Shine } from "./shine.js";
@@ -10,28 +10,30 @@ import { ACCENT, BRIDGE, CHORUSES, NO, OK, OUTRO, PROTECTS, RULES, SECTIONS } fr
 
 // The camera looks down onto the bench so that its front edge lands on screen
 // row ~1234, above the lyric band; a prop's big moment floats at HERO, around
-// rows 520–850, between the title and the riser shelf.
+// rows 400–690, between the title and the top tier.
 const CAM = new THREE.Vector3(0, 9, 46);
 const LOOK = new THREE.Vector3(0, 3.6, 0);
-const HERO = new THREE.Vector3(-0.35, 5.5, 3);
-const HERO_S = 2.0;
-const HERO_C = HERO.clone().add(new THREE.Vector3(0, HERO_S * 1.1, 0));
-const TITLE_Y = 372;
+const HERO = new THREE.Vector3(-0.35, 7.75, 3);
+const HERO_FIT = [4.4, 3.9];
+const HERO_C = HERO.clone().add(new THREE.Vector3(0, HERO_FIT[1] / 2, 0));
+const TITLE_Y = 290;
 const MAT = lathe([[0, 0.04], [0.56, 0.04], [0.62, 0.035], [0.65, 0.015], [0.62, 0]], 48);
 const RING = new THREE.TorusGeometry(0.66, 0.035, 8, 64).rotateX(Math.PI / 2);
 const decay = (t, t0, tau) => (t >= t0 ? Math.exp(-(t - t0) / tau) : 0);
 
-// Parking: verse one's nine on the riser shelf (98 px apart), verse two's eight on
-// the bench top (108 px apart), centred on column 515; each prop is scaled so its
-// bounding box fills the slot ([width, height] in world units).
+// Parking: three rows of 6 / 6 / 5 (top tier, middle tier, bench top), filled in
+// rule order and centred on column 515, about 160 px apart; each prop is scaled so
+// its bounding box fills the slot ([width, height] in world units).
 const ROWS = [
-  { n: 9, y: RISER.y, z: RISER.z, pitch: 1.485, x0: -0.38, fit: [1.44, 2.0] },
-  { n: 8, y: FRONT.y, z: FRONT.z, pitch: 1.565, x0: -0.36, fit: [1.54, 1.85] },
+  { n: 6, y: TIERS[0].y, z: TIERS[0].z, pitch: 2.45, fit: [2.25, 2.25] },
+  { n: 6, y: TIERS[1].y, z: TIERS[1].z, pitch: 2.38, fit: [2.2, 2.35] },
+  { n: 5, y: FRONT.y, z: FRONT.z, pitch: 2.6, fit: [2.3, 2.4] },
 ];
 function slotOf(i) {
-  const row = i < ROWS[0].n ? ROWS[0] : ROWS[1];
-  const k = i < ROWS[0].n ? i : i - ROWS[0].n;
-  return { pos: new THREE.Vector3(row.x0 + (k - (row.n - 1) / 2) * row.pitch, row.y, row.z), fit: row.fit };
+  for (const row of ROWS) {
+    if (i < row.n) return { pos: new THREE.Vector3(ROW_X + (i - (row.n - 1) / 2) * row.pitch, row.y, row.z), fit: row.fit };
+    i -= row.n;
+  }
 }
 
 /** Bounds of a prop's solid and glass parts, measured once in its resting state. */
@@ -79,6 +81,8 @@ export class RulesScene {
       const size = box.getSize(new THREE.Vector3());
       const { pos, fit } = slotOf(i);
       const slotS = Math.min(fit[0] / size.x, fit[1] / size.y);
+      const heroS = Math.min(HERO_FIT[0] / size.x, HERO_FIT[1] / size.y, 2.2);
+      const cx = (box.min.x + box.max.x) / 2;
       const holder = new THREE.Group();
       holder.add(group);
       this.scene.add(holder);
@@ -86,11 +90,12 @@ export class RulesScene {
       const ring = new THREE.Mesh(RING, new THREE.MeshBasicMaterial({ color: r.ok ? OK : NO, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
       for (const m of [coaster, ring]) {
         m.position.copy(pos).add(new THREE.Vector3(0, 0.01, 0));
-        m.scale.setScalar((fit[0] * 0.47) / 0.65);
+        m.scale.set(1, 1, 0.72).multiplyScalar((fit[0] * 0.47) / 0.65);
         this.scene.add(m);
       }
-      const slot = pos.clone().add(new THREE.Vector3(-((box.min.x + box.max.x) / 2) * slotS, 0, 0));
-      return { ...r, i, group, tick, holder, coaster, ring, box, slot, slotS, heroes: [] };
+      const slot = pos.clone().add(new THREE.Vector3(-cx * slotS, -box.min.y * slotS, 0));
+      const hero = HERO.clone().add(new THREE.Vector3(-cx * heroS, -box.min.y * heroS, 0));
+      return { ...r, i, group, tick, holder, coaster, ring, box, slot, slotS, hero, heroS, heroes: [] };
     });
     this.byProp = Object.fromEntries(this.props.map((p) => [p.prop, p]));
     this.shine = new Shine(this.scene, renderer, HERO_C);
@@ -210,21 +215,21 @@ export class RulesScene {
     if (t < t1) {
       const u = clamp((t - t0) / 0.35, 0, 1);
       if (k === 0) {
-        pos.copy(HERO);
-        s = HERO_S * easeOutBack(u);
+        pos.copy(p.hero);
+        s = p.heroS * easeOutBack(u);
       } else {
-        pos.lerpVectors(p.slot, HERO, easeOutCubic(u));
+        pos.lerpVectors(p.slot, p.hero, easeOutCubic(u));
         pos.y += Math.sin(u * Math.PI) * 1.2;
-        s = lerp(p.slotS, HERO_S, easeOutCubic(u));
+        s = lerp(p.slotS, p.heroS, easeOutCubic(u));
       }
       star = u;
       pos.y += this.ctx.timing.pulse(t, 0.2) * 0.15;
       holder.rotation.set(0.12, Math.sin(t * 0.9) * 0.45, 0);
     } else {
       const u = clamp((t - t1) / 0.5, 0, 1);
-      pos.lerpVectors(HERO, p.slot, easeInOut(u));
+      pos.lerpVectors(p.hero, p.slot, easeInOut(u));
       pos.y += Math.sin(u * Math.PI) * 1.5;
-      s = lerp(HERO_S, p.slotS, easeInOut(u));
+      s = lerp(p.heroS, p.slotS, easeInOut(u));
       star = 1 - u;
       holder.rotation.set(0.12 * (1 - u), Math.sin(t * 0.9) * 0.45 * (1 - u), 0);
       pos.y += Math.abs(Math.sin(bf * Math.PI)) * 0.35 * bounce * u;
@@ -282,7 +287,7 @@ export class RulesScene {
       energy: heroOn * (0.55 + 0.45 * timing.pulse(t, 0.18)),
       pulse,
       scan: Math.sin(scanU * Math.PI),
-      scanY: HERO.y + scanU * HERO_S * 2.4,
+      scanY: HERO.y + scanU * HERO_FIT[1] * 1.15,
       accent: lead && heroOn > 0.05 ? (lead.ok ? OK : NO) : "#3de8ff",
       bursts,
     });
@@ -321,7 +326,7 @@ export class RulesScene {
   drawHud(t, ch, clap) {
     const { hud } = this.ctx;
     const ctx = hud.ctx;
-    const [hx, hy] = this.screen(HERO.clone().add(new THREE.Vector3(0, 2, 0)));
+    const [hx, hy] = this.screen(HERO_C);
 
     // Rule title, chorus banner or bridge question.
     const title = this.titles.find((x) => t >= x.t0 && t < x.t1);
@@ -368,7 +373,7 @@ export class RulesScene {
       if (!p.ok) {
         const [cx, cy] = at((p.box.min.x + p.box.max.x) / 2, (p.box.min.y + p.box.max.y) / 2);
         const [ex, ey] = at(p.box.max.x, p.box.max.y);
-        const r = Math.max(Math.abs(ex - cx), Math.abs(ey - cy)) * 0.88 * pop;
+        const r = Math.max(Math.abs(ex - cx), Math.abs(ey - cy)) * 0.8 * pop;
         ctx.save();
         ctx.strokeStyle = color;
         ctx.shadowColor = color;
@@ -384,22 +389,22 @@ export class RulesScene {
       }
       const [bx, by] = at(p.box.max.x, p.box.max.y);
       ctx.save();
-      ctx.translate(bx - 14, by + 12);
+      ctx.translate(bx - 16, by + 14);
       ctx.scale(pop, pop);
       ctx.fillStyle = color;
       ctx.shadowColor = color;
       ctx.shadowBlur = 18;
       ctx.beginPath();
-      ctx.arc(0, 0, 25, 0, Math.PI * 2);
+      ctx.arc(0, 0, 29, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3.5;
       ctx.strokeStyle = "#ffffff";
       ctx.stroke();
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      hud.font(34, 800, FONT_COND);
+      hud.font(40, 800, FONT_COND);
       ctx.fillText(p.ok ? "✓" : "✗", 0, 2);
       ctx.restore();
     }
@@ -435,9 +440,9 @@ export class RulesScene {
     const arcs = [];
     if (this.heroOn > 0.5) {
       const b = timing.beatIndexAt(t);
-      if (b >= 0) arcs.push([hx, hy + 40, 200, 240, timing.beatTime(b), 2, 0.22, this.accent]);
+      if (b >= 0) arcs.push([hx, hy + 10, 220, 200, timing.beatTime(b), 2, 0.22, this.accent]);
     }
-    for (const s of this.stamps) if (t >= s.t && t < s.t + 0.4) arcs.push([hx, hy + 40, 210, 250, s.t, 5, 0.38, s.ok ? OK : NO]);
+    for (const s of this.stamps) if (t >= s.t && t < s.t + 0.4) arcs.push([hx, hy + 10, 230, 210, s.t, 5, 0.38, s.ok ? OK : NO]);
     for (const g of this.glints) {
       if (g.r > 1 || t < g.t || t > g.t + 0.35) continue;
       const [sx, sy] = this.screen(g.c);

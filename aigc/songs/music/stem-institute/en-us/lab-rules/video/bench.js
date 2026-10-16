@@ -1,13 +1,17 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { hash } from "@gizclaw/mvg-core/timing.js";
-import { ERLEN, BEAKER, GLASS, Parts, canvasTexture, curve, glassware, lathe, mesh, phys, rounded, speckle, std, tube } from "./craft.js";
+import { GLASS, Parts, canvasTexture, curve, lathe, mesh, phys, rounded, speckle, std, tube } from "./craft.js";
 
 // World layout (see rules.js for the camera): the bench top is y = 0 with its
-// front edge at z = 2.7, the riser shelf for the back row sits at y = 2 and the
-// tiled wall at z = -3. The cabinet front below the bench carries the lyrics.
-export const RISER = { y: 2.0, z: -1.4 };
+// front edge at z = 2.7, two stepped tiers rise behind it (top tier first) and
+// the tiled wall is at z = -3. The cabinet front below the bench carries the lyrics.
+export const TIERS = [
+  { y: 4.85, z: -2.1, w: 16.2, d: 1.7 },
+  { y: 2.4, z: -0.5, w: 16.8, d: 1.7 },
+];
 export const FRONT = { y: 0, z: 1.3 };
+export const ROW_X = -0.37;
 export const CLOCK = new THREE.Vector3(6.3, 9.6, -2.75);
 
 const WALL = /* glsl */ `
@@ -75,19 +79,18 @@ export class Bench {
     catcher.receiveShadow = true;
     this.group.add(catcher);
 
-    // Bench: a black epoxy top, a brushed-steel riser shelf, grained cabinet doors with raised panels and pulls.
+    // Bench: a black epoxy top, a stadium riser of two gloss tiers with brushed-steel
+    // fascias and epoxy tops, grained cabinet doors with raised panels and pulls.
     const steel = phys({ color: "#9aa0a8", map: BRUSHED(), metalness: 0.85, roughness: 0.4 });
+    const epoxy = phys({ color: "#ffffff", map: EPOXY(), roughness: 0.4, clearcoat: 0.35, clearcoatRoughness: 0.35 });
+    const body = phys({ color: "#252c38", metalness: 0.5, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.3 });
     const parts = new Parts();
-    parts.add(new RoundedBoxGeometry(26, 0.5, 5.7, 4, 0.12), phys({ color: "#ffffff", map: EPOXY(), roughness: 0.4, clearcoat: 0.35, clearcoatRoughness: 0.35 }), { p: [0, -0.25, -0.15] });
-    parts.add(new RoundedBoxGeometry(17.5, 0.16, 1.5, 3, 0.05), steel, { p: [0, RISER.y - 0.08, RISER.z] });
-    parts.add(new RoundedBoxGeometry(17.5, 0.32, 0.08, 2, 0.03), steel, { p: [0, RISER.y + 0.08, RISER.z - 0.72] });
-    const bolt = new THREE.CylinderGeometry(0.06, 0.06, 0.05, 6);
-    const flange = lathe([[0.09, 0], [0.22, 0], [0.22, 0.04], [0.12, 0.08], [0.09, 0.14]], 32);
-    for (const x of [-8.4, -4.2, 0, 4.2, 8.4]) {
-      parts.add(new THREE.CylinderGeometry(0.09, 0.09, RISER.y, 20), steel, { p: [x, RISER.y / 2, RISER.z - 0.45] });
-      parts.add(flange, steel, { p: [x, 0, RISER.z - 0.45] });
-      parts.add(flange, steel, { p: [x, RISER.y - 0.16, RISER.z - 0.45], r: [Math.PI, 0, 0] });
-      for (const dx of [-0.15, 0.15]) parts.add(bolt, std("#5a6270", 0.4, 0.8), { p: [x + dx, 0.06, RISER.z - 0.45] });
+    parts.add(new RoundedBoxGeometry(26, 0.5, 5.7, 4, 0.12), epoxy, { p: [0, -0.25, -0.15] });
+    for (const { y, z, w, d } of TIERS) {
+      parts.add(new RoundedBoxGeometry(w, y, d, 3, 0.06), body, { p: [ROW_X, y / 2, z] });
+      parts.add(new RoundedBoxGeometry(w + 0.12, 0.14, d + 0.14, 3, 0.05), epoxy, { p: [ROW_X, y - 0.07, z] });
+      parts.add(new RoundedBoxGeometry(w - 0.1, 0.36, 0.06, 2, 0.025), steel, { p: [ROW_X, y - 0.36, z + d / 2 + 0.03] });
+      for (const dx of [-w / 2 + 0.35, w / 2 - 0.35]) parts.add(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 12), std("#5a6270", 0.4, 0.8), { p: [ROW_X + dx, y - 0.36, z + d / 2 + 0.07], r: [Math.PI / 2, 0, 0] });
     }
     parts.add(new RoundedBoxGeometry(25, 16, 5, 2, 0.1), std("#121418", 0.8), { p: [0, -8.5, -0.3] });
     const grain = GRAIN();
@@ -105,11 +108,6 @@ export class Bench {
     }
     parts.add(new THREE.BoxGeometry(25, 0.5, 0.2), std("#0b0c0e", 0.9), { p: [0, -7.5, 2.1] });
 
-    // High wall shelf of reagent bottles on brackets, inside the platform's top chrome.
-    parts.add(new RoundedBoxGeometry(24, 0.22, 1.2, 2, 0.06), steel, { p: [0, 14.3, -2.4] });
-    const bracket = new THREE.Shape([[0, 0], [0.9, 0], [0, -0.9]].map(([x, y]) => new THREE.Vector2(x, y)));
-    for (const x of [-9, 0, 9]) parts.add(new THREE.ExtrudeGeometry(bracket, { depth: 0.08, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 1 }), steel, { p: [x, 14.19, -2.98], r: [0, -Math.PI / 2, 0] });
-
     // First-aid box on the left of the wall.
     parts.add(new RoundedBoxGeometry(2.0, 1.6, 0.5, 4, 0.12), phys({ color: "#2fb36a", roughness: 0.35, clearcoat: 0.5 }), { p: [-6.4, 9.2, -2.75] });
     parts.add(new RoundedBoxGeometry(0.9, 0.28, 0.06, 2, 0.02), std("#f4f4f0", 0.5), { p: [-6.4, 9.2, -2.48] });
@@ -117,20 +115,12 @@ export class Bench {
     parts.add(tube(curve([[-6.85, 10.0, -2.7], [-6.8, 10.3, -2.65], [-6.0, 10.3, -2.65], [-5.95, 10.0, -2.7]]), 0.05, { segments: 24, radial: 8 }), DARKER);
     parts.add(new RoundedBoxGeometry(0.3, 0.16, 0.1, 2, 0.03), std("#d8dde4", 0.3, 0.8), { p: [-6.4, 8.38, -2.48] });
     parts.build(this.group);
-    // LED strips along the riser and the bench front, pulsing with the beat.
+    // LED strips under each tier's fascia and along the bench front, pulsing with the beat.
     this.led = new THREE.MeshBasicMaterial({ color: "#3de8ff" });
-    mesh(this.group, new RoundedBoxGeometry(17.2, 0.05, 0.04, 1, 0.02), this.led, 0, RISER.y - 0.12, RISER.z + 0.76);
+    for (const { y, z, w, d } of TIERS) mesh(this.group, new RoundedBoxGeometry(w - 0.4, 0.05, 0.04, 1, 0.02), this.led, ROW_X, y - 0.6, z + d / 2 + 0.03);
     mesh(this.group, new RoundedBoxGeometry(25.6, 0.045, 0.04, 1, 0.02), this.led, 0, -0.12, 2.74);
     this.group.traverse((o) => {
       if (o.isMesh) o.castShadow = false;
-    });
-
-    ["#3dff8a", "#3dc2ff", "#ff9d3d", "#ff5dc8", "#ffd23f", "#b48cff", "#3dffd8"].forEach((c, k) => {
-      const v = new THREE.Group();
-      v.position.set(-9 + k * 3, 14.41, -2.4);
-      v.scale.setScalar(0.62 + (k % 3) * 0.1);
-      glassware(v, k % 2 ? BEAKER : ERLEN, { color: c, fill: 0.5, marks: false });
-      this.group.add(v);
     });
 
     // The wall clock: bezel, face, tick marks, three hands, a glass cover.
