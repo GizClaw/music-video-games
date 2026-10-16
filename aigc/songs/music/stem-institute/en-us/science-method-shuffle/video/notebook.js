@@ -3,7 +3,7 @@ import { FONT_COND, FONT_MONO } from "@gizclaw/mvg-core/hud.js";
 import { clamp, easeOutBack, hash, lerp, smooth } from "@gizclaw/mvg-core/timing.js";
 
 // The page on the clipboard, laid out on a 768 × 1152 grid and drawn at RES× so
-// the writing stays crisp under the magnifier.
+// the writing stays crisp in close-ups.
 export const PAGE_W = 768;
 export const PAGE_H = 1152;
 const RES = 4 / 3;

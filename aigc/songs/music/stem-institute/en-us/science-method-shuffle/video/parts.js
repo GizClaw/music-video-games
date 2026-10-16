@@ -148,7 +148,7 @@ let leafCache = null;
 /**
  * Leaf blade at 1024 × 512: epidermal cells (Voronoi walls, domed interiors,
  * chloroplast speck) under midrib, curving side veins and a reticulate net.
- * The cells are only legible under the magnifier. u < 0.04 is plain stalk green;
+ * The cells are only legible in a close-up. u < 0.04 is plain stalk green;
  * one texture is shared and tinted per plant.
  */
 export function leafTexture() {

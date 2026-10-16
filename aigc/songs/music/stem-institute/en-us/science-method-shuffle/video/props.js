@@ -275,8 +275,7 @@ export class BeanPot {
     return v.set(0.2, POT_H - 0.04 + Math.max(h, 0.3), -0.08).applyMatrix4(this.group.matrixWorld);
   }
 
-  /** A mid-height leaf, for the magnifier to look at. */
-  /** Centre of a grown terminal leaflet about half-way up, for the magnifier. */
+  /** Centre of a grown terminal leaflet about half-way up, for the leaf close-up. */
   leafWorld(v, h) {
     let i = 1;
     while (i < NODES.length - 1 && NODES[i + 1] + 0.3 < h * 0.7) i++;
