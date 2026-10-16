@@ -1,14 +1,14 @@
 import universe from "./universe.json";
 
 /**
- * The universe map of the site. `universe.json` (written by
+ * The SDK's universe map. `universe.json` (written by
  * `scripts/universe-catalog.mjs` from the AIGC catalog) lists every song album
  * as a galaxy and every song as a planet, with `{ zh, en }` names. This file
  * only adds what the catalog does not know:
  *
  * - SERIES_EXTRA: a galaxy's name override and arm `colors`.
  * - WORK_EXTRA, by catalog work path: planet `colors`, `look` (surface),
- *   `feature` (topic accessory, see site/features.js), `ring`, `preview`
+ *   `feature` (topic accessory, see features.js), `ring`, `preview`
  *   (second the song starts when picked, usually the first chorus) and, for a
  *   song with a game, its `game` loader and `howto` (a few short lines per language).
  *
@@ -43,7 +43,7 @@ const WORK_EXTRA = {
       zh: ["← → 或左右拖动，绕着隧道滑", "接住每一拍的光子", "钻过 γ 闸门的缺口"],
       en: ["← → or drag to slide round the tunnel", "Catch a photon on every beat", "Slip through the gap in each γ gate"],
     },
-    game: () => import("@gizclaw/mvg-games/spectrum-slide.js").then((m) => m.mountSpectrumSlide),
+    game: () => import("../spectrum-slide.js").then((m) => m.mountSpectrumSlide),
   },
   [`${STEM}/planet-parade`]: {
     colors: ["#ffb347", "#d4ccc1", "#7d5a3c"],
@@ -55,7 +55,7 @@ const WORK_EXTRA = {
       zh: ["光圈落在哪颗行星就点它，或按 1–8", "march · hey · hooray 时点太阳或按空格", "手机上跟着节奏点屏幕就行"],
       en: ["Click the planet the ring closes on, or press 1–8", "On march · hey · hooray hit the Sun or press Space", "On a phone, just tap to the beat"],
     },
-    game: () => import("@gizclaw/mvg-games/planet-parade.js").then((m) => m.mountPlanetParade),
+    game: () => import("../planet-parade.js").then((m) => m.mountPlanetParade),
   },
   [`${STEM}/binary-boogie`]: {
     colors: ["#ffe14a", "#3dff8a", "#1b2a6b"],
@@ -66,7 +66,7 @@ const WORK_EXTRA = {
       zh: ["A S D F 拨 8 · 4 · 2 · 1，拨出外星人身上的数字", "下一拍自动开火，空格一键清零", "3 条命，无限循环，越来越快"],
       en: ["A S D F flip 8 · 4 · 2 · 1 to dial the invader's number", "It fires on the next beat; Space clears", "Three lives; loops for ever, faster each time"],
     },
-    game: () => import("@gizclaw/mvg-games/binary-boogie.js").then((m) => m.mountBinaryBoogie),
+    game: () => import("../binary-boogie.js").then((m) => m.mountBinaryBoogie),
   },
   [`${STEM}/prime-time`]: {
     colors: ["#ffc83d", "#ff6a3d", "#5a2a0c"],
@@ -77,7 +77,7 @@ const WORK_EXTRA = {
       zh: ["只有质数会踩着节拍弹起来", "闪到最亮的那一拍点它，就是 PERFECT", "合数被乘法划掉，无限循环越来越快"],
       en: ["Only primes pop up, on the beat", "Hit them as they flash brightest for a PERFECT", "Multiplication crosses out the rest; loops for ever, faster each time"],
     },
-    game: () => import("@gizclaw/mvg-games/prime-time.js").then((m) => m.mountPrimeTime),
+    game: () => import("../prime-time.js").then((m) => m.mountPrimeTime),
   },
   [`${STEM}/pi-keeps-going`]: { colors: ["#ff4f6d", "#ffc93d", "#3dff8a"], look: "swirl", feature: "spiral", preview: 26.77 },
   [`${STEM}/polygon-party`]: { colors: ["#ff3d5a", "#ffd23f", "#2fe0ff"], look: "facet", feature: "crystals", preview: 29.21 },

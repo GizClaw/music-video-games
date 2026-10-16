@@ -1,4 +1,4 @@
-// Write site/universe.json from the mounted AIGC catalog: every song album is
+// Write packages/games/src/universe/universe.json from the mounted AIGC catalog: every song album is
 // a galaxy and every song with audio a planet, named from the album's i18n
 // files (zh-CN, en-US). Run again after the catalog gains albums or songs.
 //
@@ -75,6 +75,6 @@ if (flag("--verify")) {
   }
 }
 
-const out = join(ROOT, "site", "universe.json");
+const out = join(ROOT, "packages", "games", "src", "universe", "universe.json");
 writeFileSync(out, `${JSON.stringify({ series }, null, 2)}\n`);
 console.log(`${series.length} galaxies, ${series.reduce((n, s) => n + s.works.length, 0)} planets -> ${out}`);
