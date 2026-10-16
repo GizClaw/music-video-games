@@ -1,5 +1,6 @@
 import { BRAND, clamp, easeOutBack, easeOutCubic, smooth } from "./timing.js";
 import { H, W } from "./fx.js";
+import { withoutTrailingComma } from "./lyrics.js";
 
 export const FONT_HEAVY = '"Avenir Next"';
 export const FONT_COND = '"Avenir Next Condensed"';
@@ -48,7 +49,10 @@ export class Hud {
 
     this.font(size);
     const space = ctx.measureText(" ").width;
-    const words = cue.words.filter((w) => w.text !== "—").map((w) => ({ ...w, width: ctx.measureText(w.text).width }));
+    const words = cue.words.filter((w) => w.text !== "—").map((w, i, all) => {
+      const text = i === all.length - 1 ? withoutTrailingComma(w.text) : w.text;
+      return { ...w, text, width: ctx.measureText(text).width };
+    });
     const lines = [[]];
     let lineW = 0;
     for (const w of words) {

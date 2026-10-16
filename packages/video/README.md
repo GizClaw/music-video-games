@@ -121,6 +121,9 @@ word start for listening checks.
 
 Lyrics stay at one fixed bottom position for the whole video (y = 1400, or the
 song's `lyricY`, e.g. 1490 for States of Matter); scenes compose around them.
+English lyrics and Chinese subtitles omit the final comma (`,` or `，`) on each
+source line, including exported Chinese SRTs. Internal commas, other punctuation,
+source cue text and word timings are preserved.
 Every HUD label, slam, stamp and title records its screen rectangle, and scenes
 register `hud.keepout()` for text-like 3D objects such as voxel numerals and bit
 rows. Before rendering, `mvg-video clearance` renders five
