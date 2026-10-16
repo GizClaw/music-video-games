@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { hash } from "@gizclaw/mvg-core/timing.js";
 
 // A castle courtyard in daylight. One unit is about half a toy soldier; the
 // ground is y = 0 and the curtain wall stands at z = WALL_Z.
@@ -17,9 +18,12 @@ const WALL = /* glsl */ `
     vec2 q = p / vec2(1.3, 0.62) * scale;
     q.x += mod(floor(q.y), 2.0) * 0.5;
     vec2 id = floor(q), f = fract(q);
-    float mortar = 1.0 - smoothstep(0.0, 0.06, min(min(f.x, 1.0 - f.x) * 1.3, min(f.y, 1.0 - f.y)));
+    float mortar = 1.0 - smoothstep(0.0, 0.05, min(min(f.x, 1.0 - f.x) * 1.3, min(f.y, 1.0 - f.y)));
     vec3 c = mix(vec3(0.84, 0.7, 0.52), vec3(0.7, 0.6, 0.5), h21(id)) * (0.86 + 0.14 * noise(p * 6.0));
-    return mix(c, vec3(0.45, 0.38, 0.32), mortar);
+    float relief = 1.0 + 0.2 * smoothstep(0.8, 0.97, f.y) - 0.25 * smoothstep(0.2, 0.03, f.y) + 0.08 * smoothstep(0.12, 0.02, f.x) - 0.1 * smoothstep(0.88, 0.98, f.x);
+    c *= relief * (1.0 - 0.18 * smoothstep(0.55, 0.8, noise(p * 2.3 + id)));
+    c = mix(c, vec3(0.36, 0.44, 0.24), smoothstep(1.6, 0.2, p.y) * smoothstep(0.45, 0.75, noise(p * 3.0)) * 0.7);
+    return mix(c, vec3(0.4, 0.34, 0.28), mortar);
   }
   void main() {
     vec2 p = vP;
@@ -82,22 +86,45 @@ const WALL = /* glsl */ `
     gl_FragColor = vec4(col * 0.5, 1.0);
   }`;
 
-const GROUND = /* glsl */ `
-  varying vec3 vW;
-  ${NOISE}
-  void main() {
-    vec2 p = vW.xz * 2.4;
-    p.x += mod(floor(p.y), 2.0) * 0.5;
-    vec2 id = floor(p), f = fract(p) - 0.5;
-    float r = length(max(abs(f) - 0.28, 0.0)) - 0.12;
-    float cob = smoothstep(0.02, -0.04, r);
-    vec3 stoneC = mix(vec3(0.7, 0.6, 0.5), vec3(0.56, 0.5, 0.46), h21(id)) * (0.9 + 0.1 * noise(vW.xz * 8.0));
-    vec3 col = mix(vec3(0.3, 0.26, 0.22), stoneC * (0.85 + 0.15 * (0.5 - f.y)), cob);
-    float lane = smoothstep(0.08, 0.0, abs(abs(vW.x) - 4.6)) * step(vW.z, 6.0);
-    col = mix(col, vec3(0.85, 0.85, 0.8), lane * 0.6);
-    col *= 1.0 - 0.45 * smoothstep(-6.0, -16.0, vW.z);
-    gl_FragColor = vec4(col * 0.5, 1.0);
-  }`;
+/** Cobblestones drawn once: colour with lit tops and a matching height map for the bumps. */
+function cobbles(height) {
+  const size = 1024;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const g = c.getContext("2d");
+  g.fillStyle = height ? "#202020" : "#3c3630";
+  g.fillRect(0, 0, size, size);
+  const n = 10;
+  const cell = size / n;
+  for (let row = 0; row < n; row++) {
+    for (let col = -1; col <= n; col++) {
+      const x = (col + (row % 2) * 0.5) * cell + cell / 2;
+      const y = row * cell + cell / 2;
+      const r = hash(row * 31 + col * 7);
+      const w = cell * (0.84 + 0.08 * r);
+      const h = cell * (0.8 + 0.1 * hash(row * 13 + col));
+      const grad = g.createRadialGradient(x - w * 0.15, y - h * 0.2, 4, x, y, w * 0.6);
+      if (height) {
+        grad.addColorStop(0, "#ffffff");
+        grad.addColorStop(1, "#5a5a5a");
+      } else {
+        const v = 150 + r * 50;
+        grad.addColorStop(0, `rgb(${v + 30},${v + 18},${v})`);
+        grad.addColorStop(1, `rgb(${v - 50},${v - 58},${v - 64})`);
+      }
+      g.fillStyle = grad;
+      g.beginPath();
+      g.roundRect(x - w / 2, y - h / 2, w, h, cell * 0.28);
+      g.fill();
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  if (!height) tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(30, 22);
+  tex.anisotropy = 8;
+  return tex;
+}
 
 export class Courtyard {
   constructor(scene) {
@@ -112,11 +139,9 @@ export class Courtyard {
     );
     wall.position.set(0, 20, WALL_Z);
     scene.add(wall);
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(80, 60).rotateX(-Math.PI / 2),
-      new THREE.ShaderMaterial({ vertexShader: "varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }", fragmentShader: GROUND }),
-    );
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 60).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: cobbles(false), bumpMap: cobbles(true), bumpScale: 4, roughness: 0.85, color: "#b8aca0" }));
     ground.position.z = WALL_Z + 30;
+    ground.receiveShadow = true;
     scene.add(ground);
   }
 

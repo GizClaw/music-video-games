@@ -11,7 +11,7 @@ export const SECTIONS = {
 };
 export const ORDER = ["verse1", "pre", "chorus1", "verse2", "bridge", "chorus2", "outro"];
 
-/** The seven method steps, one plaque each along the bench. */
+/** The seven method steps, shown on the step track. */
 export const STEPS = [
   { name: "QUESTION", color: "#ffd23f" },
   { name: "HYPOTHESIS", color: "#ff9f43" },
@@ -24,9 +24,9 @@ export const STEPS = [
 
 /** The fair test: sunlight is the one tested variable; heights in world units (10 cm) on day 14. */
 export const POTS = [
-  { label: "SHADE", light: 0.5, height: 1.0 },
-  { label: "HALF SUN", light: 0.78, height: 1.6 },
-  { label: "FULL SUN", light: 1, height: 2.2 },
+  { label: "SHADE", light: 0.5, height: 0.85 },
+  { label: "HALF SUN", light: 0.78, height: 1.4 },
+  { label: "FULL SUN", light: 1, height: 1.95 },
 ];
 /** Experiment day at song time: seeds go in during verse 1, the run happens in verse 2. */
 export const DAYS = [[41.2, 0], [50.65, 3], [67.4, 6], [70.44, 6], [78.6, 12.4], [SECTIONS.end, 14]];

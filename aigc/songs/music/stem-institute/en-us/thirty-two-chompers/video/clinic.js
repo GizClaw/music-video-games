@@ -5,7 +5,7 @@ import { clamp, easeInOut, easeOutBack, lerp, smooth } from "@gizclaw/mvg-core/t
 import { CHORUSES, COUNT_LINE, FOUR, OUTRO, SECTIONS, TEAMS, TYPES, TYPE_ORDER, VERSE1, VERSE2 } from "./constants.js";
 import { Pantry, Toothbrush } from "./food.js";
 import { DentalModel, POST } from "./model.js";
-import { LAMP, Office } from "./office.js";
+import { Office } from "./office.js";
 
 // World units are centimetres; the model is a 2.5× demonstration jaw whose
 // base rests on the counter top (y = 0).
@@ -15,10 +15,10 @@ const HEAD_Y = 370;
 const VERB_KIND = { cut: "incisor", tear: "canine", crush: "premolar", grind: "molar" };
 const TYPE_VIEW = { incisor: "front", canine: "right", premolar: "right", molar: "side" };
 const VIEWS = {
-  wide: { p: [0, 26, 112], t: [0, 17, 0] },
-  front: { p: [0, 23, 80], t: [0, 17.5, 3] },
-  right: { p: [38, 23, 70], t: [5, 17.5, 1] },
-  side: { p: [64, 23, 44], t: [6, 17.5, -3] },
+  wide: { p: [0, 27, 112], t: [0, 17, 0] },
+  front: { p: [0, 26, 80], t: [0, 17, 3] },
+  right: { p: [14, 26, 86], t: [2.5, 17, 2] },
+  side: { p: [20, 26, 84], t: [3.5, 17, 0] },
 };
 
 const BAND = /* glsl */ `
@@ -35,9 +35,11 @@ export class ClinicScene {
     const { timing, renderer } = ctx;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color("#0b1214");
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const pmrem = new THREE.PMREMGenerator(renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.scene.environmentIntensity = 0.35;
+    this.scene.environmentIntensity = 0.25;
     this.camera = new THREE.PerspectiveCamera(30, 9 / 16, 1, 600);
     const sun = new THREE.DirectionalLight("#dfeeff", 0.8);
     sun.position.set(-60, 70, 60);
@@ -47,8 +49,7 @@ export class ClinicScene {
     this.model = new DentalModel();
     this.model.group.scale.setScalar(MODEL_SCALE);
     this.model.group.position.set(0, MODEL_Y, 0);
-    this.model.toothMat.uniforms.uLamp.value.copy(LAMP);
-    this.scene.add(this.model.group);
+        this.scene.add(this.model.group);
 
     const band = new THREE.Mesh(
       new THREE.PlaneGeometry(2, 2),
@@ -186,7 +187,7 @@ export class ClinicScene {
     return { p, out };
   }
 
-  /** The brush head on the arch: position, the direction it scrubs toward and along the row. */
+  /** The brush head on the arch: position and the direction it scrubs toward. */
   brushAt(t) {
     const seg = this.brushing.find((s) => t >= s.t0 && t < s.t1) ?? (t < this.brushing[0].t0 ? this.brushing[0] : this.brushing.at(-1));
     const on = smooth(this.brushing[0].t0 - 0.4, this.brushing[0].t0, t) * (1 - smooth(this.brushing.at(-1).t1 - 0.2, this.brushing.at(-1).t1 + 0.3, t));
@@ -197,11 +198,10 @@ export class ClinicScene {
     const tan = jaw.curve.getTangentAt(s);
     const out = new THREE.Vector3(-tan.z, 0, tan.x).normalize();
     const reach = seg.face > 0 ? 5.6 : -5.0;
-    const local = new THREE.Vector3(p.x + out.x * reach, 5 + Math.cos(t * 26) * 0.8, p.z + out.z * reach);
+    const local = new THREE.Vector3(p.x + out.x * reach, -3.5 + Math.cos(t * 26) * 0.8, p.z + out.z * reach);
     const world = local.applyMatrix4(jaw.body.matrixWorld);
     const face = out.clone().multiplyScalar(-seg.face).transformDirection(jaw.body.matrixWorld);
-    const along = tan.clone().transformDirection(jaw.body.matrixWorld);
-    return { p: world, face, along, on, seg, s };
+    return { p: world, face, on, seg, s };
   }
 
   update(t, section) {
@@ -233,7 +233,7 @@ export class ClinicScene {
     const typeLit = {};
     const typeFlash = {};
     for (const type of TYPE_ORDER) {
-      let lit = smooth(this.lightsOn - 0.1, this.lightsOn + 0.3, t) * 0.32;
+      let lit = smooth(this.lightsOn - 0.1, this.lightsOn + 0.3, t) * 0.12;
       let flash = 0;
       if (card && card.type === type) {
         lit = 1;

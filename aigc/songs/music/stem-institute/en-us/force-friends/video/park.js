@@ -3,7 +3,7 @@ import { FONT_COND, FONT_MONO } from "@gizclaw/mvg-core/hud.js";
 import { clamp, easeInOut, hash, lerp, smooth } from "@gizclaw/mvg-core/timing.js";
 import { BRIDGE, CHORUSES, CLOSEUPS, FORCES, OUTRO, QUIZ, SECTIONS, VERSE1, VERSE2, VERSE_FIRES, WIDE } from "./constants.js";
 import { ANGLES, Grounds, spot } from "./grounds.js";
-import { BUILDERS } from "./stations.js";
+import { BUILDERS, DOT } from "./stations.js";
 
 // Close-ups look outward from the plaza: camera distance and the height it looks at.
 const FRAME = [[6.6, 0.55], [6.6, 0.4], [6.4, 0.5], [5.8, 0.2], [6.2, 0.45], [6.6, 0.75]];
@@ -17,19 +17,64 @@ const WIDE_VIEW = { px: 0, py: 15, pz: 15, tx: 0, ty: 0, tz: -3.0, fov: 54 };
 const KEYS = ["px", "py", "pz", "tx", "ty", "tz", "fov"];
 const TOP_Y = 312;
 
+/** Image-based light from a blue sky over green lawn, with a bright patch where the sun is. */
+function outdoorEnvironment(renderer) {
+  const env = new THREE.Scene();
+  env.add(
+    new THREE.Mesh(
+      new THREE.SphereGeometry(10, 32, 16),
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        vertexShader: "varying vec3 vD; void main(){ vD = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+        fragmentShader: /* glsl */ `
+          varying vec3 vD;
+          void main() {
+            vec3 d = normalize(vD);
+            vec3 sky = mix(vec3(0.75, 0.85, 0.95), vec3(0.25, 0.45, 0.85), smoothstep(0.0, 0.8, d.y));
+            vec3 ground = mix(vec3(0.25, 0.32, 0.18), vec3(0.08, 0.14, 0.05), smoothstep(0.0, 0.5, -d.y));
+            vec3 col = d.y > 0.0 ? sky : ground;
+            col += vec3(6.0, 5.4, 4.6) * pow(max(dot(d, normalize(vec3(-7.5, 12.5, 10.0))), 0.0), 220.0);
+            gl_FragColor = vec4(col, 1.0);
+          }`,
+      }),
+    ),
+  );
+  return new THREE.PMREMGenerator(renderer).fromScene(env, 0.02).texture;
+}
+
 export class ParkScene {
   constructor(ctx) {
     this.ctx = ctx;
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(38, 9 / 16, 0.1, 400);
-    const sun = new THREE.DirectionalLight("#fff1d6", 2.6);
-    sun.position.set(-6, 10, 8);
-    this.scene.add(sun, new THREE.HemisphereLight("#bcd8ff", "#4a6a2a", 1.1));
+    const { renderer } = ctx;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.scene.environment = outdoorEnvironment(renderer);
+    this.scene.environmentIntensity = 0.4;
+    // The sun is the only key light; it casts soft shadows over the arc of stations.
+    const sun = new THREE.DirectionalLight("#fff1d6", 2.2);
+    sun.position.set(-7.5, 12.5, 6.5);
+    sun.target.position.set(0, 0, -3.5);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 7, bottom: -7, near: 2, far: 40 });
+    sun.shadow.bias = -0.0004;
+    sun.shadow.normalBias = 0.02;
+    sun.shadow.radius = 3;
+    this.scene.add(sun, sun.target, new THREE.HemisphereLight("#bcd8ff", "#4a6a2a", 0.6));
     this.grounds = new Grounds(this.scene);
+    const catcher = new THREE.Mesh(new THREE.PlaneGeometry(30, 22).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ opacity: 0.32 }));
+    catcher.position.set(0, 0.004, -3);
+    catcher.receiveShadow = true;
+    this.scene.add(catcher);
     this.stations = FORCES.map((f, k) => {
       const s = new BUILDERS[k](f.color);
       s.group.position.copy(spot(k));
       s.group.rotation.y = -ANGLES[k];
+      s.group.traverse((o) => {
+        if (o.isMesh && !o.material.transparent && o.renderOrder === 0) o.castShadow = o.receiveShadow = true;
+      });
       this.scene.add(s.group);
       return s;
     });
@@ -43,7 +88,7 @@ export class ParkScene {
     this.pollenSeed = Array.from({ length: n }, (_, i) => [hash(i * 1.3) * 16 - 8, hash(i * 2.9) * 4, hash(i * 4.1) * 18 - 12, 0.3 + hash(i * 6.7)]);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(n * 3), 3));
-    this.pollen = new THREE.Points(geo, new THREE.PointsMaterial({ color: "#fff6d8", size: 0.05, transparent: true, opacity: 0.7, depthWrite: false }));
+    this.pollen = new THREE.Points(geo, new THREE.PointsMaterial({ color: "#fff6d8", map: DOT, size: 0.06, transparent: true, opacity: 0.7, depthWrite: false }));
     this.pollen.frustumCulled = false;
     this.scene.add(this.pollen);
   }
@@ -153,7 +198,7 @@ export class ParkScene {
     const b = this.stations[3].group.position;
     const bev = this.stations[3].locate(t)[0];
     if (bev) this.grounds.ripple(b.x, b.z, bev.t1);
-    this.grounds.update(t, kick, timing.pulse(t, 0.22) * (chorus ? 1 : 0.5));
+    this.grounds.update(t, timing.pulse(t, 0.22) * (chorus ? 1 : 0.5));
 
     const pp = this.pollen.geometry.attributes.position;
     const drift = chorus ? 1.6 : 0.7;

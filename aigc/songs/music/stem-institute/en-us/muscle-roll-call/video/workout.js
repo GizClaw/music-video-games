@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { FONT_COND, FONT_MONO } from "@gizclaw/mvg-core/hud.js";
-import { clamp, easeInOut, lerp, smooth } from "@gizclaw/mvg-core/timing.js";
+import { clamp, easeInOut, hash, lerp, smooth } from "@gizclaw/mvg-core/timing.js";
 import { BRIDGE, CHORUSES, CONTRACT, MUSCLES, OUTRO, PRE, RELAX, SECTIONS, TENDON, VERSE1, VERSE2 } from "./constants.js";
 import { Figure } from "./figure.js";
 import { Gym } from "./gym.js";
@@ -15,17 +15,23 @@ const GROUPS = Object.keys(MUSCLES);
 // Camera views: world point (x, y) shown on screen row Y from distance z.
 const VIEWS = {
   wide: { x: 0, y: 0.95, z: 8.0, Y: 810 },
-  arm: { x: -0.12, y: 1.15, z: 3.6, Y: 1110 },
-  upper: { x: 0, y: 1.15, z: 4.0, Y: 1050 },
-  core: { x: 0, y: 1.1, z: 4.8, Y: 1000 },
-  legs: { x: 0, y: 0.5, z: 4.6, Y: 845 },
-  calves: { x: 0, y: 0.3, z: 3.6, Y: 930 },
+  arm: { x: -0.05, y: 1.2, z: 3.8, Y: 1150 },
+  upper: { x: 0, y: 1.15, z: 4.0, Y: 1110 },
+  core: { x: 0, y: 1.1, z: 4.8, Y: 1040 },
+  legs: { x: 0, y: 1.0, z: 6.3, Y: 955 },
+  calves: { x: 0, y: 0.6, z: 7.9, Y: 1056 },
 };
 const PUNCH = { biceps: "arm", triceps: "arm", deltoid: "upper", abs: "core", quads: "legs", hams: "legs", calves: "calves" };
 
 const win = (t, t0, t1, a = 0.06, b = 0.25) => smooth(t0 - a, t0 + a, t) * (1 - smooth(t1 - b, t1, t));
 const kick = (t, t0, life) => (t >= t0 ? Math.exp(-(t - t0) / life) : 0);
 const both = (key, v) => ({ [`${key}0`]: v, [`${key}1`]: v });
+
+function blink(t) {
+  const k = Math.floor(t / 2.9);
+  const d = t - (k * 2.9 + hash(k * 3.7) * 2.2);
+  return d >= 0 && d < 0.16 ? Math.sin((Math.PI * d) / 0.16) : 0;
+}
 
 function blend(p, q, k) {
   for (const key of Object.keys(p)) {
@@ -48,8 +54,16 @@ export class WorkoutScene {
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.environmentIntensity = 0.2;
     this.camera = new THREE.PerspectiveCamera(FOV, 9 / 16, 0.05, 100);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const key = new THREE.DirectionalLight("#fff3e2", 1.9);
     key.position.set(-2.5, 4, 4);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    Object.assign(key.shadow.camera, { left: -1.6, right: 1.6, top: 1.8, bottom: -1.6, near: 1, far: 14 });
+    key.shadow.bias = -0.0004;
+    key.shadow.normalBias = 0.02;
+    key.shadow.radius = 5;
     const windowLight = new THREE.DirectionalLight("#dceaff", 1.4);
     windowLight.position.set(1, 3.5, -5);
     this.scene.add(key, windowLight, new THREE.HemisphereLight("#d6e6ff", "#3a3430", 0.7));
@@ -96,8 +110,9 @@ export class WorkoutScene {
       [cue(v1.pull).start - 0.4, end(v1.pull) + 0.2, 0.75],
       [cue(PRE.shorter).start - 0.4, end(PRE.easing) + 0.2, 0.75],
       [cue(PRE.tendons).start - 0.4, end(PRE.tendons) + 0.3, 0.75],
-      [cue(v2.quads).start - 0.5, end(v2.hams) + 0.2, 0.85],
-      [cue(v2.calves).start - 0.4, end(v2.toes) + 0.2, 0.95],
+      [cue(v2.quads).start - 0.5, cue(v2.hams).start - 0.1, 0.6],
+      [cue(v2.hams).start - 0.3, end(v2.hams) + 0.2, 1.8],
+      [cue(v2.calves).start - 0.4, end(v2.toes) + 0.2, 1.8],
     ];
     this.bells = [[cue(v1.bend).start - 0.4, end(v1.teams) + 0.3], [cue(PRE.shorter).start - 0.3, end(PRE.easing) + 0.2], [cue(PRE.tendons).start - 0.3, end(PRE.tendons) + 0.3]];
 
@@ -446,6 +461,8 @@ export class WorkoutScene {
       bend: side * 0.08 * amp,
       heel: 0,
       nod: 0.08 * u.beat * amp,
+      blink: blink(t),
+      breath: 0.5 + 0.5 * Math.sin(t * (ch ? 4.2 : 2.4)),
       bells: 0,
       arms: [0, 1].map((i) => ({ raise: 0.18 + 0.06 * u.beat * amp, fwd: 0.1 + 0.25 * amp * (i ? side : -side), elbow: 0.35 + 0.25 * u.beat * amp, roll: 0 })),
       legs: [{ lift: 0, knee: 0 }, { lift: 0, knee: 0 }],

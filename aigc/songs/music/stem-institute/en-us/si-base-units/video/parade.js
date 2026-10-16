@@ -36,12 +36,19 @@ export class ParadeScene {
     const { timing, renderer } = ctx;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color("#6a8cb8");
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const pmrem = new THREE.PMREMGenerator(renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.environmentIntensity = 0.35;
     this.camera = new THREE.PerspectiveCamera(30, 9 / 16, 0.1, 200);
     const sun = new THREE.DirectionalLight("#fff0d6", 2.4);
     sun.position.set(8, 12, 9);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.bias = -0.0005;
+    sun.shadow.radius = 3;
+    Object.assign(sun.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: 1, far: 40 });
     this.scene.add(sun, new THREE.HemisphereLight("#cfe4ff", "#6a5a48", 0.7));
     this.courtyard = new Courtyard(this.scene);
     this.soldiers = UNITS.map((u, k) => {

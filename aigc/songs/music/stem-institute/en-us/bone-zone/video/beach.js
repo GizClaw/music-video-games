@@ -14,9 +14,9 @@ const BOARD_TOP = 0.1;
 
 // Camera views: world point (x, y) shown on screen row Y from distance z.
 const VIEWS = {
-  wide: { x: 0, y: 0.95, z: 8.2, Y: 836 },
-  chorus: { x: 0, y: 0.95, z: 8.2, Y: 836 },
-  bridge: { x: 0, y: 0.95, z: 9.2, Y: 885 },
+  wide: { x: 0, y: 0.95, z: 8.2, Y: 876 },
+  chorus: { x: 0, y: 0.95, z: 8.2, Y: 876 },
+  bridge: { x: 0, y: 0.95, z: 9.2, Y: 905 },
   skull: { x: 0, y: 1.76, z: 2.4, Y: 760 },
   ribs: { x: 0, y: 1.4, z: 3.1, Y: 790 },
   spine: { x: 0, y: 1.25, z: 4.2, Y: 800 },
@@ -35,7 +35,7 @@ const GROUPS = {
 };
 const MAT_COLOR = {
   skull: BONES.skull.color, ribs: BONES.ribs.color, spine: BONES.spine.color, clavicle0: BONES.clavicle.color, clavicle1: BONES.clavicle.color,
-  pelvis: BONES.pelvis.color, femur: BONES.femur.color, arm: "#ffffff", shin: "#ffffff",
+  pelvis: BONES.pelvis.color, femur: BONES.femur.color, arm: "#ffe2a8", shin: "#ffe2a8",
   shoulder: BONES.joint.color, elbow: BONES.joint.color, hip: BONES.joint.color, knee: BONES.joint.color,
 };
 const ROLL = ["skull", "clavicle", "ribs", "spine", "pelvis", "femur"];
@@ -53,8 +53,18 @@ export class BeachScene {
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.environmentIntensity = 0.12;
     this.camera = new THREE.PerspectiveCamera(FOV, 9 / 16, 0.05, 200);
-    const moon = new THREE.DirectionalLight("#a9c0ff", 1.5);
-    moon.position.set(3, 6, 2);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    const moon = new THREE.DirectionalLight("#b4c8ff", 1.7);
+    moon.position.set(3, 6.9, 2);
+    moon.target.position.set(0, 0.9, 0);
+    moon.castShadow = true;
+    moon.shadow.mapSize.set(2048, 2048);
+    Object.assign(moon.shadow.camera, { left: -1.8, right: 1.8, top: 1.8, bottom: -1.8, near: 1, far: 16 });
+    moon.shadow.bias = -0.0004;
+    moon.shadow.normalBias = 0.02;
+    moon.shadow.radius = 4;
+    this.scene.add(moon.target);
     const rim = new THREE.DirectionalLight("#7f9cff", 1.1);
     rim.position.set(-2, 3, -5);
     this.scene.add(moon, rim, new THREE.HemisphereLight("#3a4a80", "#20160f", 0.5));
@@ -72,7 +82,7 @@ export class BeachScene {
     this.rig = new Skeleton();
     this.rig.root.position.y = BOARD_TOP;
     this.scene.add(this.rig.root);
-    this.baseColor = new THREE.Color("#e6dcc4");
+    this.baseColor = new THREE.Color("#fbf1dc");
     this.tint = new THREE.Color();
     this.tmp = new THREE.Vector3();
     this.buildTimeline(timing);
@@ -331,7 +341,7 @@ export class BeachScene {
     for (const h of this.hops) {
       const k = (t - h) / 0.44;
       if (k > 0 && k < 1) {
-        p.y += 0.2 * Math.sin(Math.PI * k);
+        p.y += 0.14 * Math.sin(Math.PI * k);
         p.legs.forEach((l) => (l.knee += 0.5 * Math.sin(Math.PI * k)));
         p.arms.forEach((a) => (a.raise = lerp(a.raise, 2.6, Math.sin(Math.PI * k))));
       }
@@ -372,9 +382,14 @@ export class BeachScene {
       const g = this.glowOf(name, t);
       const color = MAT_COLOR[name];
       mat.emissive.set(color);
-      mat.emissiveIntensity = 0.03 + g * 0.75 + k * 0.03 * (loud ? 1 : 0);
-      mat.color.copy(this.baseColor).lerp(this.tint.set(color), g * 0.35);
+      mat.emissiveIntensity = 0.02 + g * 0.12 + k * 0.02 * (loud ? 1 : 0);
+      mat.userData.rim.value.set(color).multiplyScalar(g * (1.0 + 0.2 * k));
+      mat.color.copy(this.baseColor).lerp(this.tint.set(color), g * 0.3);
     }
+    const rg = this.glowOf("ribs", t);
+    rig.cartilage.emissive.set(MAT_COLOR.ribs);
+    rig.cartilage.emissiveIntensity = 0.02 + rg * 0.08;
+    rig.cartilage.userData.rim.value.set(MAT_COLOR.ribs).multiplyScalar(rg * 0.75);
 
     // Camera: shot list, with chorus and quiz punch-ins toward the named bone.
     const view = this.viewAt(t);
@@ -444,10 +459,10 @@ export class BeachScene {
       const a = smooth(SECTIONS.verse1, SECTIONS.verse1 + 0.3, t) * (1 - smooth(this.countEnd - 0.4, this.countEnd, t));
       const n = Math.round(206 * clamp((t - SECTIONS.verse1 - 0.1) / (this.six - SECTIONS.verse1 - 0.1), 0, 1));
       const pop = 1 + 0.25 * kick(t, this.six, 0.15);
-      hud.text(String(n), 540, 345, { size: Math.round(150 * pop), weight: 800, family: FONT_COND, color: COUNT, alpha: a, glow: t >= this.six ? 30 : 12 });
-      hud.text("BONES", 540, 445, { size: 40, weight: 800, family: FONT_COND, color: "#ffffff", alpha: a, tracking: 8 });
-      hud.text("in an adult skeleton", 540, 495, { size: 28, weight: 600, family: FONT_MONO, color: "#cfd8ff", alpha: a * smooth(this.six, this.six + 0.4, t) * (1 - smooth(this.living - 0.2, this.living, t)) });
-      hud.text("a living framework", 540, 495, { size: 28, weight: 600, family: FONT_MONO, color: "#ff9ab8", alpha: a * smooth(this.living, this.living + 0.3, t) });
+      hud.text(String(n), 540, 322, { size: Math.round(140 * pop), weight: 800, family: FONT_COND, color: COUNT, alpha: a, glow: t >= this.six ? 30 : 12 });
+      const late = smooth(this.living - 0.2, this.living + 0.1, t);
+      hud.text("BONES IN AN ADULT SKELETON", 540, 410, { size: 36, weight: 800, family: FONT_COND, color: "#ffffff", alpha: a * (1 - late), tracking: 3 });
+      hud.text("A LIVING FRAMEWORK", 540, 410, { size: 36, weight: 800, family: FONT_COND, color: "#ff9ab8", alpha: a * late, tracking: 3 });
     }
 
     // Verse captions: one at a time.
@@ -531,8 +546,8 @@ export class BeachScene {
     if (t >= this.final.t0 - 0.05) {
       const a = smooth(this.final.t0 - 0.05, this.final.t0 + 0.1, t) * (1 - smooth(this.final.t1 - 0.3, this.final.t1, t));
       const pop = 1 + 0.3 * kick(t, this.final.t0, 0.18);
-      hud.text("206", 540, 345, { size: Math.round(160 * pop), weight: 800, family: FONT_COND, color: COUNT, alpha: a, glow: 30 });
-      hud.text("BONES", 540, 455, { size: 40, weight: 800, family: FONT_COND, color: "#ffffff", alpha: a, tracking: 8 });
+      hud.text("206", 540, 322, { size: Math.round(140 * pop), weight: 800, family: FONT_COND, color: COUNT, alpha: a, glow: 30 });
+      hud.text("BONES", 540, 410, { size: 40, weight: 800, family: FONT_COND, color: "#ffffff", alpha: a, tracking: 8 });
     }
   }
 }

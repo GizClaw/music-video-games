@@ -22,8 +22,8 @@ export const TYPE_ORDER = ["incisor", "canine", "premolar", "molar"];
 
 /** Per quadrant from the midline: type, crown width, height and depth in mm. */
 export const PERMANENT = {
-  upper: [["incisor", 8.5, 10.5, 7], ["incisor", 6.5, 9, 6], ["canine", 7.5, 10, 8], ["premolar", 7, 8.5, 9], ["premolar", 6.5, 7.5, 9], ["molar", 10, 7.5, 11], ["molar", 9, 7, 11], ["molar", 8.5, 6.5, 10]],
-  lower: [["incisor", 5, 9, 6], ["incisor", 5.5, 9.5, 6.3], ["canine", 7, 11, 7.5], ["premolar", 7, 8.5, 7.5], ["premolar", 7, 8, 8], ["molar", 11, 7.5, 10.5], ["molar", 10.5, 7, 10], ["molar", 10, 7, 9.5]],
+  upper: [["incisor", 8.5, 9, 7], ["incisor", 6.6, 7.8, 6], ["canine", 7.6, 8.8, 8], ["premolar", 7, 7.6, 9], ["premolar", 6.6, 7, 9], ["molar", 10, 6.6, 11], ["molar", 9, 6.2, 10.5], ["molar", 8.4, 5.8, 10]],
+  lower: [["incisor", 5.4, 7.6, 6], ["incisor", 5.9, 7.9, 6.2], ["canine", 7, 8.8, 7.5], ["premolar", 7, 7.6, 7.8], ["premolar", 7, 7, 8], ["molar", 11, 6.6, 10.5], ["molar", 10.5, 6.2, 10], ["molar", 10, 5.8, 9.5]],
 };
 /** The primary set has no premolars: two incisors, a canine and two molars per quadrant. */
 export const PRIMARY = {

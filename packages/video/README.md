@@ -69,8 +69,8 @@ mvg-video --project /path/to/music-video-games --root /mounted/GizClaw --work sp
 | `songs/music/stem-institute/en-us/thirty-two-chompers` | dentist's office with a hinged demonstration jaw: incisors, canines, premolars and molars light by type, 20 primary teeth give way to 32 permanent, bites on cut, tear, crush and grind |
 | `songs/music/stem-institute/en-us/muscle-roll-call` | sports hall mannequin whose muscle groups shorten and bulge as they contract: curls, raises, squats, heel raises, flex-relax-switch chorus moves |
 | `songs/music/stem-institute/en-us/bone-zone` | moonlit beach, a surf-dancing skeleton: named bones glow with close-ups (skull, ribs, vertebrae, clavicles, femur), joints flex, 206 counter, bridge question-and-answer |
-| `songs/music/stem-institute/en-us/lab-rules` | school lab bench: each safety rule brings in a 3D prop stamped ✓ or ✗ and fills a 17-box checklist; bridge question-and-answer cards |
-| `songs/music/stem-institute/en-us/science-method-shuffle` | school garden fair test: three bean pots differ only in sunlight, plants grow day by day, data table and bar chart fill in, a ladybug hops the seven method steps |
+| `songs/music/stem-institute/en-us/lab-rules` | school lab bench: each safety rule brings in a vivid 3D prop with an electric outline, stamped ✓ or ✗, filling a 17-box checklist; bridge question-and-answer cards |
+| `songs/music/stem-institute/en-us/science-method-shuffle` | school garden fair test led by a magnifying glass: on each sung step it glides to that subject and its lens shows a live close-up (seed sprouting, leaf cells, ruler marks, the notebook and chart); three bean pots differ only in sunlight |
 
 ## Analysis
 

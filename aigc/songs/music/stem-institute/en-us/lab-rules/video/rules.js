@@ -1,8 +1,11 @@
 import * as THREE from "three";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { BRAND, clamp, easeInOut, easeOutBack, easeOutCubic, hash, lerp, smooth } from "@gizclaw/mvg-core/timing.js";
 import { FONT_COND, FONT_MONO } from "@gizclaw/mvg-core/hud.js";
 import { Bench, CLOCK, FRONT, RISER } from "./bench.js";
+import { lathe } from "./craft.js";
 import { PROPS } from "./props.js";
+import { Shine } from "./shine.js";
 import { ACCENT, BRIDGE, CHORUSES, NO, OK, OUTRO, PROTECTS, RULES, SECTIONS } from "./constants.js";
 
 // The camera looks down onto the bench so that its front edge lands on screen
@@ -12,9 +15,11 @@ const CAM = new THREE.Vector3(0, 9, 46);
 const LOOK = new THREE.Vector3(0, 3.6, 0);
 const HERO = new THREE.Vector3(-0.35, 4.9, 3);
 const HERO_S = 2.0;
+const HERO_C = HERO.clone().add(new THREE.Vector3(0, HERO_S * 1.1, 0));
 const SLOT_S = 0.5;
 const TITLE_Y = 372;
 const LIST_Y = 470;
+const MAT = lathe([[0, 0.04], [0.56, 0.04], [0.62, 0.035], [0.65, 0.015], [0.62, 0]], 48);
 const decay = (t, t0, tau) => (t >= t0 ? Math.exp(-(t - t0) / tau) : 0);
 
 /** Bench slots: verse one's nine on the riser shelf, verse two's eight on the bench top. */
@@ -26,13 +31,27 @@ function slotOf(i) {
 export class RulesScene {
   constructor(ctx) {
     this.ctx = ctx;
+    const { renderer } = ctx;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     this.scene = new THREE.Scene();
+    this.scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+    this.scene.environmentIntensity = 0.2;
     this.camera = new THREE.PerspectiveCamera(34, 9 / 16, 0.5, 300);
-    this.scene.add(new THREE.AmbientLight("#b0b8d0", 1.1));
-    const key = new THREE.DirectionalLight("#fff4e0", 2.1);
-    key.position.set(3, 14, 12);
-    this.scene.add(key);
-    const fill = new THREE.DirectionalLight("#9fc4ff", 0.6);
+    this.scene.add(new THREE.HemisphereLight("#c8d4e8", "#2a2420", 0.55));
+    // The ceiling lamp over the bench is the key light and the only shadow caster.
+    const lamp = new THREE.SpotLight("#fff2dc", 1.6, 0, 0.62, 0.8, 0);
+    lamp.position.set(2, 24, 16);
+    lamp.target.position.set(0, 2, 0);
+    lamp.castShadow = true;
+    lamp.shadow.mapSize.set(2048, 2048);
+    lamp.shadow.camera.near = 8;
+    lamp.shadow.camera.far = 60;
+    lamp.shadow.bias = -0.0004;
+    lamp.shadow.normalBias = 0.03;
+    lamp.shadow.radius = 6;
+    this.scene.add(lamp, lamp.target);
+    const fill = new THREE.DirectionalLight("#9fc4ff", 0.5);
     fill.position.set(-8, 4, 6);
     this.scene.add(fill);
     this.bench = new Bench(this.scene);
@@ -42,12 +61,17 @@ export class RulesScene {
       const holder = new THREE.Group();
       holder.add(group);
       this.scene.add(holder);
-      const coaster = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.05, 32), new THREE.MeshBasicMaterial({ color: r.ok ? OK : NO }));
-      coaster.position.copy(slotOf(i)).add(new THREE.Vector3(0, 0.03, 0));
+      const coaster = new THREE.Mesh(MAT, new THREE.MeshBasicMaterial({ color: r.ok ? OK : NO }));
+      coaster.position.copy(slotOf(i)).add(new THREE.Vector3(0, 0.005, 0));
       this.scene.add(coaster);
       return { ...r, i, group, tick, holder, coaster, slot: slotOf(i), heroes: [] };
     });
     this.byProp = Object.fromEntries(this.props.map((p) => [p.prop, p]));
+    this.shine = new Shine(this.scene, renderer, HERO_C);
+    for (const p of this.props) {
+      p.holder.traverse((o) => [o.material].flat().forEach((m) => m && this.shine.dress(m)));
+      this.shine.outline(p.holder);
+    }
     this.buildConfetti();
     this.buildTimeline(ctx.timing);
     this.tmp = new THREE.Vector3();
@@ -126,7 +150,13 @@ export class RulesScene {
     this.titles.push({ t0: cue(OUTRO.rock).start - 0.1, t1: SECTIONS.end, kicker: "STEM INSTITUTE  ·  No. 24", text: "LAB RULES ROCK!", color: ACCENT, chorus: true });
     this.titles.push({ t0: SECTIONS.warmup + 0.2, t1: this.props[0].t0, kicker: "STEM INSTITUTE  ·  No. 24", text: "LAB RULES ROCK!", color: ACCENT, chorus: true });
     for (const p of this.props) p.heroes.sort((a, b) => a[0] - b[0]);
+    this.arrivals = this.props.flatMap((p) => p.heroes.map(([t0]) => t0)).sort((a, b) => a - b);
     this.stamps.sort((a, b) => a.t - b.t);
+    // Gleams and star bursts: on every stamp at the hero spot, and as each prop lands in its slot.
+    this.glints = [
+      ...this.stamps.map((s) => ({ t: s.t, c: HERO_C, r: 2.6, life: 0.6, count: 10, size: 2.6 })),
+      ...this.props.flatMap((p) => p.heroes.map(([, t1]) => ({ t: t1 + 0.5, c: p.slot.clone().add(new THREE.Vector3(0, 0.6, 0)), r: 0.9, life: 0.5, count: 5, size: 1.6 }))),
+    ].sort((a, b) => a.t - b.t);
   }
 
   /** Holder transform for a prop: popping in, starring at HERO, flying to its slot. */
@@ -182,10 +212,13 @@ export class RulesScene {
     const rock = Math.max(decay(t, o.rock, 0.5), ...this.choruses.map((c) => decay(t, c.rock, 0.4)));
     const bounce = Math.max(chorus, smooth(o.rock - 0.2, o.rock, t));
 
+    let heroOn = 0;
+    let lead = null;
     for (const p of this.props) {
       const star = this.place(p, t, bf, bounce);
+      if (star > heroOn) [heroOn, lead] = [star, p];
       const act = p.t0 <= t ? clamp((t - p.t0) / Math.max(0.2, p.stampT - p.t0), 0, 1) : 0;
-      p.tick?.(t, act);
+      p.tick?.(t, act, star);
       const wave = decay(t, this.protects.word + p.i * 0.05, 0.25) + decay(t, o.start + p.i * 0.04, 0.25);
       p.holder.position.y += (wave + rock) * 0.6 * (1 - star);
       const lit = smooth(p.stampT, p.stampT + 0.4, t);
@@ -199,9 +232,32 @@ export class RulesScene {
     cp.needsUpdate = true;
     this.confetti.material.opacity = Math.max(rock * 0.9, smooth(o.rock, o.rock + 0.4, t) * 0.8, chorus * 0.3);
 
+    const live = this.glints.filter((g) => t >= g.t && t < g.t + 0.8);
+    const sweep = live.filter((g) => t < g.t + g.life).at(-1);
+    const bursts = live.map((g) => [g.c, g.r, g.t, g.count, g.life + 0.2, g.size]);
+    if (heroOn > 0.5) {
+      const b = timing.beatIndexAt(t);
+      for (const k of [b - 1, b]) if (k >= 0) bursts.push([HERO_C, 1.9, timing.beatTime(k), 3, 0.45, 1.6]);
+    }
+    let pulse = 0;
+    for (const s of this.stamps) pulse = Math.max(pulse, decay(t, s.t, 0.22));
+    const arrival = this.arrivals.filter((a) => a <= t).at(-1) ?? -9;
+    const scanU = clamp((t - arrival) / 0.7, 0, 1);
+    this.shine.update(t, {
+      gleam: sweep ? [sweep.c, sweep.r, (t - sweep.t) / sweep.life] : null,
+      energy: heroOn * (0.55 + 0.45 * timing.pulse(t, 0.18)),
+      pulse,
+      scan: Math.sin(scanU * Math.PI),
+      scanY: HERO.y + scanU * HERO_S * 2.4,
+      accent: lead && heroOn > 0.05 ? (lead.ok ? OK : NO) : "#3de8ff",
+      bursts,
+    });
+    this.accent = lead?.ok === false ? NO : OK;
+    this.heroOn = heroOn;
+
     const clockPop = ch ? decay(t, ch.clock, 0.35) : 0;
     const spin = this.choruses.reduce((a, c) => a + easeOutCubic(clamp((t - c.clock) / 0.8, 0, 1)), 0);
-    this.bench.update(t, bf, 1 + chorus * 0.12 * timing.pulse(t, 0.25) + rock * 0.2, spin, clockPop);
+    this.bench.update(t, bf, 1 + chorus * 0.12 * timing.pulse(t, 0.25) + rock * 0.2, spin, clockPop, kick);
     this.bench.wallU.uFlash.value = rock;
     this.bench.wallU.uHue.value.set(ACCENT);
 
@@ -320,6 +376,60 @@ export class RulesScene {
           ctx.arc(x + Math.cos(a) * r, y + Math.sin(a) * r, 7 * (1 - u) + 2, 0, Math.PI * 2);
           ctx.fill();
         }
+        ctx.restore();
+      }
+    }
+
+    // Electric arcs crackle around the hero on the beat and on stamps, and around a prop as it lands.
+    const { timing } = this.ctx;
+    const arcs = [];
+    if (this.heroOn > 0.5) {
+      const b = timing.beatIndexAt(t);
+      if (b >= 0) arcs.push([hx, hy + 40, 200, 240, timing.beatTime(b), 2, 0.22, this.accent]);
+    }
+    for (const s of this.stamps) if (t >= s.t && t < s.t + 0.4) arcs.push([hx, hy + 40, 210, 250, s.t, 5, 0.38, s.ok ? OK : NO]);
+    for (const g of this.glints) {
+      if (g.r > 1 || t < g.t || t > g.t + 0.35) continue;
+      const [sx, sy] = this.screen(g.c);
+      arcs.push([sx, sy, 50, 45, g.t, 3, 0.3, "#3de8ff"]);
+    }
+    for (const [cx, cy, rx, ry, t0, count, life, color] of arcs) {
+      const u = (t - t0) / life;
+      if (u < 0 || u >= 1) continue;
+      const frame = Math.floor(t * 30);
+      for (let k = 0; k < count; k++) {
+        const seed = t0 * 7.13 + k * 3.7;
+        const a0 = hash(seed) * Math.PI * 2;
+        const a1 = a0 + (0.5 + hash(seed + 1) * 0.7) * (hash(seed + 2) > 0.5 ? 1 : -1);
+        const pts = [[cx + Math.cos(a0) * rx, cy + Math.sin(a0) * ry], [cx + Math.cos(a1) * rx * 1.05, cy + Math.sin(a1) * ry * 1.05]];
+        for (let level = 0; level < 4; level++) {
+          const next = [pts[0]];
+          for (let i = 1; i < pts.length; i++) {
+            const [x0, y0] = pts[i - 1];
+            const [x1, y1] = pts[i];
+            const l = Math.hypot(x1 - x0, y1 - y0);
+            const j = (hash(seed + frame * 0.37 + level * 11 + i * 1.3) - 0.5) * l * 0.5;
+            next.push([(x0 + x1) / 2 + ((y0 - y1) / l) * j, (y0 + y1) / 2 + ((x1 - x0) / l) * j], pts[i]);
+          }
+          pts.splice(0, pts.length, ...next);
+        }
+        const fade = (1 - u) * (hash(seed + frame) > 0.15 ? 1 : 0.3);
+        ctx.save();
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+        ctx.globalAlpha = fade * 0.55;
+        ctx.strokeStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 18;
+        ctx.lineWidth = 7;
+        ctx.stroke();
+        ctx.globalAlpha = fade;
+        ctx.strokeStyle = "#ffffff";
+        ctx.shadowBlur = 8;
+        ctx.lineWidth = 2.2;
+        ctx.stroke();
         ctx.restore();
       }
     }
