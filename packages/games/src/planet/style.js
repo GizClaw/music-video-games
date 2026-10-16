@@ -1,3 +1,4 @@
+import { COMMON, overlays } from "../lang.js";
 import { spectrumStyle } from "../spectrum/style.js";
 
 /** Layout for a mounted Planet Parade: the shared game HUD plus the planet lineup. Scoped to `.mvg-game.planet`. */
@@ -51,7 +52,22 @@ export const planetStyle = `${spectrumStyle}
 @media (max-width: 560px), (max-height: 500px) { .mvg-game .lineup span, .mvg-game .tag span { display: none; } .mvg-game .tag { padding: 3px; } }
 `;
 
-export const planetMarkup = `
+const TITLE = {
+  zh: {
+    sub: "行星点名！唱到哪颗行星，光圈就落在哪颗，跟着节拍点它",
+    keys: ["光圈收紧时点击行星，或按它的序号 <kbd>1</kbd> 水星 … <kbd>8</kbd> 海王星", "march · hey · hooray 时点太阳或按 <kbd>空格</kbd>", "冥王星出现时按 <kbd>9</kbd>"],
+  },
+  en: {
+    sub: "Planet roll call! A ring closes on each planet the song names: hit it on the beat",
+    keys: ["Click the planet as its ring closes, or press its number <kbd>1</kbd> Mercury … <kbd>8</kbd> Neptune", "On march · hey · hooray hit the Sun or press <kbd>Space</kbd>", "Press <kbd>9</kbd> when Pluto shows up"],
+  },
+};
+
+/** The HUD and overlays of a mounted Planet Parade, in `lang`. */
+export const planetMarkup = (lang) => {
+  const c = COMMON[lang];
+  const t = TITLE[lang];
+  return `
   <div class="stage" id="stage"></div>
   <div class="tags" id="tags"></div>
   <div class="hud" id="hud" hidden>
@@ -68,26 +84,15 @@ export const planetMarkup = `
   <div class="overlay" id="title">
     <div class="kicker">STEM INSTITUTE · No. 22</div>
     <h1>PLANET<br />PARADE</h1>
-    <p class="sub">行星点名！唱到哪颗行星，光圈就落在哪颗，跟着节拍点它</p>
+    <p class="sub">${t.sub}</p>
     <div class="keys">
-      <div>光圈收紧时点击行星，或按它的序号 <kbd>1</kbd> 水星 … <kbd>8</kbd> 海王星</div>
-      <div>march · hey · hooray 时点太阳或按 <kbd>空格</kbd></div>
-      <div>冥王星出现时按 <kbd>9</kbd></div>
-      <div><kbd>Esc</kbd> 暂停　<kbd>[</kbd><kbd>]</kbd> 调整音画同步</div>
+      ${t.keys.map((k) => `<div>${k}</div>`).join("")}
+      <div>${c.keysPause}</div>
     </div>
-    <div class="rotate">↻ 把手机横过来玩更舒服</div>
-    <button id="start" disabled>载入中…</button>
-    <a class="back" href="">← 全部游戏</a>
+    <div class="rotate">${c.rotate}</div>
+    <button id="start" disabled>${c.loading}</button>
+    <a class="back" href="">${c.back}</a>
   </div>
-  <div class="overlay" id="pause" hidden>
-    <h2>暂停</h2>
-    <p class="sub">按 Esc 或点击继续</p>
-  </div>
-  <div class="overlay" id="result" hidden>
-    <div class="kicker">RESULT</div>
-    <div class="grade" id="grade"></div>
-    <div class="final" id="final"></div>
-    <table class="stats" id="stats"></table>
-    <button id="again">再来一次 (R)</button>
-  </div>
+  ${overlays(c)}
 `;
+};

@@ -34,7 +34,8 @@ See [packages/video/README.md](packages/video/README.md) for the analysis, lyric
    `mvg-video --work <work> game-data`, move it into the package and leave
    `game/analysis.json` as a link to it.
 3. Give the work a `WORK_EXTRA` entry in `site/catalog.js` with a `game`
-   loader and `howto` so its planet lights up in the universe. New catalog
+   loader and `howto` (two or three short lines in `zh` and `en`) so its
+   planet lights up in the universe. New catalog
    albums or songs appear after `npm run universe:catalog`.
 4. Play it through with `npm run dev` and `npm run play -- <work>`, then check
    `npm run build`.

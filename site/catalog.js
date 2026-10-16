@@ -10,7 +10,7 @@ import universe from "./universe.json";
  * - WORK_EXTRA, by catalog work path: planet `colors`, `look` (surface),
  *   `feature` (topic accessory, see site/features.js), `ring`, `preview`
  *   (second the song starts when picked, usually the first chorus) and, for a
- *   song with a game, its `game` loader and `howto`.
+ *   song with a game, its `game` loader and `howto` (a few short lines per language).
  *
  * Songs without a game are grey placeholders whose song still plays when picked.
  */
@@ -40,8 +40,8 @@ const WORK_EXTRA = {
     feature: "bands",
     preview: 41.81,
     howto: {
-      zh: "← → 或左右拖动，绕着隧道滑动接光子，钻过 γ 闸门的缺口",
-      en: "← → or drag sideways to slide round the tunnel, catch the photons and slip through the γ gates",
+      zh: ["← → 或左右拖动，绕着隧道滑", "接住每一拍的光子", "钻过 γ 闸门的缺口"],
+      en: ["← → or drag to slide round the tunnel", "Catch a photon on every beat", "Slip through the gap in each γ gate"],
     },
     game: () => import("@gizclaw/mvg-games/spectrum-slide.js").then((m) => m.mountSpectrumSlide),
   },
@@ -52,8 +52,8 @@ const WORK_EXTRA = {
     feature: "moons",
     preview: 45.8,
     howto: {
-      zh: "行星点名：光圈落在哪颗行星就点它，或按序号 1–8；march / hey / hooray 点太阳或按空格。手机上跟着节奏点屏幕就行",
-      en: "Planet roll call: click the planet the ring closes on, or press its number 1–8; on march, hey and hooray hit the Sun or Space. On a phone, just tap to the beat",
+      zh: ["光圈落在哪颗行星就点它，或按 1–8", "march · hey · hooray 时点太阳或按空格", "手机上跟着节奏点屏幕就行"],
+      en: ["Click the planet the ring closes on, or press 1–8", "On march · hey · hooray hit the Sun or press Space", "On a phone, just tap to the beat"],
     },
     game: () => import("@gizclaw/mvg-games/planet-parade.js").then((m) => m.mountPlanetParade),
   },
@@ -63,12 +63,22 @@ const WORK_EXTRA = {
     feature: "bits",
     preview: 30.85,
     howto: {
-      zh: "二进制射击：A S D F 拨 8 · 4 · 2 · 1 四个开关，拨出外星人身上的数字，下一拍开火；3 条命，歌曲无限循环越来越快，打掉 Boss 加一条命；空格一键清零",
-      en: "Binary blaster: flip the 8, 4, 2 and 1 switches with A S D F to dial the number an invader carries and it is shot on the next beat; three lives, the song loops for ever and keeps speeding up, a boss gives a life back; Space clears",
+      zh: ["A S D F 拨 8 · 4 · 2 · 1，拨出外星人身上的数字", "下一拍自动开火，空格一键清零", "3 条命，无限循环，越来越快"],
+      en: ["A S D F flip 8 · 4 · 2 · 1 to dial the invader's number", "It fires on the next beat; Space clears", "Three lives; loops for ever, faster each time"],
     },
     game: () => import("@gizclaw/mvg-games/binary-boogie.js").then((m) => m.mountBinaryBoogie),
   },
-  [`${STEM}/prime-time`]: { colors: ["#ffc83d", "#ff6a3d", "#5a2a0c"], look: "rock", feature: "primes", preview: 23.32 },
+  [`${STEM}/prime-time`]: {
+    colors: ["#ffc83d", "#ff6a3d", "#5a2a0c"],
+    look: "rock",
+    feature: "primes",
+    preview: 23.32,
+    howto: {
+      zh: ["只有质数会踩着节拍弹起来", "闪到最亮的那一拍点它，就是 PERFECT", "合数被乘法划掉，无限循环越来越快"],
+      en: ["Only primes pop up, on the beat", "Hit them as they flash brightest for a PERFECT", "Multiplication crosses out the rest; loops for ever, faster each time"],
+    },
+    game: () => import("@gizclaw/mvg-games/prime-time.js").then((m) => m.mountPrimeTime),
+  },
   [`${STEM}/pi-keeps-going`]: { colors: ["#ff4f6d", "#ffc93d", "#3dff8a"], look: "swirl", feature: "spiral", preview: 26.77 },
   [`${STEM}/polygon-party`]: { colors: ["#ff3d5a", "#ffd23f", "#2fe0ff"], look: "facet", feature: "crystals", preview: 29.21 },
   [`${STEM}/molecule-shapes`]: { colors: ["#ff4fd8", "#3de8ff", "#7cff4f"], look: "swirl", feature: "atoms", preview: 26.29 },

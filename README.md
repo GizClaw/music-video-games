@@ -177,7 +177,7 @@ the mouse works throughout.
 
 Games are reached through the universe only; there are no per-game pages, and
 hosts that want a game on their own page mount it from `@gizclaw/mvg-games`
-(`mountSpectrumSlide`, `mountPlanetParade`, `mountBinaryBoogie`). A route
+(`mountSpectrumSlide`, `mountPlanetParade`, `mountBinaryBoogie`, `mountPrimeTime`). A route
 straight into a game skips the opening stage, and it can carry game options:
 `#/stem-institute/binary-boogie/play?start=31&auto`. From the browser console,
 `__universe.play("binary-boogie", { start: 31, auto: true })` jumps there and
@@ -196,7 +196,7 @@ owns packaging; Deploy owns publication to the TOS npm registry.
 
 - [`@gizclaw/mvg-core`](packages/core/README.md): timing, HUD, opening, post-processing and shared assets.
 - [`@gizclaw/mvg-video`](packages/video/README.md): analysis, lyric alignment and placement, song modules, rendering and deliverables.
-- [`@gizclaw/mvg-games`](packages/games/README.md): game layout and the Slide Down the Spectrum, Planet Parade and Binary Boogie charts.
+- [`@gizclaw/mvg-games`](packages/games/README.md): game layout and the Slide Down the Spectrum, Planet Parade, Binary Boogie and Prime Time charts.
 
 ## Releases
 

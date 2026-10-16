@@ -1,3 +1,5 @@
+import { COMMON, overlays } from "../lang.js";
+
 /** Layout for a mounted Slide Down the Spectrum. Scoped to `.mvg-game`. */
 export const spectrumStyle = `
 .mvg-game { position: relative; width: 100%; height: 100%; overflow: hidden; background: #020208; color: #fff; font-family: "Avenir Next", "PingFang SC", sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
@@ -45,7 +47,22 @@ export const spectrumStyle = `
 .mvg-game a.back:hover { color: #fff; }
 `;
 
-export const spectrumMarkup = `
+const TITLE = {
+  zh: {
+    sub: "接住每一拍的光子，从 γ 闸门的缺口钻过去",
+    keys: ["<kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> 绕隧道滑动", "鼠标或手指左右拖动也可以"],
+  },
+  en: {
+    sub: "Catch a photon on every beat and slip through the gap in each γ gate",
+    keys: ["<kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> slide round the tunnel", "or drag sideways with a mouse or finger"],
+  },
+};
+
+/** The HUD and overlays of a mounted Slide Down the Spectrum, in `lang`. */
+export const spectrumMarkup = (lang) => {
+  const c = COMMON[lang];
+  const t = TITLE[lang];
+  return `
   <div class="stage" id="stage"></div>
   <div class="hud" id="hud" hidden>
     <div class="progress" id="progress"><i></i></div>
@@ -59,24 +76,14 @@ export const spectrumMarkup = `
   <div class="overlay" id="title">
     <div class="kicker">STEM INSTITUTE · No. 15</div>
     <h1>SLIDE DOWN<br />THE SPECTRUM</h1>
-    <p class="sub">接住每一拍的光子，从 γ 闸门的缺口钻过去</p>
+    <p class="sub">${t.sub}</p>
     <div class="keys">
-      <div><kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> 绕隧道滑动</div>
-      <div>鼠标或手指左右拖动也可以</div>
-      <div><kbd>Esc</kbd> 暂停　<kbd>[</kbd><kbd>]</kbd> 调整音画同步</div>
+      ${t.keys.map((k) => `<div>${k}</div>`).join("")}
+      <div>${c.keysPause}</div>
     </div>
-    <button id="start" disabled>载入中…</button>
-    <a class="back" href="">← 全部游戏</a>
+    <button id="start" disabled>${c.loading}</button>
+    <a class="back" href="">${c.back}</a>
   </div>
-  <div class="overlay" id="pause" hidden>
-    <h2>暂停</h2>
-    <p class="sub">按 Esc 或点击继续</p>
-  </div>
-  <div class="overlay" id="result" hidden>
-    <div class="kicker">RESULT</div>
-    <div class="grade" id="grade"></div>
-    <div class="final" id="final"></div>
-    <table class="stats" id="stats"></table>
-    <button id="again">再来一次 (R)</button>
-  </div>
+  ${overlays(c)}
 `;
+};
