@@ -106,7 +106,21 @@ export class BeanPot {
       crumbs.setMatrixAt(i, m.makeTranslation(Math.cos(a) * r, POT_H - 0.035, Math.sin(a) * r));
     }
     crumbs.castShadow = true;
-    this.group.add(crumbs);
+    const perlite = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.009, 1), new THREE.MeshStandardMaterial({ color: "#b8b4aa", roughness: 0.8 }), 24);
+    for (let i = 0; i < 24; i++) {
+      const a = hash(k * 70 + i * 2.3) * Math.PI * 2;
+      const r = Math.sqrt(hash(k * 70 + i * 3.1)) * 0.3;
+      perlite.setMatrixAt(i, m.makeTranslation(Math.cos(a) * r, POT_H - 0.036, Math.sin(a) * r));
+    }
+    this.group.add(crumbs, perlite);
+    const water = new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: 0, transparent: true, opacity: 0.45, clearcoat: 1 });
+    this.beads = Array.from({ length: 9 }, (_, i) => {
+      const a = hash(k * 90 + i * 1.7) * Math.PI * 2;
+      const r = 0.06 + hash(k * 90 + i * 2.9) * 0.22;
+      const b = mesh(new THREE.SphereGeometry(0.008 + hash(i * 4.4) * 0.01, 14, 10), water, this.group, Math.cos(a) * r, POT_H - 0.035, Math.sin(a) * r, { cast: false });
+      b.scale.y = 0.6;
+      return b;
+    });
 
     this.buildLabel(spec.label);
     this.buildRuler();
@@ -127,8 +141,8 @@ export class BeanPot {
     s.closePath();
     const geo = new THREE.ExtrudeGeometry(s, { depth: 0.01, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.006, bevelSegments: 2 });
     this.label = new THREE.Group();
-    this.label.position.set(-0.04, POT_H - 0.02, 0.24);
-    this.label.rotation.x = -0.18;
+    this.label.position.set(-0.17, POT_H - 0.02, 0.22);
+    this.label.rotation.set(-0.18, 0.3, 0);
     this.group.add(this.label);
     this.labelMat = new THREE.MeshStandardMaterial({ color: "#f2f0ea", roughness: 0.45 });
     mesh(geo, this.labelMat, this.label);
@@ -144,15 +158,15 @@ export class BeanPot {
   }
 
   buildRuler() {
-    const tex = canvasTexture(96, 2048, (g, w, h) => {
+    const tex = canvasTexture(128, 4096, (g, w, h) => {
       g.fillStyle = "#f0c95a";
       g.fillRect(0, 0, w, h);
-      g.fillStyle = "#2a1e0c";
+      g.fillStyle = "#1e1608";
       for (let mm = 0; mm <= 220; mm++) {
         const y = h - (mm / 220) * h;
-        g.fillRect(0, y - 1, mm % 10 ? (mm % 5 ? 14 : 24) : 40, 2);
+        g.fillRect(0, y - 2, mm % 10 ? (mm % 5 ? 26 : 44) : 68, 4);
       }
-      g.font = `700 34px ${FONT_COND}`;
+      g.font = `800 46px ${FONT_COND}`;
       g.textAlign = "right";
       g.textBaseline = "middle";
       for (let cmk = 1; cmk <= 21; cmk++) g.fillText(String(cmk), w - 8, h - (cmk / 22) * h);
@@ -167,13 +181,13 @@ export class BeanPot {
     this.plant.position.y = POT_H - 0.04;
     this.group.add(this.plant);
     this.stemMat = new THREE.MeshStandardMaterial({ color: "#6aae42", roughness: 0.55 });
-    this.leafMat = new THREE.MeshStandardMaterial({ map: leafTexture(k * 7 + 2), side: THREE.DoubleSide, roughness: 0.5 });
+    this.leafMat = new THREE.MeshStandardMaterial({ map: leafTexture(), side: THREE.DoubleSide, roughness: 0.5 });
     this.stem = mesh(STEM, this.stemMat, this.plant);
     const leafAt = (geo, yaw, lift = 0.3) => {
       const pivot = new THREE.Group();
       pivot.rotation.y = yaw;
       const leaf = mesh(geo, this.leafMat, pivot);
-      leaf.rotation.set(0.35, 0, lift);
+      leaf.rotation.set(Math.cos(yaw) > 0 ? 0.95 : -0.95, 0, lift);
       this.plant.add(pivot);
       return pivot;
     };
@@ -247,6 +261,7 @@ export class BeanPot {
     this.mark.material.opacity = ruler;
     this.mark.position.set(0.24, POT_H - 0.04 + h, -0.08);
 
+    this.beads.forEach((b, i) => (b.visible = wet > 0.1 + hash(i) * 0.3));
     this.shade?.update(open);
   }
 
@@ -255,13 +270,23 @@ export class BeanPot {
     return v.copy(this.mark.position).applyMatrix4(this.group.matrixWorld);
   }
 
-  /** A mid-height leaf, for the magnifier to look at. */
-  leafWorld(v, h) {
-    return v.set(0.18, POT_H + Math.max(0.05, h * 0.62), 0.05).applyMatrix4(this.group.matrixWorld);
+  /** The ruler's scale at the plant top, or a few centimetres up while it is still a seed. */
+  rulerWorld(v, h) {
+    return v.set(0.2, POT_H - 0.04 + Math.max(h, 0.3), -0.08).applyMatrix4(this.group.matrixWorld);
   }
 
+  /** A mid-height leaf, for the magnifier to look at. */
+  /** Centre of a grown terminal leaflet about half-way up, for the magnifier. */
+  leafWorld(v, h) {
+    let i = 1;
+    while (i < NODES.length - 1 && NODES[i + 1] + 0.3 < h * 0.7) i++;
+    const leaf = NODES[i] + 0.2 < h ? this.nodes[i][0].children[0] : this.tip.children[0];
+    return v.set(0.45, 0.08, 0).applyMatrix4(leaf.matrixWorld);
+  }
+
+  /** Just above the rim: the seed going in, then the sprout's base and the soil. */
   soilWorld(v) {
-    return v.set(0, POT_H, 0.05).applyMatrix4(this.group.matrixWorld);
+    return v.set(0.06, POT_H + 0.12, 0).applyMatrix4(this.group.matrixWorld);
   }
 }
 
@@ -328,7 +353,7 @@ class Parasol {
     geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
     geo.setIndex(idx);
     geo.computeVertexNormals();
-    this.canopy = mesh(geo, cloth, this.top);
+    mesh(geo, cloth, this.top);
     const rib = new THREE.MeshStandardMaterial({ color: "#3a3a3a", metalness: 0.6, roughness: 0.4 });
     for (let i = 0; i < N; i++) {
       const th = (i / N) * Math.PI * 2;
@@ -381,90 +406,139 @@ export class WateringCan {
   }
 }
 
-/** Germination jar: a bean pressed against wet paper towel; root and shoot grow from germ state. */
+/** Germination jar: a bean pressed between the glass and wet paper towel; the coat splits, a haired root and the shoot grow. */
 export class SeedJar {
   constructor(parent) {
     this.group = new THREE.Group();
     parent.add(this.group);
-    const glass = glassMaterial([0.8, 0.92, 0.9]);
-    const g = mesh(lathe([[0, 0], [0.15, 0], [0.165, 0.012], [0.17, 0.04], [0.17, 0.36], [0.162, 0.4], [0.13, 0.43], [0.12, 0.44], [0.12, 0.47]], 48), glass, this.group, 0, 0, 0, { cast: false, receive: false });
+    const glass = glassMaterial([0.8, 0.92, 0.9], 0.8);
+    const g = mesh(lathe([[0, 0], [0.2, 0], [0.215, 0.015], [0.222, 0.05], [0.222, 0.5], [0.21, 0.54], [0.17, 0.57], [0.158, 0.58], [0.158, 0.62]], 56), glass, this.group, 0, 0, 0, { cast: false, receive: false });
     g.renderOrder = 3;
     const lid = brassMaterial(true);
     lid.color.set("#b8bcc0");
-    mesh(lathe([[0.122, 0.44], [0.13, 0.445], [0.13, 0.5], [0.12, 0.51], [0, 0.512]], 48), lid, this.group);
+    mesh(lathe([[0.16, 0.585], [0.17, 0.59], [0.17, 0.65], [0.158, 0.66], [0, 0.662]], 48), lid, this.group);
     const towel = canvasTexture(256, 256, (c, w, h) => {
-      c.fillStyle = "#e6ece8";
+      c.fillStyle = "#e2e8e4";
       c.fillRect(0, 0, w, h);
-      for (let i = 0; i < 600; i++) {
-        c.strokeStyle = `rgba(150,170,170,${0.08 + hash(i) * 0.1})`;
+      for (let i = 0; i < 900; i++) {
+        c.strokeStyle = `rgba(140,160,160,${0.06 + hash(i) * 0.12})`;
         c.beginPath();
         const x = hash(i * 1.3) * w;
         const y = hash(i * 2.7) * h;
         c.moveTo(x, y);
-        c.lineTo(x + (hash(i * 3.1) - 0.5) * 20, y + (hash(i * 4.3) - 0.5) * 20);
+        c.quadraticCurveTo(x + (hash(i * 3.1) - 0.5) * 20, y + (hash(i * 4.3) - 0.5) * 20, x + (hash(i * 5.1) - 0.5) * 30, y + (hash(i * 6.7) - 0.5) * 30);
         c.stroke();
       }
     });
-    mesh(new THREE.CylinderGeometry(0.155, 0.155, 0.34, 40, 1, true), new THREE.MeshStandardMaterial({ map: towel, roughness: 0.95, side: THREE.DoubleSide }), this.group, 0, 0.21, 0);
-    mesh(new THREE.CylinderGeometry(0.158, 0.158, 0.05, 40), new THREE.MeshStandardMaterial({ color: "#8fc0d0", transparent: true, opacity: 0.45, roughness: 0.1 }), this.group, 0, 0.03, 0, { cast: false });
+    mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.5, 40, 1, true), new THREE.MeshStandardMaterial({ map: towel, color: new THREE.Color(0.75, 0.78, 0.76), roughness: 0.95, side: THREE.DoubleSide }), this.group, 0, 0.29, 0);
+    mesh(new THREE.CylinderGeometry(0.208, 0.208, 0.06, 40), new THREE.MeshStandardMaterial({ color: "#8fc0d0", transparent: true, opacity: 0.4, roughness: 0.1 }), this.group, 0, 0.035, 0, { cast: false });
+
+    // The bean is modelled at seed scale (about 2.9 × 1.9 units) and shrunk to fit.
     this.bean = new THREE.Group();
-    this.bean.position.set(0, 0.27, 0.14);
+    this.bean.position.set(0, 0.42, 0.172);
+    this.bean.rotation.set(0.25, 0, -0.08);
+    this.bean.scale.set(0.09, 0.09, 0.06);
     this.group.add(this.bean);
-    this.seed = mesh(beanGeometry().scale(0.055, 0.055, 0.04), new THREE.MeshPhysicalMaterial({ map: seedTexture(), roughness: 0.35, clearcoat: 0.6 }), this.bean);
-    const root = new THREE.MeshStandardMaterial({ color: "#f2ead2", roughness: 0.5 });
-    this.root = mesh(taperTube([[0, -0.03, 0], [0.01, -0.09, 0.004], [-0.008, -0.16, 0], [0.004, -0.22, 0]], 0.008, 0.003, 40, 8), root, this.bean);
-    this.shoot = mesh(taperTube([[0, 0.03, 0], [0.02, 0.07, 0.004], [0.01, 0.12, 0], [-0.01, 0.14, 0]], 0.008, 0.006, 30, 8), new THREE.MeshStandardMaterial({ color: "#b8d07a", roughness: 0.5 }), this.bean);
+    this.coat = mesh(beanGeometry(), new THREE.MeshPhysicalMaterial({ map: seedTexture(), color: new THREE.Color(0.8, 0.8, 0.8), roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.2 }), this.bean);
+    mesh(new THREE.SphereGeometry(1, 32, 16).scale(0.42, 0.07, 0.16), new THREE.MeshStandardMaterial({ color: "#5a3a22", roughness: 0.5 }), this.bean, 0, -0.66, 0.08);
+    mesh(new THREE.TorusGeometry(1, 0.05, 8, 40).scale(0.46, 0.12, 1).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: "#f4ecd8", roughness: 0.6 }), this.bean, 0, -0.66, 0.08);
+    this.crack = mesh(taperTube([[-0.3, -0.62, 0.62], [-0.45, -0.1, 0.72], [-0.3, 0.45, 0.66], [0.1, 0.8, 0.5]], 0.05, 0.03, 40, 6), new THREE.MeshStandardMaterial({ color: "#5a3a1e", roughness: 0.6 }), this.bean);
+    const rootPts = [[0.25, -0.6, 0.2], [0.35, -1.2, 0.3], [0.15, -1.9, 0.35], [0.3, -2.7, 0.3], [0.1, -3.6, 0.35]];
+    const rootMat = new THREE.MeshPhysicalMaterial({ color: "#f4ecd4", roughness: 0.45, sheen: 0.6, sheenColor: new THREE.Color("#ffffff") });
+    this.root = mesh(taperTube(rootPts, 0.17, 0.06, 64, 14), rootMat, this.bean);
+    const curve = new THREE.CatmullRomCurve3(rootPts.map((q) => new THREE.Vector3(...q)));
+    const n = 140;
+    this.hairs = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.012, 0.008, 0.4, 4).translate(0, 0.2, 0), rootMat, n);
+    this.hairU = [];
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    for (let i = 0; i < n; i++) {
+      const u = 0.25 + (i / n) * 0.6;
+      const c = curve.getPointAt(u);
+      const a = hash(i * 1.7) * Math.PI * 2;
+      const dir = new THREE.Vector3(Math.cos(a), -0.3, Math.sin(a) * 0.3).normalize();
+      q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      m.compose(c.addScaledVector(dir, 0.1), q, new THREE.Vector3(1, 0.6 + hash(i) * 0.8, 1));
+      this.hairs.setMatrixAt(i, m);
+      this.hairU.push(u);
+    }
+    this.bean.add(this.hairs);
+    this.shoot = mesh(taperTube([[-0.4, 0.7, 0.2], [-0.55, 1.3, 0.3], [-0.35, 1.9, 0.3], [0.05, 2.1, 0.25], [0.25, 1.85, 0.25]], 0.15, 0.12, 48, 12), new THREE.MeshStandardMaterial({ color: "#b8d07a", roughness: 0.5 }), this.bean);
   }
 
   update(germ) {
-    this.seed.scale.setScalar(1 + germ.swell * 0.15);
-    const reveal = (m, k) => m.geometry.setDrawRange(0, Math.floor(m.geometry.index.count * clamp(k, 0, 1) / 6) * 6);
+    this.coat.scale.setScalar(1 + germ.swell * 0.12);
+    const reveal = (m, k) => m.geometry.setDrawRange(0, Math.floor((m.geometry.index.count * clamp(k, 0, 1)) / 6) * 6);
+    reveal(this.crack, germ.crack);
     reveal(this.root, germ.root);
     reveal(this.shoot, germ.shoot);
+    this.hairs.count = this.hairU.filter((h) => h < germ.root * 0.95 && germ.hairs > (h - 0.25) / 0.6).length;
   }
 
-  seedWorld(v) {
-    return v.set(0, 0, 0).applyMatrix4(this.bean.matrixWorld);
+  /** The bean, or once it has grown, the middle of the seedling. */
+  seedWorld(v, germ) {
+    return v.set(0, -1.2 * germ.root, 0).applyMatrix4(this.bean.matrixWorld);
   }
 }
 
-/** Clipboard on a small easel; the paper is the shared notebook texture. */
+/** Clipboard on an easel; the paper is the shared notebook texture and a pencil writes on it. */
 export class Clipboard {
   constructor(parent, paperTex) {
     this.group = new THREE.Group();
     parent.add(this.group);
     const wood = new THREE.MeshStandardMaterial({ map: woodTexture("#a8784a", 9, 256, 64), roughness: 0.65 });
     for (const s of [1, -1]) {
-      const leg = mesh(rbox(0.035, 0.82, 0.03, 0.01), wood, this.group, s * 0.2, 0.4, 0.04);
-      leg.rotation.set(-0.18, 0, s * 0.05);
+      const leg = mesh(rbox(0.04, 1.3, 0.035, 0.012), wood, this.group, s * 0.3, 0.63, 0.06);
+      leg.rotation.set(-0.16, 0, s * 0.05);
     }
-    const back = mesh(rbox(0.03, 0.7, 0.03, 0.01), wood, this.group, 0, 0.34, -0.14);
-    back.rotation.x = 0.35;
-    mesh(rbox(0.5, 0.04, 0.06, 0.012), wood, this.group, 0, 0.1, 0.06);
+    const back = mesh(rbox(0.035, 1.15, 0.035, 0.012), wood, this.group, 0, 0.55, -0.2);
+    back.rotation.x = 0.33;
+    mesh(rbox(0.72, 0.045, 0.07, 0.014), wood, this.group, 0, 0.32, 0.03);
     this.board = new THREE.Group();
-    this.board.position.set(0, 0.12, 0.05);
-    this.board.rotation.x = -0.18;
+    this.board.position.set(0, 0.34, 0.02);
+    this.board.rotation.x = -0.16;
     this.group.add(this.board);
-    mesh(rbox(0.5, 0.7, 0.018, 0.02), new THREE.MeshStandardMaterial({ color: "#8a5a34", bumpMap: speckleTexture(256, 17), bumpScale: 0.4, roughness: 0.7 }), this.board, 0, 0.35, 0);
-    mesh(new THREE.PlaneGeometry(0.44, 0.62), new THREE.MeshStandardMaterial({ color: "#9c978c", roughness: 0.9 }), this.board, 0.006, 0.325, 0.011);
-    this.paper = mesh(new THREE.PlaneGeometry(0.42, 0.63), new THREE.MeshStandardMaterial({ map: paperTex, color: new THREE.Color(0.6, 0.6, 0.6), roughness: 0.85 }), this.board, 0, 0.33, 0.013, { cast: false });
-    const steel = new THREE.MeshStandardMaterial({ color: "#c0c4ca", metalness: 0.9, roughness: 0.25 });
-    mesh(rbox(0.2, 0.06, 0.012, 0.01), steel, this.board, 0, 0.66, 0.02);
-    mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.2, 16).rotateZ(Math.PI / 2), steel, this.board, 0, 0.69, 0.02);
-    const lever = mesh(rbox(0.12, 0.05, 0.008, 0.008), steel, this.board, 0, 0.71, 0.032);
+    const W = 0.7;
+    const H = 0.98;
+    mesh(rbox(W + 0.06, H + 0.1, 0.02, 0.025), new THREE.MeshStandardMaterial({ color: "#8a5a34", bumpMap: speckleTexture(256, 17), bumpScale: 0.4, roughness: 0.7 }), this.board, 0, H / 2 + 0.03, 0);
+    mesh(new THREE.PlaneGeometry(W - 0.02, H - 0.03), new THREE.MeshStandardMaterial({ color: "#9c978c", roughness: 0.9 }), this.board, 0.008, H / 2 + 0.005, 0.012);
+    this.paper = mesh(new THREE.PlaneGeometry(W - 0.04, H - 0.04), new THREE.MeshStandardMaterial({ map: paperTex, color: new THREE.Color(0.62, 0.62, 0.62), roughness: 0.85 }), this.board, 0, H / 2, 0.014, { cast: false });
+    this.size = [W - 0.04, H - 0.04];
+    const steel = new THREE.MeshStandardMaterial({ color: "#8a8e94", metalness: 0.8, roughness: 0.35 });
+    mesh(rbox(0.26, 0.07, 0.014, 0.012), steel, this.board, 0, H + 0.01, 0.022);
+    mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.26, 16).rotateZ(Math.PI / 2), steel, this.board, 0, H + 0.05, 0.024);
+    const lever = mesh(rbox(0.16, 0.06, 0.01, 0.01), steel, this.board, 0, H + 0.07, 0.036);
     lever.rotation.x = 0.5;
-    for (const s of [1, -1]) mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.01, 12).rotateX(Math.PI / 2), steel, this.board, s * 0.08, 0.66, 0.028);
+    for (const s of [1, -1]) mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.012, 12).rotateX(Math.PI / 2), steel, this.board, s * 0.1, H + 0.01, 0.03);
+    // A hexagonal yellow pencil: sharpened wood cone, graphite point, ribbed ferrule, eraser.
+    this.pencil = new THREE.Group();
+    this.board.add(this.pencil);
+    const body = new THREE.Group();
+    body.rotation.set(0.5, 0, -0.75);
+    body.scale.setScalar(0.07);
+    this.pencil.add(body);
+    mesh(new THREE.CylinderGeometry(0.16, 0.16, 4.2, 6).translate(0, 2.6, 0), new THREE.MeshPhysicalMaterial({ color: "#f2b51d", roughness: 0.35, clearcoat: 0.8 }), body);
+    mesh(lathe([[0, 0], [0.04, 0.05], [0.07, 0.2], [0.15, 0.5]], 18), new THREE.MeshStandardMaterial({ map: woodTexture("#e0b888", 61, 128, 32), roughness: 0.7 }), body);
+    mesh(new THREE.ConeGeometry(0.045, 0.16, 12).rotateX(Math.PI).translate(0, 0.07, 0), new THREE.MeshStandardMaterial({ color: "#2a2a2e", metalness: 0.4, roughness: 0.35 }), body);
+    mesh(lathe([[0.165, 4.7], [0.175, 4.75], [0.17, 4.82], [0.175, 4.9], [0.17, 4.97], [0.175, 5.05], [0.165, 5.1]], 24), brassMaterial(), body);
+    mesh(new THREE.CylinderGeometry(0.155, 0.15, 0.4, 20).translate(0, 5.3, 0), new THREE.MeshStandardMaterial({ color: "#f08aa0", roughness: 0.8 }), body);
+  }
+
+  /** pen: page position (0..1 from the top-left) and how firmly it touches the paper. */
+  update(pen) {
+    const [w, h] = this.size;
+    this.pencil.position.set((pen.u - 0.5) * w, h / 2 + 0.02 + (0.5 - pen.v) * h, 0.02 + (1 - pen.down) * 0.06);
   }
 
   /** World point on the sheet; u, v in 0..1 from the top-left. */
   paperWorld(v, u, w) {
-    return v.set((u - 0.5) * 0.42, (0.5 - w) * 0.63, 0).applyMatrix4(this.paper.matrixWorld);
+    return v.set((u - 0.5) * this.size[0], (0.5 - w) * this.size[1], 0).applyMatrix4(this.paper.matrixWorld);
   }
 }
 
-/** The hero magnifier: knurled brass rim, refracting lens showing the macro view, turned and varnished handle. */
+/** The hero magnifier: knurled brass rim, a glass that magnifies the scene behind it, turned and varnished handle. */
 export class Magnifier {
-  constructor(parent, view) {
+  constructor(parent, behind) {
     this.group = new THREE.Group();
     parent.add(this.group);
     this.inner = new THREE.Group();
@@ -472,12 +546,11 @@ export class Magnifier {
     const R = 0.72;
     const brass = brassMaterial();
     const knurl = brassMaterial(true);
-    const rim = mesh(lathe([[R, -0.05], [R + 0.03, -0.055], [R + 0.06, -0.035], [R + 0.065, 0.0], [R + 0.06, 0.035], [R + 0.03, 0.055], [R, 0.05]], 128).rotateX(Math.PI / 2), brass, this.inner);
-    rim.castShadow = true;
-    mesh(new THREE.CylinderGeometry(R + 0.068, R + 0.068, 0.05, 160, 1, true).rotateX(Math.PI / 2), knurl, this.inner);
-    for (const z of [-0.03, 0.03]) mesh(new THREE.TorusGeometry(R + 0.068, 0.006, 6, 160), brass, this.inner, 0, 0, z);
+    mesh(lathe([[R, -0.05], [R + 0.03, -0.055], [R + 0.06, -0.035], [R + 0.065, 0.0], [R + 0.06, 0.035], [R + 0.03, 0.055], [R, 0.05]], 128).rotateX(Math.PI / 2), brass, this.inner, 0, 0, 0, { cast: false });
+    mesh(new THREE.CylinderGeometry(R + 0.068, R + 0.068, 0.05, 160, 1, true).rotateX(Math.PI / 2), knurl, this.inner, 0, 0, 0, { cast: false });
+    for (const z of [-0.03, 0.03]) mesh(new THREE.TorusGeometry(R + 0.068, 0.006, 6, 160), brass, this.inner, 0, 0, z, { cast: false });
     this.uniforms = {
-      tView: { value: view },
+      tBehind: { value: behind },
       tQ: { value: canvasTexture(256, 256, (g, w) => {
         g.fillStyle = "#fff";
         g.font = `800 200px ${FONT_COND}`;
@@ -485,7 +558,9 @@ export class Magnifier {
         g.textBaseline = "middle";
         g.fillText("?", w / 2, w / 2 + 10);
       }, false) },
-      uBlur: { value: 0 },
+      uCenter: { value: new THREE.Vector2() },
+      uRegion: { value: 200 },
+      uMag: { value: 2.3 },
       uQ: { value: 0 },
       uGlint: { value: 0 },
       uSweep: { value: -1 },
@@ -497,44 +572,43 @@ export class Magnifier {
     yoke.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     yoke.position.copy(dir).multiplyScalar(R + 0.05);
     this.inner.add(yoke);
-    mesh(lathe([[0.05, 0], [0.055, 0.02], [0.045, 0.08], [0.04, 0.14], [0.05, 0.16], [0.052, 0.19], [0.0, 0.19]], 32), brass, yoke);
+    mesh(lathe([[0.05, 0], [0.055, 0.02], [0.045, 0.08], [0.04, 0.14], [0.05, 0.16], [0.052, 0.19], [0.0, 0.19]], 32), brass, yoke, 0, 0, 0, { cast: false });
     const wood = new THREE.MeshPhysicalMaterial({ map: woodTexture("#7a3e1c", 21, 256, 64), roughness: 0.45, clearcoat: 0.8, clearcoatRoughness: 0.15 });
     wood.map.rotation = Math.PI / 2;
     const handle = [[0.045, 0.19], [0.062, 0.2], [0.07, 0.22], [0.062, 0.25], [0.066, 0.3], [0.078, 0.55], [0.085, 0.75], [0.08, 0.85], [0.07, 0.88], [0.08, 0.92], [0.088, 0.98], [0.085, 1.04], [0.07, 1.08], [0.0, 1.1]];
-    mesh(lathe(handle, 40), wood, yoke);
-    mesh(lathe([[0.05, 1.075], [0.072, 1.08], [0.06, 1.12], [0.03, 1.14], [0, 1.145]], 32), brass, yoke);
+    mesh(lathe(handle, 40), wood, yoke, 0, 0, 0, { cast: false });
+    mesh(lathe([[0.05, 1.075], [0.072, 1.08], [0.06, 1.12], [0.03, 1.14], [0, 1.145]], 32), brass, yoke, 0, 0, 0, { cast: false });
   }
 }
 
+// tBehind holds the square patch of the frame under the lens (uRegion screen px
+// across, centred on uCenter, rendered without the magnifier at high resolution);
+// the glass shows it enlarged about its centre.
 const LENS = /* glsl */ `
-  uniform sampler2D tView, tQ; uniform float uBlur, uQ, uGlint, uSweep; varying vec2 vUv;
-  vec3 view(vec2 uv, float r) {
-    float ca = 0.018 * r * r;
-    vec2 d = uv - 0.5;
-    return vec3(texture2D(tView, 0.5 + d * (1.0 + ca)).r, texture2D(tView, uv).g, texture2D(tView, 0.5 + d * (1.0 - ca)).b);
-  }
+  uniform sampler2D tBehind, tQ; uniform vec2 uCenter; uniform float uRegion, uMag, uQ, uGlint, uSweep; varying vec2 vUv;
   void main() {
     vec2 p = vUv * 2.0 - 1.0;
     float r = length(p);
-    // Magnifier barrel: the centre enlarged, the rim compressed and fringed.
-    vec2 uv = p * (0.8 + 0.2 * r * r) * 0.5 + 0.5;
-    vec3 col = view(uv, r);
-    if (uBlur > 0.01) {
+    vec2 d = gl_FragCoord.xy - uCenter;
+    // Stronger in the middle, gently barrelled toward the rim, fringed at the edge.
+    float k = (1.0 + 0.28 * r * r) / uMag / uRegion;
+    float ca = 0.012 * r * r * r;
+    vec3 col = vec3(texture2D(tBehind, 0.5 + d * k * (1.0 + ca)).r, texture2D(tBehind, 0.5 + d * k).g, texture2D(tBehind, 0.5 + d * k * (1.0 - ca)).b);
+    if (uQ > 0.01) {
       vec3 acc = col;
       for (int i = 0; i < 12; i++) {
         float a = float(i) * 2.39996;
-        float s = sqrt(float(i + 1) / 12.0) * uBlur * 0.06;
-        acc += texture2D(tView, uv + vec2(cos(a), sin(a)) * s).rgb;
+        float s = sqrt(float(i + 1) / 12.0) * uQ * 0.06;
+        acc += texture2D(tBehind, 0.5 + d * k + vec2(cos(a), sin(a)) * s).rgb;
       }
-      col = acc / 13.0;
+      col = mix(col, acc / 13.0 * 0.8 + vec3(0.06), uQ);
+      col += vec3(1.0, 0.95, 0.75) * texture2D(tQ, vUv).r * uQ * 0.55;
     }
-    col *= 1.0 - 0.5 * smoothstep(0.8, 1.0, r);
-    col += vec3(0.7, 0.85, 1.0) * pow(smoothstep(0.88, 1.0, r), 2.0) * 0.2;
-    float spot = exp(-length(p - vec2(-0.42, 0.46)) * 6.0) * 0.16;
-    float band = smoothstep(0.06, 0.0, abs(length(p - vec2(0.4, -0.4)) - 1.05)) * 0.05;
-    float streak = exp(-pow((p.x + p.y - uSweep) * 4.0, 2.0)) * (1.0 - r * r) * uGlint * 0.35;
+    col *= 1.0 - 0.35 * smoothstep(0.86, 1.0, r);
+    col += vec3(0.7, 0.85, 1.0) * pow(smoothstep(0.84, 1.0, r), 2.0) * 0.16;
+    float spot = exp(-length(p - vec2(-0.45, 0.48)) * 7.0) * 0.12;
+    float band = smoothstep(0.05, 0.0, abs(length(p - vec2(0.4, -0.4)) - 1.05)) * 0.04;
+    float streak = exp(-pow((p.x + p.y - uSweep) * 4.0, 2.0)) * (1.0 - r * r) * uGlint * 0.3;
     col += vec3(1.0, 0.97, 0.9) * (spot + band + streak);
-    col = mix(col, vec3(0.32, 0.36, 0.38), uQ * 0.6);
-    col += vec3(1.0, 0.95, 0.75) * texture2D(tQ, vUv).r * uQ * 0.6;
     gl_FragColor = vec4(col, 1.0);
   }`;

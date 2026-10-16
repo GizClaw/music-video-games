@@ -10,22 +10,38 @@ import { ACCENT, BRIDGE, CHORUSES, NO, OK, OUTRO, PROTECTS, RULES, SECTIONS } fr
 
 // The camera looks down onto the bench so that its front edge lands on screen
 // row ~1234, above the lyric band; a prop's big moment floats at HERO, around
-// row 760, between the checklist and the riser shelf.
+// rows 520–850, between the title and the riser shelf.
 const CAM = new THREE.Vector3(0, 9, 46);
 const LOOK = new THREE.Vector3(0, 3.6, 0);
-const HERO = new THREE.Vector3(-0.35, 4.9, 3);
+const HERO = new THREE.Vector3(-0.35, 5.5, 3);
 const HERO_S = 2.0;
 const HERO_C = HERO.clone().add(new THREE.Vector3(0, HERO_S * 1.1, 0));
-const SLOT_S = 0.5;
 const TITLE_Y = 372;
-const LIST_Y = 470;
 const MAT = lathe([[0, 0.04], [0.56, 0.04], [0.62, 0.035], [0.65, 0.015], [0.62, 0]], 48);
+const RING = new THREE.TorusGeometry(0.66, 0.035, 8, 64).rotateX(Math.PI / 2);
 const decay = (t, t0, tau) => (t >= t0 ? Math.exp(-(t - t0) / tau) : 0);
 
-/** Bench slots: verse one's nine on the riser shelf, verse two's eight on the bench top. */
+// Parking: verse one's nine on the riser shelf (98 px apart), verse two's eight on
+// the bench top (108 px apart), centred on column 515; each prop is scaled so its
+// bounding box fills the slot ([width, height] in world units).
+const ROWS = [
+  { n: 9, y: RISER.y, z: RISER.z, pitch: 1.485, x0: -0.38, fit: [1.44, 2.0] },
+  { n: 8, y: FRONT.y, z: FRONT.z, pitch: 1.565, x0: -0.36, fit: [1.54, 1.85] },
+];
 function slotOf(i) {
-  if (i < 9) return new THREE.Vector3(-6.0 + i * 1.5 - 0.35, RISER.y, RISER.z);
-  return new THREE.Vector3(-5.6 + (i - 9) * 1.6 - 0.35, FRONT.y, FRONT.z);
+  const row = i < ROWS[0].n ? ROWS[0] : ROWS[1];
+  const k = i < ROWS[0].n ? i : i - ROWS[0].n;
+  return { pos: new THREE.Vector3(row.x0 + (k - (row.n - 1) / 2) * row.pitch, row.y, row.z), fit: row.fit };
+}
+
+/** Bounds of a prop's solid and glass parts, measured once in its resting state. */
+function propBox(group) {
+  group.updateMatrixWorld(true);
+  const box = new THREE.Box3();
+  group.traverse((o) => {
+    if (o.isMesh && (o.material.isMeshStandardMaterial || o.material.userData?.outline || Array.isArray(o.material))) box.expandByObject(o, true);
+  });
+  return box;
 }
 
 export class RulesScene {
@@ -58,13 +74,23 @@ export class RulesScene {
 
     this.props = RULES.map((r, i) => {
       const { group, tick } = PROPS[r.prop]();
+      tick?.(0, 1, 0);
+      const box = propBox(group);
+      const size = box.getSize(new THREE.Vector3());
+      const { pos, fit } = slotOf(i);
+      const slotS = Math.min(fit[0] / size.x, fit[1] / size.y);
       const holder = new THREE.Group();
       holder.add(group);
       this.scene.add(holder);
       const coaster = new THREE.Mesh(MAT, new THREE.MeshBasicMaterial({ color: r.ok ? OK : NO }));
-      coaster.position.copy(slotOf(i)).add(new THREE.Vector3(0, 0.005, 0));
-      this.scene.add(coaster);
-      return { ...r, i, group, tick, holder, coaster, slot: slotOf(i), heroes: [] };
+      const ring = new THREE.Mesh(RING, new THREE.MeshBasicMaterial({ color: r.ok ? OK : NO, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+      for (const m of [coaster, ring]) {
+        m.position.copy(pos).add(new THREE.Vector3(0, 0.01, 0));
+        m.scale.setScalar((fit[0] * 0.47) / 0.65);
+        this.scene.add(m);
+      }
+      const slot = pos.clone().add(new THREE.Vector3(-((box.min.x + box.max.x) / 2) * slotS, 0, 0));
+      return { ...r, i, group, tick, holder, coaster, ring, box, slot, slotS, heroes: [] };
     });
     this.byProp = Object.fromEntries(this.props.map((p) => [p.prop, p]));
     this.shine = new Shine(this.scene, renderer, HERO_C);
@@ -106,7 +132,7 @@ export class RulesScene {
       p.stampT = w(p.cue, word, nth);
       hero(p.prop, p.t0, p.t1);
       stamp(p.stampT, p.ok);
-      this.titles.push({ t0: p.t0, t1: p.t1, kicker: `RULE ${p.i + 1}`, text: p.title, color: p.ok ? OK : NO });
+      this.titles.push({ t0: p.t0, t1: p.t1, kicker: `RULE ${p.i + 1} / ${RULES.length}`, text: p.title, color: p.ok ? OK : NO });
     }
     this.protects = { t0: cue(PROTECTS).start, word: w(PROTECTS, "protects") };
     this.titles.push({ t0: this.protects.t0, t1: SECTIONS.chorus1, kicker: "ALL RULES", text: "CAREFUL SCIENCE!", color: ACCENT });
@@ -151,6 +177,12 @@ export class RulesScene {
     this.titles.push({ t0: SECTIONS.warmup + 0.2, t1: this.props[0].t0, kicker: "STEM INSTITUTE  ·  No. 24", text: "LAB RULES ROCK!", color: ACCENT, chorus: true });
     for (const p of this.props) p.heroes.sort((a, b) => a[0] - b[0]);
     this.arrivals = this.props.flatMap((p) => p.heroes.map(([t0]) => t0)).sort((a, b) => a - b);
+    // A prop wears its verdict once it lands after its first stamp; it bounces on at every landing after that.
+    for (const p of this.props) {
+      const first = p.heroes.find(([t0, t1]) => this.stamps.some((s) => s.t >= t0 && s.t <= t1)) ?? [p.t0, p.t1];
+      p.landings = p.heroes.filter(([t0]) => t0 >= first[0]).map(([, t1]) => t1 + 0.5);
+      p.badgeT = p.landings[0];
+    }
     this.stamps.sort((a, b) => a.t - b.t);
     // Gleams and star bursts: on every stamp at the hero spot, and as each prop lands in its slot.
     this.glints = [
@@ -183,7 +215,7 @@ export class RulesScene {
       } else {
         pos.lerpVectors(p.slot, HERO, easeOutCubic(u));
         pos.y += Math.sin(u * Math.PI) * 1.2;
-        s = lerp(SLOT_S, HERO_S, easeOutCubic(u));
+        s = lerp(p.slotS, HERO_S, easeOutCubic(u));
       }
       star = u;
       pos.y += this.ctx.timing.pulse(t, 0.2) * 0.15;
@@ -192,7 +224,7 @@ export class RulesScene {
       const u = clamp((t - t1) / 0.5, 0, 1);
       pos.lerpVectors(HERO, p.slot, easeInOut(u));
       pos.y += Math.sin(u * Math.PI) * 1.5;
-      s = lerp(HERO_S, SLOT_S, easeInOut(u));
+      s = lerp(HERO_S, p.slotS, easeInOut(u));
       star = 1 - u;
       holder.rotation.set(0.12 * (1 - u), Math.sin(t * 0.9) * 0.45 * (1 - u), 0);
       pos.y += Math.abs(Math.sin(bf * Math.PI)) * 0.35 * bounce * u;
@@ -221,10 +253,12 @@ export class RulesScene {
       p.tick?.(t, act, star);
       const wave = decay(t, this.protects.word + p.i * 0.05, 0.25) + decay(t, o.start + p.i * 0.04, 0.25);
       p.holder.position.y += (wave + rock) * 0.6 * (1 - star);
-      const lit = smooth(p.stampT, p.stampT + 0.4, t);
-      const flash = Math.max(decay(t, p.stampT + 0.3, 0.3), decay(t, o.smart, 0.4), ch ? decay(t, ch.sound, 0.3) : 0);
+      p.star = star;
+      const lit = smooth(p.badgeT - 0.1, p.badgeT + 0.3, t);
+      const flash = Math.max(decay(t, p.badgeT, 0.3), decay(t, o.smart, 0.4), ch ? decay(t, ch.sound, 0.3) : 0);
       const chase = section === "warmup" && timing.beatIndexAt(t) % this.props.length === p.i ? kick * 0.4 : 0;
-      p.coaster.material.color.set(p.ok ? OK : NO).multiplyScalar(0.06 + chase + lit * (0.3 + flash * 0.5));
+      p.coaster.material.color.set(p.ok ? OK : NO).multiplyScalar(0.06 + chase + lit * (0.3 + flash * 0.4));
+      p.ring.material.color.set(p.ok ? OK : NO).multiplyScalar(chase + lit * (0.75 + flash * 0.6 + 0.15 * kick));
     }
 
     const cp = this.confetti.geometry.attributes.position;
@@ -320,39 +354,55 @@ export class RulesScene {
       hud.keepout(515 - 420, TITLE_Y - 55, 515 + 420, TITLE_Y + 55);
     }
 
-    // The checklist: one box per rule, filled with its verdict when stamped.
-    const n = this.props.length;
-    const pitch = 50;
-    const x0 = 515 - ((n - 1) * pitch) / 2;
-    const appear = (i) => smooth(SECTIONS.warmup + 0.5 + i * 0.22, SECTIONS.warmup + 0.8 + i * 0.22, t);
-    const allFlash = Math.max(decay(t, this.outro.smart, 0.5), ch ? decay(t, ch.sound, 0.35) : 0, ...(ch ? ch.checks.map((c) => decay(t, c, 0.2) * 0.6) : [0]));
-    this.props.forEach((p, i) => {
-      const a = appear(i);
-      if (a <= 0) return;
-      const x = x0 + i * pitch;
-      const done = smooth(p.stampT, p.stampT + 0.12, t);
-      const pop = 1 + 0.35 * decay(t, p.stampT, 0.18) + 0.15 * allFlash * done;
-      const active = t >= p.t0 && t < p.stampT;
+    // Parked props wear their verdict: a round ✓/✗ badge on the top-right corner and,
+    // for the "don't" rules, a red prohibition ring with its slash.
+    const pulse = Math.max(decay(t, this.outro.smart, 0.5), ch ? decay(t, ch.sound, 0.35) : 0, ...(ch ? ch.checks.map((c) => decay(t, c, 0.2) * 0.5) : [0]));
+    for (const p of this.props) {
+      const land = p.landings.filter((l) => l <= t).at(-1);
+      if (land === undefined || p.star > 0.05) continue;
+      const pop = easeOutBack(clamp((t - land) / 0.35, 0, 1)) * (1 + 0.25 * pulse);
+      if (pop <= 0.01) continue;
+      const s = p.holder.scale.x;
+      const at = (x, y) => this.screen(p.holder.position.clone().add(new THREE.Vector3(x * s, y * s, 0)));
       const color = p.ok ? OK : NO;
-      ctx.save();
-      ctx.globalAlpha = a;
-      ctx.translate(x, LIST_Y);
-      ctx.scale(pop * easeOutBack(a), pop * easeOutBack(a));
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = done ? color : active ? "#ffffff" : "rgba(200,210,230,0.5)";
-      ctx.fillStyle = done ? color : "rgba(10,14,24,0.7)";
-      if (active || done) {
-        ctx.shadowColor = done ? color : "#ffffff";
-        ctx.shadowBlur = active ? 10 + 10 * Math.sin(t * 10) : 14;
+      if (!p.ok) {
+        const [cx, cy] = at((p.box.min.x + p.box.max.x) / 2, (p.box.min.y + p.box.max.y) / 2);
+        const [ex, ey] = at(p.box.max.x, p.box.max.y);
+        const r = Math.max(Math.abs(ex - cx), Math.abs(ey - cy)) * 0.88 * pop;
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 14;
+        ctx.globalAlpha = 0.9;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.moveTo(cx - r * 0.7071, cy - r * 0.7071);
+        ctx.lineTo(cx + r * 0.7071, cy + r * 0.7071);
+        ctx.stroke();
+        ctx.restore();
       }
+      const [bx, by] = at(p.box.max.x, p.box.max.y);
+      ctx.save();
+      ctx.translate(bx - 14, by + 12);
+      ctx.scale(pop, pop);
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 18;
       ctx.beginPath();
-      ctx.roundRect(-20, -20, 40, 40, 8);
+      ctx.arc(0, 0, 25, 0, Math.PI * 2);
       ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#ffffff";
       ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      hud.font(34, 800, FONT_COND);
+      ctx.fillText(p.ok ? "✓" : "✗", 0, 2);
       ctx.restore();
-      if (done > 0.5) hud.text(p.ok ? "✓" : "✗", x, LIST_Y + 2, { size: Math.round(32 * pop), weight: 800, family: FONT_COND, color: "#0a0e18", alpha: a });
-    });
-    hud.keepout(x0 - 24, LIST_Y - 24, x0 + (n - 1) * pitch + 24, LIST_Y + 24);
+    }
 
     // Verdict stamps and answer stamps over the hero, with a burst of sparks.
     for (const s of this.stamps) {

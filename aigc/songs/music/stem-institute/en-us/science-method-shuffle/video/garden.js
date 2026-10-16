@@ -6,10 +6,10 @@ import { canvasTexture, lathe, mesh, rbox, speckleTexture, strut, woodTexture } 
 // greenhouse. The bench top is y = 1; the clipboard easel stands on its left
 // end, the germination jar on its right, the three pots in between.
 export const BENCH_Y = 1;
-export const POT_X = [-1.15, 0, 1.15];
+export const POT_X = [-1.05, 0, 1.05];
 export const POT_Z = -0.12;
-export const CLIP_AT = [-2.0, 0.22];
-export const JAR_AT = [2.0, 0.28];
+export const CLIP_AT = [-1.88, 0.18];
+export const JAR_AT = [1.82, 0.26];
 const GH = { x: -0.4, z: -6.5, w: 8.2, d: 4.2, h: 2.5, ridge: 4.2 };
 
 const NOISE = /* glsl */ `

@@ -5,7 +5,7 @@ import { FONT_COND, FONT_MONO, SAFE } from "@gizclaw/mvg-core/hud.js";
 import { clamp, easeInOut, easeOutBack, easeOutCubic, hash, lerp, smooth } from "@gizclaw/mvg-core/timing.js";
 import { BRIDGE, CHORUSES, DAYS, OUTRO, POTS, PRE, SECTIONS, STEPS, TABLE_DAYS, VERSE1, VERSE2 } from "./constants.js";
 import { BENCH_Y, CLIP_AT, Garden, JAR_AT, POT_X, POT_Z, SKY } from "./garden.js";
-import { MacroWorld, Notebook } from "./macro.js";
+import { Notebook, PAGE_H, PAGE_W } from "./notebook.js";
 import { BeanPot, Clipboard, Magnifier, POT_H, SeedJar, WateringCan } from "./props.js";
 
 const FOV = 30;
@@ -17,10 +17,14 @@ const TRACK_Y = 468;
 const STAMP_Y = 600;
 /** Distance of the magnifier from the camera, and where on screen it may go. */
 const LENS_DIST = 11;
-const LENS_BOX = [230, 850, 730, 1030];
-/** What the lens looks at for each step; the notebook stations name a spot on the clipboard page (0..1 from the top). */
+const LENS_BOX = [170, 910, 700, 1070];
+/** How far the camera leans toward the subject, so edge subjects come within the lens's reach. */
+const PAN = 0.35;
+const LENS_RT = 1024;
+const LENS_R = 0.72 * 0.78;
+/** What the lens looks at for each step; the notebook stations name a spot on the clipboard page (0..1 from the top-left). */
 const STATION = ["seed", "hypo", "soil", "leaf", "table", "chart", "check"];
-const PAGE_V = { hypo: 0.22, table: 0.47, chart: 0.77, check: 0.94, paper: 0.5 };
+const PAGE_AT = { hypo: [0.5, 0.19], table: [0.5, 0.47], chart: [0.5, 0.77], check: [0.62, 0.92], paper: [0.5, 0.5] };
 
 const growth = (day) => {
   const L = (d) => 1 / (1 + Math.exp(-(d - 6.5) / 2));
@@ -159,12 +163,13 @@ export class ShuffleScene {
 
     this.buildTimeline(timing);
     this.notebook = new Notebook(this.plan, tableCm);
-    this.macro = new MacroWorld(renderer, this.notebook);
     this.clipboard = new Clipboard(this.bench, this.notebook.texture);
     this.clipboard.group.position.set(CLIP_AT[0], 0, CLIP_AT[1]);
-    this.clipboard.group.rotation.y = 0.25;
-    this.lens = new Magnifier(this.scene, this.macro.rt.texture);
-    this.lens.group.scale.setScalar(0.85);
+    this.clipboard.group.rotation.y = 0.15;
+    this.behind = new THREE.WebGLRenderTarget(LENS_RT, LENS_RT, { type: THREE.HalfFloatType, samples: 4 });
+    this.lensCam = new THREE.PerspectiveCamera();
+    this.lens = new Magnifier(this.scene, this.behind.texture);
+    this.lens.group.scale.setScalar(LENS_R / 0.72);
 
     this.trail = makeRibbon({
       segments: 96,
@@ -258,11 +263,12 @@ export class ShuffleScene {
     const v2 = VERSE2;
     step(w(v2.run, "run"), 2);
     sub(w(v2.run, "run"), "Day after day, the beans grow");
-    step(w(v2.observe, "observe"), 3, false, "leaf0");
+    step(w(v2.observe, "observe"), 3, false, "ruler");
     step(w(v2.observe, "happens"), 3, false, "leaf1");
     step(w(v2.observe, "closely"), 3, false, "leaf2");
     sub(w(v2.observe, "observe"), "Look closely and measure each one");
     this.zoom = [w(v2.observe, "closely"), cue(v2.observe).end + 0.3];
+    this.rulers.push([w(v2.observe, "observe") - 0.1, cue(v2.record).start + 0.2]);
     step(w(v2.record, "record"), 4);
     sub(w(v2.record, "record"), "Write every height in the table");
     const rows = [w(CHORUSES.chorus1 + 1, "record"), w(v2.record, "data"), w(v2.record, "numbers"), w(v2.record, "notes")];
@@ -347,13 +353,13 @@ export class ShuffleScene {
   /** Screen point of a station's subject on the bench. */
   target(station, day) {
     const v = this.tmp;
-    if (station === "seed") this.jar.seedWorld(v);
+    if (station === "seed") this.jar.seedWorld(v, this.germNow);
     else if (station === "soil") this.pots[1].soilWorld(v);
-    else if (station === "ruler") this.pots[2].markWorld(v);
+    else if (station === "ruler") this.pots[2].rulerWorld(v, heightAt(2, day));
     else if (station.startsWith("leaf")) {
       const k = Number(station[4] ?? 2);
       this.pots[k].leafWorld(v, heightAt(k, day));
-    } else this.clipboard.paperWorld(v, 0.5, PAGE_V[station]);
+    } else this.clipboard.paperWorld(v, ...PAGE_AT[station]);
     const [x, y] = this.screen(v);
     return [clamp(x, LENS_BOX[0], LENS_BOX[1]), clamp(y, LENS_BOX[2], LENS_BOX[3])];
   }
@@ -364,21 +370,34 @@ export class ShuffleScene {
     return out.multiplyScalar(LENS_DIST).add(this.camera.position);
   }
 
+  stationX(station) {
+    if (station === "seed") return JAR_AT[0];
+    if (station === "soil") return POT_X[1];
+    if (station === "ruler") return POT_X[2];
+    if (station.startsWith("leaf")) return POT_X[Number(station[4] ?? 2)];
+    return CLIP_AT[0];
+  }
+
   update(t, section) {
     const { timing, renderer } = this.ctx;
     const kick = timing.pulse(t, 0.12);
     const bf = timing.beatFloat(t);
     const loud = section.startsWith("chorus") || section === "outro";
     const day = dayAt(t);
-
-    // Camera first: the lens is placed in screen space.
-    const sway = Math.sin(t * 0.31) * 0.25;
     const ls = this.lensState(t);
     const cur = ls.last ? ls.last.k : -1;
     const landed = ls.last ? t - ls.last.t : 9;
     const punch = ls.last?.chorus ? Math.exp(-landed / 0.18) : 0;
-    this.camera.position.set(sway, VIEW.y + Math.sin(t * 0.23) * 0.05, VIEW.z - kick * (loud ? 0.18 : 0.08) - punch * 0.4);
-    this.camera.lookAt(sway * 0.6, VIEW.look, 0);
+    const e = ls.glide;
+    const fromSt = e ? e.fromStation : ls.last ? ls.last.station : "seed";
+    const toSt = e ? e.station : fromSt;
+    const glideU = e ? clamp(ls.u, 0, 1) : 1;
+
+    // Camera first, leaning toward the subject; the lens is then placed in screen space.
+    const sway = Math.sin(t * 0.31) * 0.2;
+    const pan = lerp(this.stationX(fromSt), this.stationX(toSt), easeInOut(glideU)) * PAN;
+    this.camera.position.set(pan + sway, VIEW.y + Math.sin(t * 0.23) * 0.05, VIEW.z - kick * (loud ? 0.18 : 0.08) - punch * 0.4);
+    this.camera.lookAt(pan + sway * 0.6, VIEW.look, 0);
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld();
 
@@ -402,53 +421,35 @@ export class ShuffleScene {
       pot.group.scale.setScalar(1 + kept * 0.06 + (loud ? kick * 0.025 : 0));
     });
     const g = this.germ;
-    const germ = { swell: smooth(...g.swell, t), crack: smooth(...g.crack, t), root: smooth(...g.root, t), hairs: smooth(g.root[0] + 4, g.root[1] + 4, t), shoot: smooth(...g.shoot, t) };
-    this.jar.update(germ);
+    this.germNow = { swell: smooth(...g.swell, t), crack: smooth(...g.crack, t), root: smooth(...g.root, t), hairs: smooth(g.root[0] + 4, g.root[1] + 4, t), shoot: smooth(...g.shoot, t) };
+    this.jar.update(this.germNow);
+    this.notebook.draw(t, day);
+    const pen = this.notebook.pencil(t);
+    this.clipboard.update({ u: pen.x / PAGE_W, v: pen.y / PAGE_H, down: pen.down });
     this.updateCan(t);
     this.scene.updateMatrixWorld();
 
-    // The magnifier: glides (or snaps, in choruses) to each step's subject on its word.
-    const e = ls.glide;
-    const fromSt = e ? e.fromStation : ls.last ? ls.last.station : "seed";
-    const toSt = e ? e.station : fromSt;
-    const u = e ? (e.chorus ? easeOutBack(clamp(ls.u, 0, 1)) : easeInOut(clamp(ls.u, 0, 1))) : 1;
+    // The magnifier glides (or snaps, in choruses) over each step's subject on its word.
+    const u = e ? (e.chorus ? easeOutBack(glideU) : easeInOut(glideU)) : 1;
     const [ax, ay] = this.target(fromSt, day);
     const [bx, by] = this.target(toSt, day);
-    const lift = e ? Math.sin(Math.PI * clamp(ls.u, 0, 1)) * e.lift : 0;
-    const bob = Math.abs(Math.sin(Math.PI * bf)) * (loud ? 22 : 6);
+    const lift = e ? Math.sin(Math.PI * glideU) * e.lift : 0;
+    const bob = Math.abs(Math.sin(Math.PI * bf)) * (loud ? 16 : 4);
     const sx = lerp(ax, bx, u);
     const sy = lerp(ay, by, u) - lift - bob;
     this.unproject(sx, sy, this.lens.group.position);
     this.lens.group.lookAt(this.camera.position);
-    let tilt = Math.sin(Math.PI * bf * 0.5) * 0.03 - Math.sign(bx - ax) * 0.25 * Math.sin(Math.PI * clamp(ls.u, 0, 1)) * (e ? 1 : 0);
+    let tilt = Math.sin(Math.PI * bf * 0.5) * 0.03 - Math.sign(bx - ax) * 0.25 * Math.sin(Math.PI * glideU) * (e ? 1 : 0);
     if (!e && ls.last && landed < 1) tilt += Math.sign(this.target(ls.last.station, day)[0] - this.target(ls.last.fromStation, day)[0]) * 0.18 * Math.exp(-landed / 0.16) * Math.cos(landed * 16);
     this.lens.inner.rotation.set(0, 0, tilt);
+    this.lens.group.updateMatrixWorld();
     const lu = this.lens.uniforms;
+    // Magnification, stronger while we look "closely".
+    const mag = lerp(2.3, 3.3, smooth(this.zoom[0] - 0.2, this.zoom[0] + 0.6, t) * (1 - smooth(this.zoom[1], this.zoom[1] + 0.5, t)));
     lu.uGlint.value = landed < 0.7 ? Math.exp(-landed / 0.35) : 0;
     lu.uSweep.value = lerp(-1.2, 1.2, clamp(landed / 0.45, 0, 1));
     const ask = this.asks.find((a) => t >= a.t0 - 0.1 && t < a.t1 - 0.05);
-    const fog = this.asks.reduce((m, a) => Math.max(m, smooth(a.t0 - 0.1, a.t0 + 0.2, t) * (1 - smooth(a.t1 - 0.05, a.t1 + 0.2, t))), 0);
-    const far = e && fromSt.replace(/\d$/, "") !== toSt.replace(/\d$/, "") ? Math.sin(Math.PI * clamp(ls.u, 0, 1)) : 0;
-    lu.uQ.value = fog;
-    lu.uBlur.value = Math.max(fog, far * 0.7);
-
-    // What the lens sees.
-    const station = (s) => s.replace(/\d$/, "");
-    const tipH = heightAt(2, day);
-    this.macro.update({
-      t,
-      day,
-      germ,
-      from: station(fromSt),
-      to: station(toSt),
-      u: e ? clamp(ls.u, 0, 1) : 1,
-      planted: clamp((t - (this.seeds[1] - 0.35)) / 0.35, 0, 1),
-      sprout: clamp(day / 3, 0, 1),
-      wet: wet[1],
-      tipCm: tipH * 10,
-      zoom: smooth(this.zoom[0] - 0.2, this.zoom[0] + 0.8, t) * (1 - smooth(this.zoom[1], this.zoom[1] + 0.5, t)),
-    });
-    this.macro.render(renderer);
+    lu.uQ.value = this.asks.reduce((m, a) => Math.max(m, smooth(a.t0 - 0.1, a.t0 + 0.2, t) * (1 - smooth(a.t1 - 0.05, a.t1 + 0.2, t))), 0);
 
     // Back sweeps leave a trail; every arrival throws a ring of glints round the rim.
     const back = e && e.from - e.k >= 3 ? e : !e && ls.last && ls.last.from - ls.last.k >= 3 && landed < 0.6 ? ls.last : null;
@@ -459,14 +460,14 @@ export class ShuffleScene {
       this.unproject(...this.target(back.station, day), tu.uB.value);
       tu.uH.value = 0.6;
       tu.uColor.value.set(STEPS[back.k].color);
-      tu.uReveal.value = e ? clamp(ls.u, 0, 1) : 1;
+      tu.uReveal.value = e ? glideU : 1;
       tu.uOpacity.value = e ? 0.8 : 0.8 * (1 - landed / 0.6);
     }
     const bp = this.burst.geometry.attributes.position;
     const c = this.lens.group.position;
     for (let i = 0; i < 40; i++) {
       const a = (i / 40) * Math.PI * 2 + hash(i) * 0.2;
-      const r = 0.64 + easeOutCubic(landed / 0.6) * (0.25 + hash(i * 2.1) * 0.3);
+      const r = 0.6 + easeOutCubic(landed / 0.6) * (0.25 + hash(i * 2.1) * 0.3);
       this.tmp.set(Math.cos(a) * r, Math.sin(a) * r, 0).applyQuaternion(this.lens.group.quaternion);
       bp.setXYZ(i, c.x + this.tmp.x, c.y + this.tmp.y, c.z + this.tmp.z);
     }
@@ -500,6 +501,24 @@ export class ShuffleScene {
     this.bgU.uTime.value = t;
     this.bgU.uGlow.value = (loud ? 1 : 0.3) + kick * 0.3;
     this.garden.update(t);
+
+    // The patch of the frame under the lens, without the magnifier, at several times
+    // screen resolution so that what the glass enlarges keeps its detail.
+    const radius = (LENS_R * 960) / (LENS_DIST * Math.tan((FOV / 2) * (Math.PI / 180)));
+    const region = (2 * radius * 1.3) / mag;
+    const over = LENS_RT / region;
+    lu.uCenter.value.set(sx, 1920 - sy);
+    lu.uRegion.value = region;
+    lu.uMag.value = mag;
+    this.lensCam.copy(this.camera);
+    this.lensCam.setViewOffset(1080 * over, 1920 * over, (sx - region / 2) * over, (sy - region / 2) * over, LENS_RT, LENS_RT);
+    this.lensCam.updateProjectionMatrix();
+    this.lensCam.updateMatrixWorld();
+    this.lens.group.visible = false;
+    renderer.setRenderTarget(this.behind);
+    renderer.render(this.scene, this.lensCam);
+    renderer.setRenderTarget(null);
+    this.lens.group.visible = true;
 
     const post = { bloom: [loud ? 0.55 : 0.42, 0.4, 0.82], ca: 0.08 + kick * (loud ? 0.2 : 0.1), vignette: 0.32, grain: 0.022, zoom: 1 + punch * 0.02 };
     const start = SECTIONS[section];

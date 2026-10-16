@@ -143,48 +143,93 @@ export function bladeGeometry(len, width, { cup = 0.25, droop = 0.12, nu = 20, n
   return geo;
 }
 
-/** Leaf colour with midrib, curving side veins and a fine reticulate net; u < 0.04 is plain stalk green. */
-export function leafTexture(seed, light = "#6fb848", dark = "#2f7a24") {
-  return canvasTexture(512, 256, (g, w, h) => {
-    const grad = g.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, dark);
-    grad.addColorStop(0.5, light);
-    grad.addColorStop(1, dark);
-    g.fillStyle = grad;
-    g.fillRect(0, 0, w, h);
+let leafCache = null;
+
+/**
+ * Leaf blade at 1024 × 512: epidermal cells (Voronoi walls, domed interiors,
+ * chloroplast speck) under midrib, curving side veins and a reticulate net.
+ * The cells are only legible under the magnifier. u < 0.04 is plain stalk green;
+ * one texture is shared and tinted per plant.
+ */
+export function leafTexture() {
+  if (leafCache) return leafCache;
+  const W = 1024;
+  const H = 512;
+  const CW = 26;
+  const gx = Math.ceil(W / CW) + 1;
+  const gy = Math.ceil(H / CW) + 1;
+  const pts = [];
+  for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) pts.push([(i + 0.15 + hash(i * 7.1 + j * 13.3) * 0.7) * CW, (j + 0.15 + hash(i * 3.7 + j * 5.9) * 0.7) * CW]);
+  leafCache = canvasTexture(W, H, (g) => {
+    const img = g.createImageData(W, H);
+    for (let y = 0; y < H; y++) {
+      const v = Math.abs(y / H - 0.5) * 2;
+      for (let x = 0; x < W; x++) {
+        const ci = Math.floor(x / CW);
+        const cj = Math.floor(y / CW);
+        let d1 = 1e9;
+        let d2 = 1e9;
+        let id = 0;
+        for (let j = cj - 1; j <= cj + 1; j++) {
+          if (j < 0 || j >= gy) continue;
+          for (let i = ci - 1; i <= ci + 1; i++) {
+            if (i < 0 || i >= gx) continue;
+            const p = pts[j * gx + i];
+            const d = (p[0] - x) ** 2 + (p[1] - y) ** 2;
+            if (d < d1) {
+              d2 = d1;
+              d1 = d;
+              id = j * gx + i;
+            } else if (d < d2) d2 = d;
+          }
+        }
+        const edge = Math.sqrt(d2) - Math.sqrt(d1);
+        const wall = Math.max(0, 1 - edge / 2.2);
+        const dome = Math.min(1, edge / 9);
+        const tone = 0.88 + 0.24 * hash(id * 1.37) + 0.12 * dome - 0.18 * v;
+        const speck = hash(x * 0.37 + y * 1.91) > 0.93 ? 0.12 : 0;
+        const k = (y * W + x) * 4;
+        img.data[k] = (58 + speck * 160) * tone * (1 - wall * 0.55);
+        img.data[k + 1] = (138 + speck * 120) * tone * (1 - wall * 0.45);
+        img.data[k + 2] = 44 * tone * (1 - wall * 0.5);
+        img.data[k + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
     g.fillStyle = "#5a9a38";
-    g.fillRect(0, 0, 0.04 * w, h);
-    g.strokeStyle = "rgba(190,235,140,0.18)";
-    g.lineWidth = 1;
-    for (let i = 0; i < 260; i++) {
-      const x = 0.06 * w + hash(seed + i) * 0.9 * w;
-      const y = hash(seed + i * 2.7) * h;
+    g.fillRect(0, 0, 0.04 * W, H);
+    g.strokeStyle = "rgba(205,240,160,0.35)";
+    g.lineWidth = 1.6;
+    for (let i = 0; i < 420; i++) {
+      const x = 0.06 * W + hash(i * 1.1) * 0.92 * W;
+      const y = hash(i * 2.7) * H;
       g.beginPath();
       g.moveTo(x, y);
-      g.lineTo(x + (hash(seed + i * 3.3) - 0.5) * 22, y + (hash(seed + i * 5.9) - 0.5) * 22);
+      g.lineTo(x + (hash(i * 3.3) - 0.5) * 60, y + (hash(i * 5.9) - 0.5) * 60);
       g.stroke();
     }
-    g.strokeStyle = "rgba(205,245,160,0.55)";
-    for (let k = 1; k < 8; k++) {
-      const x0 = 0.04 * w + (k / 8) * 0.86 * w;
+    g.strokeStyle = "rgba(215,248,170,0.75)";
+    for (let k = 1; k < 9; k++) {
+      const x0 = 0.04 * W + (k / 9) * 0.86 * W;
       for (const s of [1, -1]) {
-        g.lineWidth = 2.2 - k * 0.15;
+        g.lineWidth = 5 - k * 0.35;
         g.beginPath();
-        g.moveTo(x0, h / 2);
-        g.quadraticCurveTo(x0 + 40, h / 2 + s * h * 0.25, x0 + 90, h / 2 + s * h * 0.46);
+        g.moveTo(x0, H / 2);
+        g.quadraticCurveTo(x0 + 70, H / 2 + s * H * 0.25, x0 + 170, H / 2 + s * H * 0.47);
         g.stroke();
       }
     }
-    g.strokeStyle = "rgba(220,250,180,0.8)";
-    g.lineWidth = 5;
+    g.strokeStyle = "rgba(225,250,185,0.9)";
+    g.lineWidth = 11;
     g.beginPath();
-    g.moveTo(0.04 * w, h / 2);
-    g.lineTo(w, h / 2);
+    g.moveTo(0.04 * W, H / 2);
+    g.lineTo(W, H / 2);
     g.stroke();
-    g.strokeStyle = "rgba(20,60,15,0.5)";
-    g.lineWidth = 4;
-    g.strokeRect(0.04 * w, 1, w, h - 2);
+    g.strokeStyle = "rgba(20,60,15,0.6)";
+    g.lineWidth = 6;
+    g.strokeRect(0.04 * W, 2, W, H - 4);
   });
+  return leafCache;
 }
 
 /** Kidney-shaped bean seed, about 2.9 × 1.9 × 1.4, hilum on the -y edge. */

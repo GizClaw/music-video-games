@@ -49,10 +49,10 @@ const LAWN = /* glsl */ `
     float n = noise(p * 0.35) * 0.5 + noise(p * 1.7) * 0.3 + noise(p * 9.0) * 0.2;
     vec3 grass = mix(vec3(0.08, 0.2, 0.04), vec3(0.22, 0.4, 0.08), n);
     grass = mix(grass, vec3(0.3, 0.36, 0.1), smoothstep(0.62, 0.8, noise(p * 0.22 + 7.0)) * 0.5);
-    // Gravel: a round plaza and a path along the front of the stations, with a soft worn edge.
+    // Gravel: a round plaza ringed by a closed circular path, with a soft worn edge.
     float r = length(p);
     float edge = noise(p * 6.0) * 0.12;
-    float path = max(1.0 - smoothstep(uPlaza - 0.1 + edge, uPlaza + 0.05 + edge, r), (1.0 - smoothstep(uPath.y - 0.12 + edge, uPath.y + edge, abs(r - uPath.x))) * step(p.y, 1.5));
+    float path = max(1.0 - smoothstep(uPlaza - 0.1 + edge, uPlaza + 0.05 + edge, r), 1.0 - smoothstep(uPath.y - 0.12 + edge, uPath.y + edge, abs(r - uPath.x)));
     float pebble = noise(p * 40.0);
     vec3 gravel = mix(vec3(0.46, 0.4, 0.3), vec3(0.7, 0.63, 0.5), pebble) * (0.85 + 0.15 * noise(p * 13.0));
     gravel *= 1.0 - 0.35 * smoothstep(0.75, 0.95, noise(p * 22.0 + 3.0));
