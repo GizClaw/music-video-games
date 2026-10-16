@@ -1,6 +1,6 @@
 {
   "name": "@gizclaw/mvg-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared timing, HUD, post-processing and haivivi intro for music videos and games",
   "license": "BSD-3-Clause",
   "type": "module",

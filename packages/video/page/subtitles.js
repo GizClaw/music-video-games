@@ -1,5 +1,6 @@
 import { H, W } from "@gizclaw/mvg-core/fx.js";
 import { SAFE } from "@gizclaw/mvg-core/hud.js";
+import { withoutTrailingComma } from "@gizclaw/mvg-core/lyrics.js";
 
 export const SUBTITLE_FONT = '"PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif';
 const SIZE = 36;
@@ -17,7 +18,7 @@ export class StaticSubtitles {
     this.cues = [];
     if (!track) return;
     if (Array.isArray(track)) {
-      this.cues = track.map((cue) => ({ ...cue, end: Math.min(cue.end, end) })).filter((cue) => cue.end > cue.start);
+      this.cues = track.map((cue) => ({ ...cue, text: withoutTrailingComma(cue.text), end: Math.min(cue.end, end) })).filter((cue) => cue.end > cue.start);
       return;
     }
     if (track.version !== 1 || track.language !== "zh-CN" || !track.lines || typeof track.lines !== "object") {
@@ -29,7 +30,7 @@ export class StaticSubtitles {
       return {
         start: Math.max(0, cue.start - 0.15),
         end: Math.min(cue.end + 0.35, cues[i + 1] ? cues[i + 1].start - 0.15 : Infinity, end),
-        text,
+        text: withoutTrailingComma(text),
       };
     }).filter((cue) => cue.end > cue.start);
   }

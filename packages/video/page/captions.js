@@ -1,3 +1,5 @@
+import { withoutTrailingComma } from "@gizclaw/mvg-core/lyrics.js";
+
 /** SubRip helpers shared by the renderer and full-song / trimmed preview exports. */
 export function parseSrt(source) {
   if (!source.trim()) return [];
@@ -22,6 +24,6 @@ export function formatSrt(cues, from = 0, to = Infinity) {
     return `${pad(Math.floor(ms / 3600000))}:${pad(Math.floor(ms / 60000) % 60)}:${pad(Math.floor(ms / 1000) % 60)},${pad(ms % 1000, 3)}`;
   };
   return cues.filter((cue) => cue.end > from && cue.start < to).map((cue, i) =>
-    `${i + 1}\n${stamp(Math.max(from, cue.start) - from)} --> ${stamp(Math.min(to, cue.end) - from)}\n${cue.text}\n`,
+    `${i + 1}\n${stamp(Math.max(from, cue.start) - from)} --> ${stamp(Math.min(to, cue.end) - from)}\n${withoutTrailingComma(cue.text)}\n`,
   ).join("\n");
 }
