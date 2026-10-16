@@ -7,7 +7,7 @@ The complete music universe and its rhythm games, ready to mount in a host page.
 release_tag=vYYYYMMDD-HHMMSS
 npm install \
   "https://github.com/GizClaw/music-video-games/releases/download/${release_tag}/gizclaw-mvg-core-0.1.0.tgz" \
-  "https://github.com/GizClaw/music-video-games/releases/download/${release_tag}/gizclaw-mvg-games-0.4.0.tgz"
+  "https://github.com/GizClaw/music-video-games/releases/download/${release_tag}/gizclaw-mvg-games-0.4.1.tgz"
 ```
 
 ## Complete game entrance

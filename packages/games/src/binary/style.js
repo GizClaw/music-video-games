@@ -20,7 +20,8 @@ export const binaryStyle = `${spectrumStyle}
 .mvg-game .nums i.pop { animation: mvg-pop-num 0.45s ease-out; }
 @keyframes mvg-pop-num { from { transform: scale(1.8); } to { transform: scale(1); } }
 .mvg-game .switches { position: absolute; left: 50%; bottom: max(14px, 2.5%); transform: translateX(-50%); display: flex; align-items: stretch; gap: 10px; }
-.mvg-game .sw { width: clamp(64px, 9vw, 96px); height: clamp(70px, 12vh, 104px); padding: 0; border-radius: 8px; border: 3px solid #29adff; background: #1d2b53; color: #29adff; box-shadow: 0 5px 0 #070b22; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-family: Menlo, monospace; letter-spacing: 0; cursor: pointer; touch-action: none; transition: transform 0.05s; }
+/* The shared HUD ignores pointer events; its playable switches must receive them. */
+.mvg-game .sw { width: clamp(64px, 9vw, 96px); height: clamp(70px, 12vh, 104px); padding: 0; border-radius: 8px; border: 3px solid #29adff; background: #1d2b53; color: #29adff; box-shadow: 0 5px 0 #070b22; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-family: Menlo, monospace; letter-spacing: 0; cursor: pointer; pointer-events: auto; touch-action: none; transition: transform 0.05s; }
 .mvg-game .sw b { font-size: clamp(26px, 5vh, 40px); line-height: 1; }
 .mvg-game .sw small { font-size: 11px; opacity: 0.8; }
 .mvg-game .sw em { font-style: normal; font-size: 10px; opacity: 0.55; }
@@ -38,11 +39,22 @@ export const binaryStyle = `${spectrumStyle}
   .mvg-game .switches { left: 0; right: 0; transform: none; bottom: 0; gap: 0; padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
   .mvg-game .sw { flex: 1; width: auto; height: clamp(84px, 22vh, 140px); border-radius: 0; border-width: 2px; }
   .mvg-game .sw em { display: none; }
-  .mvg-game .sw.clr { flex: 0.55; margin-left: 0; }
+  .mvg-game .sw.clr { flex: 0.55; min-width: 44px; margin-left: 0; }
   .mvg-game .tip { bottom: calc(clamp(84px, 22vh, 140px) + 14px); }
   .mvg-game .readout { display: none; }
 }
-@media (max-width: 560px), (max-height: 500px) { .mvg-game .nums i { width: 16px; height: 16px; font-size: 8px; } .mvg-game.binary .lyric { top: 40px; } }
+@media (max-width: 560px), (max-height: 500px) {
+  .mvg-game .nums i { width: 16px; height: 16px; font-size: 8px; }
+  .mvg-game.binary .lyric { top: 40px; }
+  /* Leave room for the universe's exit button below the title's start button. */
+  .mvg-game.binary #title { padding: 16px 20px calc(84px + env(safe-area-inset-bottom, 0px)); }
+  .mvg-game.binary #title .kicker { font-size: 12px; letter-spacing: 2px; }
+  .mvg-game.binary #title h1 { font-size: clamp(32px, 8vh, 64px); margin: 8px 0; }
+  .mvg-game.binary #title .sub { font-size: 14px; margin-bottom: 12px; }
+  .mvg-game.binary #title .keys { font-size: 12px; line-height: 1.35; gap: 6px; margin-bottom: 16px; }
+  .mvg-game.binary #title button { font-size: 18px; padding: 10px 28px; }
+  .mvg-game.binary .tip { width: max-content; max-width: calc(100% - 24px); box-sizing: border-box; white-space: normal; text-align: center; }
+}
 `;
 
 const TITLE = {
