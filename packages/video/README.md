@@ -62,6 +62,15 @@ mvg-video --project /path/to/music-video-games --root /mounted/GizClaw --work sp
 | `songs/music/stem-institute/en-us/big-number-ladder` | a ladder made of the number: a golden 1 and one rung per three zeroes rising from Earth past the Moon, then a low-angle googol tower of 100 zeroes beside a spiral galaxy |
 | `songs/music/stem-institute/en-us/angle-gang` | desert-sunset protractor whose ray swings to each sung angle, live degree readout and angle names, quarter-to-full-turn bridge |
 | `songs/music/stem-institute/en-us/simple-machines` | construction-site scaffold holding six working machines; verse close-ups with labelled parts, chorus punch-ins on every name, welding sparks |
+| `songs/music/stem-institute/en-us/elements-part-two` | the Part One chemistry lab with the full table: elements 57–118 light on their names across periods 6–7 and the lanthanide and actinide rows, Bohr atom with seven shells from reference configurations |
+| `songs/music/stem-institute/en-us/math-word-machine` | workshop word machine: problems ride a conveyor in and answer cards name sum, difference, product and quotient; 3/4 fraction pie, equation balance, variable box, power-down ending |
+| `songs/music/stem-institute/en-us/si-base-units` | castle-courtyard roll call: seven toy soldiers report quantity, unit and symbol with a demonstrator each (metre stick, kilogram, stopwatch, current loop, thermometer, mole jar, candle) |
+| `songs/music/stem-institute/en-us/force-friends` | sunny park with six force demos (gravity, friction, elastic, buoyancy, magnetism, air drag) drawn as force arrows; chorus whips to each answer, balanced and unbalanced tug of war |
+| `songs/music/stem-institute/en-us/thirty-two-chompers` | dentist's office with a hinged demonstration jaw: incisors, canines, premolars and molars light by type, 20 primary teeth give way to 32 permanent, bites on cut, tear, crush and grind |
+| `songs/music/stem-institute/en-us/muscle-roll-call` | sports hall mannequin whose muscle groups shorten and bulge as they contract: curls, raises, squats, heel raises, flex-relax-switch chorus moves |
+| `songs/music/stem-institute/en-us/bone-zone` | moonlit beach, a surf-dancing skeleton: named bones glow with close-ups (skull, ribs, vertebrae, clavicles, femur), joints flex, 206 counter, bridge question-and-answer |
+| `songs/music/stem-institute/en-us/lab-rules` | school lab bench: each safety rule brings in a vivid 3D prop with an electric outline, stamped ✓ or ✗, filling a 17-box checklist; bridge question-and-answer cards |
+| `songs/music/stem-institute/en-us/science-method-shuffle` | school garden fair test led by a magnifying glass: on each sung step it glides to that subject and its lens shows a live close-up (seed sprouting, leaf cells, ruler marks, the notebook and chart); three bean pots differ only in sunlight |
 
 ## Analysis
 

@@ -40,7 +40,7 @@ Every frame is a function of the song's time. No generative video model, no keyf
 
 ## The videos
 
-Sixteen songs from the STEM Institute album, each 1080×1920 at 30 fps and cut to
+All twenty-five songs from the STEM Institute album, each 1080×1920 at 30 fps and cut to
 the detected beat, with forced-aligned karaoke lyrics. Optional catalog
 translation tracks add small, static Chinese subtitles beneath the animation,
 burned into the picture by default or delivered as companion SRT files.
