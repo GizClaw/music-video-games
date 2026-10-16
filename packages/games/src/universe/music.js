@@ -54,7 +54,8 @@ export class Music {
     if (this.ctx) {
       d.gain = this.ctx.createGain();
       d.gain.gain.value = 0;
-      this.ctx.createMediaElementSource(el).connect(d.gain);
+      d.source = this.ctx.createMediaElementSource(el);
+      d.source.connect(d.gain);
       d.gain.connect(this.master);
     } else {
       el.volume = 0;
@@ -151,5 +152,25 @@ export class Music {
     this.bass += (bass - this.bass) * (bass > this.bass ? 0.6 : 0.12);
     this.mid += (mid - this.mid) * 0.2;
     return this;
+  }
+
+  /** Stop every deck and release the audio graph when its hub is unmounted. */
+  destroy() {
+    this.held = true;
+    this.want = null;
+    this.onchange = () => {};
+    for (const d of this.decks.values()) {
+      clearTimeout(d.timer);
+      d.el.pause();
+      d.el.removeAttribute("src");
+      d.el.load();
+      d.source?.disconnect();
+      d.gain?.disconnect();
+    }
+    this.decks.clear();
+    this.master?.disconnect();
+    this.analyser?.disconnect();
+    this.ctx?.close().catch(() => {});
+    this.ctx = null;
   }
 }

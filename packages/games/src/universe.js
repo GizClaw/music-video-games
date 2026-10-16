@@ -6,14 +6,15 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { clamp, easeInOut, easeOutCubic, hash, lerp, smooth } from "@gizclaw/mvg-core/timing.js";
 import wordmark from "@gizclaw/mvg-core/assets/haivivi-wordmark.svg?raw";
-import { GamePostShader, glowTexture, songAudioUrl } from "@gizclaw/mvg-games/kit.js";
-import { lockGestures } from "@gizclaw/mvg-games/mobile.js";
-import { sfx } from "@gizclaw/mvg-games/sfx.js";
-import { makeFeature } from "./features.js";
-import { LOGO_HALF, LOGO_Y, makeGate } from "./gate.js";
-import { STRINGS, local, saveLang, savedLang } from "./i18n.js";
-import { makeBrandLogo } from "./logo.js";
-import { Music } from "./music.js";
+import { GamePostShader, glowTexture, songAudioUrl } from "./kit.js";
+import { lockGestures } from "./mobile.js";
+import { sfx } from "./sfx.js";
+import { SERIES } from "./universe/catalog.js";
+import { makeFeature } from "./universe/features.js";
+import { LOGO_HALF, LOGO_Y, makeGate } from "./universe/gate.js";
+import { STRINGS, local, saveLang, savedLang } from "./universe/i18n.js";
+import { makeBrandLogo } from "./universe/logo.js";
+import { Music } from "./universe/music.js";
 import {
   makeAccretion,
   makeBeacon,
@@ -27,8 +28,18 @@ import {
   makeSun,
   makeWarp,
   ringTexture,
-} from "./space.js";
-import "./universe.css";
+} from "./universe/space.js";
+import universeStyle from "./universe/universe.css?raw";
+
+export { SERIES };
+
+function ensureStyle() {
+  if (document.getElementById("mvg-universe-style")) return;
+  const style = document.createElement("style");
+  style.id = "mvg-universe-style";
+  style.textContent = universeStyle;
+  document.head.appendChild(style);
+}
 
 const GALAXY_R = 340;
 /** Distance between galaxies on the carousel. */
@@ -82,25 +93,48 @@ const MARKUP = `
  * carousel; inside one, works are planets and clicking a playable planet
  * dives into it and mounts its game in place. The location hash holds the
  * route (`#/<series>/<work>/play`), so browser back walks out a level.
+ * The packaged catalog is used by default. Give the target a height; the hub
+ * fills its container. Set `routing: false` to leave the host URL untouched.
  * @param {Element | string} target
- * @param {{ series: object[] }} options
+ * @param {{ series?: object[], lang?: "zh" | "en", routing?: boolean, manageDocument?: boolean }} [options]
+ * @returns {{ play: (id: string, options?: object) => void, open: (id: string) => void, destroy: () => void }}
  */
-export function mountUniverse(target, { series }) {
+export function mountUniverse(target, { series = SERIES, lang: initialLang, routing = true, manageDocument = false } = {}) {
   const root = typeof target === "string" ? document.querySelector(target) : target;
+  if (!root) throw new Error("mountUniverse: target not found");
+  if (!series.length || series.some((s) => !s.works?.length)) throw new Error("mountUniverse: series must contain galaxies with works");
+  ensureStyle();
+  const previous = { className: root.getAttribute("class"), style: root.getAttribute("style"), level: root.getAttribute("data-level"), tabIndex: root.getAttribute("tabindex"), lang: root.getAttribute("lang") };
+  const documentState = { lang: document.documentElement.lang, title: document.title };
+  const restore = (name, value) => value == null ? root.removeAttribute(name) : root.setAttribute(name, value);
+  const resetRoot = () => {
+    root.replaceChildren();
+    restore("class", previous.className);
+    restore("style", previous.style);
+    restore("data-level", previous.level);
+    restore("tabindex", previous.tabIndex);
+    restore("lang", previous.lang);
+    if (manageDocument) {
+      document.documentElement.lang = documentState.lang;
+      document.title = documentState.title;
+    }
+  };
   root.classList.add("uv", "uv-silent");
+  if (!root.hasAttribute("tabindex")) root.tabIndex = 0;
   root.innerHTML = MARKUP;
   const $ = (sel) => root.querySelector(sel);
   const ac = new AbortController();
   const { signal } = ac;
   lockGestures(root, signal);
-  let lang = savedLang();
+  let lang = initialLang in STRINGS ? initialLang : savedLang();
   const S = (key) => STRINGS[lang][key];
 
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
   } catch {
-    return fallback(root, series, lang);
+    ac.abort();
+    return fallback(root, series, lang, resetRoot);
   }
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -231,8 +265,11 @@ export function mountUniverse(target, { series }) {
 
   // ---------- language ----------
   function relabel() {
-    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
-    document.title = S("doc");
+    root.lang = lang === "zh" ? "zh-CN" : "en";
+    if (manageDocument) {
+      document.documentElement.lang = root.lang;
+      document.title = S("doc");
+    }
     root.querySelectorAll("[data-t]").forEach((el) => (el.textContent = S(el.dataset.t)));
     root.querySelectorAll("[data-html]").forEach((el) => (el.innerHTML = S(el.dataset.html)));
     root.querySelectorAll("[data-title]").forEach((el) => (el.title = S(el.dataset.title)));
@@ -305,13 +342,14 @@ export function mountUniverse(target, { series }) {
   let playPushed = false;
   function go(r) {
     music.unlock();
+    if (!routing) return apply(r);
     const h = hashOf(r);
     if (location.hash !== h) {
       if (r.level === "game") playPushed = true;
       location.hash = h;
     } else apply(r);
   }
-  addEventListener("hashchange", () => apply(parse(location.hash)), { signal });
+  if (routing) addEventListener("hashchange", () => apply(parse(location.hash)), { signal });
 
   function apply(r, instant = false) {
     const prev = state.level;
@@ -367,7 +405,7 @@ export function mountUniverse(target, { series }) {
     root.classList.add("uv-tipped");
     sfx.select(k % 8);
     state.sel = k;
-    history.replaceState(null, "", hashOf({ level: "galaxy", si: state.si, wi: k }));
+    if (routing) history.replaceState(null, "", hashOf({ level: "galaxy", si: state.si, wi: k }));
     playPick();
     hud();
   }
@@ -450,6 +488,8 @@ export function mountUniverse(target, { series }) {
   let mountedOpts = {};
   let gameHost = null;
   let gameToken = 0;
+  let destroyed = false;
+  const retiring = new Map();
   let exitPoll = 0;
   let covering = false;
   let coverTimer = 0;
@@ -461,7 +501,10 @@ export function mountUniverse(target, { series }) {
     root.style.setProperty("--accent", p.w.colors[0]);
     flash.style.background = `radial-gradient(circle, #fff 0%, ${p.w.colors[0]} 45%, #020208 100%)`;
     flash.classList.add("on");
-    const modulePromise = p.w.game();
+    const modulePromise = Promise.resolve().then(() => p.w.game());
+    // Loading overlaps the flight; keep a failed or cancelled flight from
+    // leaving an unhandled rejection before its callback can await the module.
+    modulePromise.catch(() => {});
     fly(async () => {
       if (token !== gameToken) return;
       gameHost = document.createElement("div");
@@ -521,7 +564,7 @@ export function mountUniverse(target, { series }) {
   }
 
   /** Close the portal over the game, then tear it down; the camera pulls back out meanwhile. */
-  function exitGame() {
+  function exitGame(immediate = false) {
     gameToken++;
     playPushed = false;
     clearInterval(exitPoll);
@@ -529,22 +572,30 @@ export function mountUniverse(target, { series }) {
     covering = false;
     const g = game;
     const host = gameHost;
-    sfx.back();
+    if (!immediate) sfx.back();
     game = null;
     gameHost = null;
     playEl.classList.remove("open");
     $(".uv-exit").classList.remove("show");
     flash.classList.remove("on");
-    setTimeout(() => {
+    const retire = () => {
       g?.destroy();
       host?.remove();
       if (!playEl.classList.contains("open")) playEl.hidden = true;
-    }, 700);
-    music.release();
+    };
+    if (immediate) retire();
+    else {
+      const timer = setTimeout(() => {
+        retiring.delete(timer);
+        retire();
+      }, 700);
+      retiring.set(timer, retire);
+      music.release();
+    }
   }
   /** Back out of the game; a game's back-button guard entry is stepped over too. */
   const leaveGame = () => {
-    if (playPushed && state.level === "game") history.go(history.state?.mvgGuard ? -2 : -1);
+    if (routing && playPushed && state.level === "game") history.go(history.state?.mvgGuard ? -2 : -1);
     else go({ level: "galaxy", si: state.si, wi: state.sel });
   };
   $(".uv-exit").addEventListener("click", leaveGame, { signal });
@@ -626,8 +677,13 @@ export function mountUniverse(target, { series }) {
     sfx.unlock();
     root.classList.remove("uv-silent");
   };
-  addEventListener("pointerdown", hear, { signal, capture: true });
+  root.addEventListener("pointerdown", () => {
+    if (!root.contains(document.activeElement)) root.focus({ preventScroll: true });
+    hear();
+  }, { signal, capture: true });
   addEventListener("keydown", (e) => {
+    if (!root.contains(document.activeElement)) return;
+    if (e.target.closest?.("input, textarea, select, [contenteditable=true]")) return;
     if (state.level === "game") {
       if (e.key === "Escape" && gameHost?.querySelector("#title:not([hidden]), #result:not([hidden])")) leaveGame();
       return;
@@ -963,7 +1019,7 @@ export function mountUniverse(target, { series }) {
       }
   }
 
-  const first = parse(location.hash);
+  const first = routing ? parse(location.hash) : { level: "cosmos" };
   relabel();
   apply(first, true);
   if (first.level === "game") skipGate();
@@ -993,6 +1049,7 @@ export function mountUniverse(target, { series }) {
   return {
     /** Jump straight into a game: `play("binary-boogie", { start: 31, auto: true })`. */
     play(id, opts = {}) {
+      if (destroyed) throw new Error("mountUniverse: hub is destroyed");
       const at = find(id);
       if (!at || !series[at.si].works[at.wi].game) throw new Error(`no game for ${id}`);
       skipGate();
@@ -1005,12 +1062,13 @@ export function mountUniverse(target, { series }) {
       if (opts.auto) q.set("auto", "");
       if (opts.play) q.set("play", "");
       const r = { level: "game", si: at.si, wi: at.wi, opts: gameOptions(q) };
-      history.pushState(null, "", hashOf(r));
-      playPushed = true;
+      if (routing) history.pushState(null, "", hashOf(r));
+      playPushed = routing;
       apply(r);
     },
     /** Fly to a galaxy, or a planet in it: `open("stem-institute")`, `open("planet-parade")`. */
     open(id) {
+      if (destroyed) throw new Error("mountUniverse: hub is destroyed");
       skipGate();
       const si = series.findIndex((s) => s.id === id);
       const at = si >= 0 ? { si } : find(id);
@@ -1018,20 +1076,42 @@ export function mountUniverse(target, { series }) {
       go({ level: "galaxy", ...at });
     },
     destroy() {
+      if (destroyed) return;
+      destroyed = true;
       cancelAnimationFrame(raf);
       ac.abort();
       ro.disconnect();
-      exitGame();
-      music.hold();
+      flight = null;
+      clearTimeout(toastTimer);
+      exitGame(true);
+      for (const [timer, retire] of retiring) {
+        clearTimeout(timer);
+        retire();
+      }
+      retiring.clear();
+      music.destroy();
+      const geometries = new Set();
+      const materials = new Set();
+      const textures = new Set([glow, ringTex]);
+      scene.traverse((object) => {
+        if (object.geometry) geometries.add(object.geometry);
+        for (const material of [object.material].flat().filter(Boolean)) {
+          materials.add(material);
+          for (const value of Object.values(material)) if (value?.isTexture) textures.add(value);
+          for (const uniform of Object.values(material.uniforms ?? {})) if (uniform.value?.isTexture) textures.add(uniform.value);
+        }
+      });
+      for (const resource of [...geometries, ...materials, ...textures]) resource.dispose();
+      for (const pass of composer.passes) pass.dispose?.();
+      composer.dispose();
       renderer.dispose();
-      root.replaceChildren();
-      root.classList.remove("uv");
+      resetRoot();
     },
   };
 }
 
 /** Plain links for browsers without WebGL. */
-function fallback(root, series, lang) {
+function fallback(root, series, lang, resetRoot) {
   root.innerHTML = `<main class="uv-fallback">${series
     .map(
       (s) => `<h1>${local(s.name, lang)}</h1><ul>${s.works
@@ -1039,5 +1119,6 @@ function fallback(root, series, lang) {
         .join("")}</ul>`,
     )
     .join("")}</main>`;
-  return { destroy: () => root.replaceChildren() };
+  const unavailable = () => { throw new Error("mountUniverse: WebGL is unavailable"); };
+  return { play: unavailable, open: unavailable, destroy: resetRoot };
 }

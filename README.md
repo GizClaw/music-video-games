@@ -89,12 +89,12 @@ music-video-games/
 ├── packages/
 │   ├── core/    @gizclaw/mvg-core   timing, HUD, post-processing, haivivi intro (shared)
 │   ├── video/   @gizclaw/mvg-video  mvg-video CLI, renderer page, beat/lyric analysis (Python)
-│   └── games/   @gizclaw/mvg-games  embeddable games; Pages mounts this package
+│   └── games/   @gizclaw/mvg-games  complete universe entrance, catalog, scenes, music and games
 ├── aigc/                            mirrors the AIGC catalog (gizclaw/catalogs/aigc/)
 │   └── songs/<category>/<album>/<lang>/<id>/
 │       ├── video/                   choreography: song.js and its scenes
 │       └── game/                    optional game data: analysis.json (the game is in packages/games)
-├── site/                            the GitHub Pages site: index.html mounts the universe; universe.json + catalog.js (galaxies, planets), scene, music
+├── site/                            thin GitHub Pages host: index.html mounts the games SDK
 └── scripts/check.mjs                layout and syntax check
 ```
 
@@ -165,18 +165,21 @@ models into `<root>/cache/models`; encoding needs `ffmpeg`.
 npm run build      # dist/, deployed to GitHub Pages on every push to main
 ```
 
-The site root is a full-screen 3D music universe (`site/`). Every song album
+The site root mounts the full 3D music universe from `@gizclaw/mvg-games/universe.js`.
+The SDK owns its catalog, scenes, styles and music; `site/index.html` is only a host.
+Every song album
 of the AIGC catalog is a galaxy on a horizontal carousel and every song a
 planet; planets with a game are coloured, the rest stay grey until their game
-ships. `npm run universe:catalog` rewrites `site/universe.json` (albums, songs,
+ships. `npm run universe:catalog` rewrites `packages/games/src/universe/universe.json` (albums, songs,
 zh/en names) from the mounted catalog (`--catalog <dir>`, `--verify` checks the
-audio on the CDN); `site/catalog.js` adds planet looks and game entries on top. Picking a planet crossfades to its song, and clicking a playable one
+audio on the CDN); `packages/games/src/universe/catalog.js` adds planet looks and game entries on top. Picking a planet crossfades to its song, and clicking a playable one
 dives into it and mounts the game in place. The hash holds the route
 (`#/<series>/<work>/play`). Arrow keys or A/D, Enter and Esc drive everything;
 the mouse works throughout.
 
 Games are reached through the universe only; there are no per-game pages, and
-hosts that want a game on their own page mount it from `@gizclaw/mvg-games`
+hosts can mount the entire entrance with `mountUniverse(target)` (the bundled
+catalog and styles are included), or mount a single game from `@gizclaw/mvg-games`
 (`mountSpectrumSlide`, `mountPlanetParade`, `mountBinaryBoogie`, `mountPrimeTime`). A route
 straight into a game skips the opening stage, and it can carry game options:
 `#/stem-institute/binary-boogie/play?start=31&auto`. From the browser console,
@@ -196,7 +199,7 @@ owns packaging; Deploy owns publication to the TOS npm registry.
 
 - [`@gizclaw/mvg-core`](packages/core/README.md): timing, HUD, opening, post-processing and shared assets.
 - [`@gizclaw/mvg-video`](packages/video/README.md): analysis, lyric alignment and placement, song modules, rendering and deliverables.
-- [`@gizclaw/mvg-games`](packages/games/README.md): game layout and the Slide Down the Spectrum, Planet Parade, Binary Boogie and Prime Time charts.
+- [`@gizclaw/mvg-games`](packages/games/README.md): embeddable universe entrance, catalog, game layout and the Slide Down the Spectrum, Planet Parade, Binary Boogie and Prime Time charts.
 
 ## Releases
 

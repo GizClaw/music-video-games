@@ -15,7 +15,7 @@ const { values: opts, positionals } = parseArgs({
   },
 });
 const [id] = positionals;
-const { series } = JSON.parse(readFileSync(new URL("../site/universe.json", import.meta.url), "utf8"));
+const { series } = JSON.parse(readFileSync(new URL("../packages/games/src/universe/universe.json", import.meta.url), "utf8"));
 if (!id) {
   console.log("usage: npm run play -- <work> [--start SECONDS] [--auto] [--port 5179 | --base URL] [--print]");
   process.exit(1);

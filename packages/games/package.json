@@ -1,7 +1,7 @@
 {
   "name": "@gizclaw/mvg-games",
-  "version": "0.3.0",
-  "description": "Playable web games for AIGC catalog songs and the GitHub Pages site that hosts them",
+  "version": "0.4.0",
+  "description": "Embeddable music universe, catalog and rhythm games for AIGC songs",
   "license": "BSD-3-Clause",
   "type": "module",
   "files": ["src", "README.md"],

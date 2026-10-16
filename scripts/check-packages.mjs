@@ -35,15 +35,34 @@ try {
 
   writeFileSync(join(consumer, "index.html"), '<div id="game"></div><script type="module" src="/main.js"></script>');
   writeFileSync(join(consumer, "main.js"), `
-    import { mountSpectrumSlide, songAudioUrl } from "@gizclaw/mvg-games";
+    import { mountSpectrumSlide, mountUniverse, SERIES, songAudioUrl } from "@gizclaw/mvg-games";
     import { Timing } from "@gizclaw/mvg-core/timing.js";
     import { deriveIntro } from "@gizclaw/mvg-core/intro.js";
     import logo from "@gizclaw/mvg-core/assets/haivivi-wordmark.svg?raw";
-    window.packageSmoke = { Timing, deriveIntro, logo, songAudioUrl };
+    window.packageSmoke = { Timing, deriveIntro, logo, songAudioUrl, mountUniverse, SERIES };
     mountSpectrumSlide("#game");
   `);
+  // The complete entry must build from the installed SDK alone, including
+  // its default catalog, styles, core logo and all four lazy game loaders.
+  writeFileSync(join(consumer, "universe.html"), '<div id="universe" style="height: 100vh"></div><script type="module" src="/universe.js"></script>');
+  writeFileSync(join(consumer, "universe.js"), `
+    import { mountUniverse, SERIES } from "@gizclaw/mvg-games/universe.js";
+    window.catalog = SERIES;
+    window.universe = mountUniverse("#universe", { routing: false });
+  `);
+  writeFileSync(join(consumer, "vite.config.js"), `export default {
+    build: { rolldownOptions: { input: { game: "index.html", universe: "universe.html" } } }
+  };\n`);
   execFileSync(process.execPath, [join(ROOT, "node_modules/vite/bin/vite.js"), "build", consumer], { cwd: consumer, encoding: "utf8" });
   assert(readFileSync(join(consumer, "dist/index.html"), "utf8").includes("/assets/"));
+  assert(readFileSync(join(consumer, "dist/universe.html"), "utf8").includes("/assets/"));
+  const games = join(consumer, "node_modules/@gizclaw/mvg-games/src");
+  const catalog = JSON.parse(readFileSync(join(games, "universe/universe.json"), "utf8"));
+  assert(catalog.series.length > 0);
+  for (const id of ["spectrum-slide", "planet-parade", "binary-boogie", "prime-time"]) {
+    assert(catalog.series.some((s) => s.works.some((w) => w.id === id)), `Packaged universe is missing ${id}`);
+    assert(existsSync(join(games, `${id}.js`)), `Packaged universe cannot load ${id}`);
+  }
 
   const cli = join(consumer, "node_modules/@gizclaw/mvg-video/bin/mvg-video.mjs");
   const videoVersion = index.packages.find((pkg) => pkg.name === "@gizclaw/mvg-video").version;
@@ -96,7 +115,7 @@ try {
     assert.match(await response.text(), pattern);
   }
   assert.equal((await fetch(`${base}/package.json`)).status, 404);
-  console.log(`Verified ${index.packages.length} npm tarballs: game build, core assets, video CLI, renderer routes and npx without a project install`);
+  console.log(`Verified ${index.packages.length} npm tarballs: game and universe builds, packaged catalog, core assets, video CLI, renderer routes and npx without a project install`);
 } finally {
   if (preview) {
     const closed = new Promise((resolve) => preview.once("close", resolve));

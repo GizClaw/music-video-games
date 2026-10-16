@@ -1,14 +1,45 @@
 # @gizclaw/mvg-games
 
-Embeddable rhythm games. Install the tarball from a GitHub Release together with `@gizclaw/mvg-core`. Deploy handles subsequent publication to the TOS npm registry. The universe hub on GitHub Pages mounts the same entry; there are no per-game pages. Use a bundler such as Vite to resolve the npm imports and packaged chart JSON.
+The complete music universe and its rhythm games, ready to mount in a host page. The SDK includes the opening stage, galaxy and planet catalog, 3D scenes, music crossfades, Chinese/English interface, styles and game loaders. GitHub Pages uses this same SDK entry. Install the tarball from a GitHub Release together with `@gizclaw/mvg-core`. Deploy handles subsequent publication to the TOS npm registry. Use a bundler such as Vite to resolve the npm imports, packaged JSON and `?raw` assets.
 
 ```sh
 # Set this to an actual UTC snapshot tag from the Releases page.
 release_tag=vYYYYMMDD-HHMMSS
 npm install \
   "https://github.com/GizClaw/music-video-games/releases/download/${release_tag}/gizclaw-mvg-core-0.1.0.tgz" \
-  "https://github.com/GizClaw/music-video-games/releases/download/${release_tag}/gizclaw-mvg-games-0.3.0.tgz"
+  "https://github.com/GizClaw/music-video-games/releases/download/${release_tag}/gizclaw-mvg-games-0.4.0.tgz"
 ```
+
+## Complete game entrance
+
+```html
+<div id="games" style="height: 100vh"></div>
+<script type="module">
+  import { mountUniverse } from "@gizclaw/mvg-games/universe.js";
+  const games = mountUniverse("#games");
+
+  // games.open("stem-institute");
+  // games.play("binary-boogie", { start: 31, auto: true });
+  // games.destroy(); // call when the host view unmounts
+</script>
+```
+
+`mountUniverse` and the default `SERIES` catalog are also exported from `@gizclaw/mvg-games`. The `universe.js` entry loads individual games on demand. Give the target a height; the universe fills that container and installs its styles automatically. No files from the repository's `site/` directory are needed. Music streams from the catalog CDN, as it does in the individual games.
+
+Options:
+
+| Option | Default | Behavior |
+| --- | --- | --- |
+| `series` | `SERIES` | Replace the bundled galaxies and works, or pass a subset of `SERIES`. |
+| `lang` | Saved choice, then `"zh"` | Initial interface language (`"zh"` or `"en"`). |
+| `routing` | `true` | Use `#/<series>/<work>/play` routes and browser back. Set `false` when the host owns the URL. |
+| `manageDocument` | `false` | Update the document title and language. The Pages host enables this. |
+
+`open(id)` flies to a galaxy or selects a song; `play(id, { start, auto, play })` opens a playable song. Song ids may be qualified as `<series>/<work>`. Universe navigation keys work while focus is inside the container; clicking it focuses the container. A full-page host can give the target `tabindex="0" autofocus`, as the Pages host does. `destroy()` stops the hub's animation and music, disposes its scene, removes listeners and mounted games, and restores the container's original attributes. Without WebGL the hub displays the catalog; `open` and `play` report that WebGL is unavailable.
+
+The catalog source is `src/universe/universe.json`; `npm run universe:catalog` in the repository regenerates it. Planet looks and game loaders live in `src/universe/catalog.js`.
+
+## Individual games
 
 ```html
 <div id="game" style="height: 100vh"></div>
