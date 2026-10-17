@@ -73,6 +73,48 @@ const beamFragment = `
  * truss with moving heads, an LED drum hung over the centre, an LED band
  * round the far walls, and lasers fanning out from the drum.
  */
+// The crowd bounces, and the sticks swing, in the vertex shader. Rebuilding a
+// thousand instance matrices on the CPU every frame is what made the picture hitch.
+const crowdUniforms = {
+  uBeat: { value: 0 },
+  uJump: { value: 0 },
+  uMotion: { value: 1 },
+  uSpin: { value: 1 },
+  uDrift: { value: 4 },
+  uPulse: { value: 0 },
+};
+const crowdProject = (stick) => `vec4 mvPosition = vec4( transformed, 1.0 );
+#ifdef USE_INSTANCING
+${stick ? `	float wave = sin(3.14159265 * uBeat + aYaw * uSpin + aPhase * uDrift) * 0.55 * uMotion;
+	float cw = cos(wave), sw = sin(wave);
+	float wx = cw * mvPosition.x - sw * mvPosition.y;
+	mvPosition.y = sw * mvPosition.x + cw * mvPosition.y;
+	mvPosition.x = wx;
+` : ""}	mvPosition = instanceMatrix * mvPosition;
+	mvPosition.y += abs(sin(3.14159265 * uBeat + aPhase)) * uJump;
+#endif
+mvPosition = modelViewMatrix * mvPosition;
+gl_Position = projectionMatrix * mvPosition;`;
+function dressCrowd(material, stick) {
+  material.customProgramCacheKey = () => (stick ? "polygon-stick" : "polygon-crowd");
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uBeat = crowdUniforms.uBeat;
+    shader.uniforms.uJump = crowdUniforms.uJump;
+    const decl = stick
+      ? "uniform float uBeat, uJump, uMotion, uSpin, uDrift;\nattribute float aPhase;\nattribute float aYaw;"
+      : "uniform float uBeat, uJump;\nattribute float aPhase;";
+    shader.vertexShader = shader.vertexShader.replace("#include <common>", `#include <common>\n${decl}`).replace("#include <project_vertex>", crowdProject(stick));
+    if (!stick) return;
+    shader.uniforms.uMotion = crowdUniforms.uMotion;
+    shader.uniforms.uSpin = crowdUniforms.uSpin;
+    shader.uniforms.uDrift = crowdUniforms.uDrift;
+    shader.uniforms.uPulse = crowdUniforms.uPulse;
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", "#include <common>\nuniform float uPulse;")
+      .replace("#include <color_fragment>", "#include <color_fragment>\ndiffuseColor.rgb *= 1.3 + uPulse * 0.9;");
+  };
+}
+
 export function createVenue(scene) {
   const group = new THREE.Group();
   group.name = "polygon-party-venue";
@@ -172,21 +214,48 @@ export function createVenue(scene) {
     }
   }
   const silhouette = new THREE.MeshBasicMaterial({ color: "#07030f" });
-  const headMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.26, 10, 8), silhouette, fans.length);
-  const bodyMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.5, 10, 8), silhouette, fans.length);
-  const sticks = fans.filter((f) => f.stick);
-  const stickMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.022, 0.022, 0.5, 6).translate(0, 0.25, 0), new THREE.MeshBasicMaterial({ color: "#ffffff" }), sticks.length);
+  dressCrowd(silhouette, false);
+  const headMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.26, 8, 6), silhouette, fans.length);
+  const bodyMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.5, 8, 6), silhouette, fans.length);
+  const sticks = [];
+  for (const f of fans) if (f.stick) { f.stickI = sticks.length; sticks.push(f); }
+  const stickMat = new THREE.MeshBasicMaterial({ color: "#ffffff" });
+  dressCrowd(stickMat, true);
+  const stickMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.022, 0.022, 0.5, 6).translate(0, 0.25, 0), stickMat, sticks.length);
+  const phaseAttr = (list) => {
+    const a = new Float32Array(list.length);
+    for (let i = 0; i < list.length; i++) a[i] = list[i].phase * 0.15;
+    return new THREE.InstancedBufferAttribute(a, 1);
+  };
+  headMesh.geometry.setAttribute("aPhase", phaseAttr(fans));
+  bodyMesh.geometry.setAttribute("aPhase", phaseAttr(fans));
+  stickMesh.geometry.setAttribute("aPhase", phaseAttr(sticks));
+  const yawAttr = new Float32Array(sticks.length);
+  for (let i = 0; i < sticks.length; i++) yawAttr[i] = sticks[i].a;
+  stickMesh.geometry.setAttribute("aYaw", new THREE.InstancedBufferAttribute(yawAttr, 1));
   for (const mesh of [headMesh, bodyMesh, stickMesh]) {
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     mesh.frustumCulled = false;
     group.add(mesh);
   }
-  stickMesh.setColorAt(0, new THREE.Color());
+  stickMesh.setColorAt(0, new THREE.Color("#ffffff"));
   stickMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
 
-  const tmpColor = new THREE.Color(), white = new THREE.Color("#fff3e0"), e = new THREE.Euler(), pos = new THREE.Vector3(), desired = new THREE.Vector3();
+  const tmpColor = new THREE.Color(), white = new THREE.Color("#fff3e0"), pos = new THREE.Vector3(), desired = new THREE.Vector3();
+  const shown = new Uint8Array(fans.length);
+  for (let i = 0; i < fans.length; i++) {
+    const f = fans[i];
+    shown[i] = 1;
+    headMesh.setMatrixAt(i, m.compose(pos.set(f.x, 0.1 + f.h, f.z), q.identity(), sc.set(1, 1.1, 1)));
+    bodyMesh.setMatrixAt(i, m.compose(pos.set(f.x, -0.62 + f.h, f.z), q.setFromAxisAngle(up, f.a), sc.set(1, 1.45, 0.7)));
+    if (f.stick) stickMesh.setMatrixAt(f.stickI, m.compose(pos.set(f.x, 0.35 + f.h, f.z), q.setFromAxisAngle(up, f.a), sc.set(1, 1, 1)));
+  }
+  headMesh.instanceMatrix.needsUpdate = bodyMesh.instanceMatrix.needsUpdate = stickMesh.instanceMatrix.needsUpdate = true;
+  const stickPal = new Float32Array(9), palNow = new Float32Array(9);
+  const nearest = [0, 1, 2], nearestGap = [0, 0, 0];
   const angleTo = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
-  let lastT = 0;
+  let lastT = 0, fansMoved = 0, colorsMoved = 0, colorCursor = sticks.length;
+  const colorHold = [new THREE.Color(), new THREE.Color(), new THREE.Color()];
   return {
     /**
      * `subject` is the active performer's world position, `eye` the camera,
@@ -211,10 +280,19 @@ export function createVenue(scene) {
       // three heads nearest it stay on it as follow spots.
       const subjectAngle = Math.atan2(subject.x, subject.z);
       const converge = Math.exp(-Math.max(0, t - cueAt) / 0.7);
-      const order = heads.map((h, i) => [angleTo(h.angle, subjectAngle), i]).sort((a, b) => a[0] - b[0]).slice(0, 3).map(([, i]) => i);
+      nearestGap[0] = nearestGap[1] = nearestGap[2] = Infinity;
+      for (let i = 0; i < heads.length; i++) {
+        const gap = angleTo(heads[i].angle, subjectAngle);
+        let at = 3;
+        while (at > 0 && gap < nearestGap[at - 1]) at--;
+        if (at === 3) continue;
+        for (let j = 2; j > at; j--) { nearestGap[j] = nearestGap[j - 1]; nearest[j] = nearest[j - 1]; }
+        nearestGap[at] = gap;
+        nearest[at] = i;
+      }
       const spin = t * (chorus ? 0.9 : 0.35) * motion + (chorus ? Math.sin(beat * Math.PI * 0.5) * 0.4 : 0);
       heads.forEach((h, i) => {
-        const follow = order.includes(i);
+        const follow = i === nearest[0] || i === nearest[1] || i === nearest[2];
         const a = h.angle + spin + Math.sin(t * 0.5 * motion + i) * 0.5;
         const reach = 9 + Math.sin(t * 0.4 * motion + i * 1.7) * 7;
         desired.set(Math.sin(a) * reach, FLOOR, Math.cos(a) * reach);
@@ -242,7 +320,13 @@ export function createVenue(scene) {
       // Light sticks wave together on the beat; the crowd jumps in the choruses.
       // Fans at the lens, or between it and the stage close enough to fill
       // the frame with silhouette, step out of the shot.
-      const jump = (0.03 + chorus * 0.1 + finale * 0.08) * motion;
+      crowdUniforms.uBeat.value = beat;
+      crowdUniforms.uJump.value = (0.03 + chorus * 0.1 + finale * 0.08) * motion;
+      crowdUniforms.uMotion.value = motion;
+      crowdUniforms.uPulse.value = pulse;
+      const chorusOn = chorus > 0.02;
+      crowdUniforms.uSpin.value = chorusOn ? 3 : 1;
+      crowdUniforms.uDrift.value = (chorusOn ? 0.1 : 0.6) / 0.15;
       const fx = look ? look.x : 0, fz = look ? look.z : 0, fl = Math.hypot(fx, fz) || 1;
       const reach = eye ? Math.max(7.5, (Math.hypot(eye.x, eye.z) - 12) * 0.7) : 0;
       const near = (f) => {
@@ -251,21 +335,40 @@ export function createVenue(scene) {
         if (d < 3.2) return 0;
         return d < reach && (dx * fx + dz * fz) / (d * fl) > 0.45 ? 0 : 1;
       };
-      fans.forEach((f, i) => {
-        const bounce = Math.abs(Math.sin(Math.PI * beat + f.phase * 0.15)) * jump;
-        const k = near(f);
-        headMesh.setMatrixAt(i, m.compose(pos.set(f.x, 0.1 + f.h + bounce, f.z), q.identity(), sc.set(k, 1.1 * k, k)));
-        bodyMesh.setMatrixAt(i, m.compose(pos.set(f.x, -0.62 + f.h + bounce, f.z), q.setFromAxisAngle(up, f.a), sc.set(k, 1.45 * k, 0.7 * k)));
-      });
-      sticks.forEach((f, i) => {
-        const bounce = Math.abs(Math.sin(Math.PI * beat + f.phase * 0.15)) * jump;
-        const wave = Math.sin(Math.PI * beat + f.a * (chorus ? 3 : 1) + f.phase * (chorus ? 0.1 : 0.6)) * 0.55 * motion;
-        q.setFromEuler(e.set(0, f.a, wave, "YXZ"));
-        stickMesh.setMatrixAt(i, m.compose(pos.set(f.x, 0.35 + f.h + bounce, f.z), q, sc.setScalar(near(f))));
-        stickMesh.setColorAt(i, tmpColor.copy(i % 3 === 0 ? accent : i % 2 ? primary : secondary).multiplyScalar(1.3 + pulse * 0.9));
-      });
-      for (const mesh of [headMesh, bodyMesh, stickMesh]) mesh.instanceMatrix.needsUpdate = true;
-      stickMesh.instanceColor.needsUpdate = true;
+      let moved = 0;
+      for (let i = 0; i < fans.length && moved < 80; i++) {
+        const k = near(fans[i]);
+        if (k === shown[i]) continue;
+        shown[i] = k;
+        moved++;
+        const f = fans[i];
+        headMesh.setMatrixAt(i, m.compose(pos.set(f.x, 0.1 + f.h, f.z), q.identity(), sc.set(k, 1.1 * k, k)));
+        bodyMesh.setMatrixAt(i, m.compose(pos.set(f.x, -0.62 + f.h, f.z), q.setFromAxisAngle(up, f.a), sc.set(k, 1.45 * k, 0.7 * k)));
+        if (f.stick) stickMesh.setMatrixAt(f.stickI, m.compose(pos.set(f.x, 0.35 + f.h, f.z), q.setFromAxisAngle(up, f.a), sc.set(k, k, k)));
+      }
+      fansMoved = moved;
+      if (moved) for (const mesh of [headMesh, bodyMesh, stickMesh]) mesh.instanceMatrix.needsUpdate = true;
+      palNow[0] = primary.r; palNow[1] = primary.g; palNow[2] = primary.b;
+      palNow[3] = secondary.r; palNow[4] = secondary.g; palNow[5] = secondary.b;
+      palNow[6] = accent.r; palNow[7] = accent.g; palNow[8] = accent.b;
+      let shift = 0;
+      for (let i = 0; i < 9; i++) shift += Math.abs(palNow[i] - stickPal[i]);
+      if (colorCursor >= sticks.length && shift > 0.03) {
+        stickPal.set(palNow);
+        colorHold[0].copy(accent);
+        colorHold[1].copy(primary);
+        colorHold[2].copy(secondary);
+        colorCursor = 0;
+      }
+      const colorEnd = Math.min(sticks.length, colorCursor + 48);
+      for (let i = colorCursor; i < colorEnd; i++) stickMesh.setColorAt(i, i % 3 === 0 ? colorHold[0] : i % 2 ? colorHold[1] : colorHold[2]);
+      colorsMoved = colorEnd - colorCursor;
+      if (colorsMoved) stickMesh.instanceColor.needsUpdate = true;
+      colorCursor = colorEnd;
+    },
+    /** What the last update cost, so a slow frame can be traced. */
+    load() {
+      return { fans: fansMoved, colors: colorsMoved, lasers: lasers.reduce((n, l) => n + (l.visible ? 1 : 0), 0) };
     },
     diagnostics() {
       return { screens: screens.length, beams: heads.map((h) => ({ origin: h.origin.toArray(), aim: h.aim.toArray(), intensity: h.uniforms.uIntensity.value })), lasers: lasers.filter((l) => l.visible).length, fans: fans.length, sticks: sticks.length };

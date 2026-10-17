@@ -95,13 +95,14 @@ export async function mountPolygonParty(target, options = {}) {
   let alive = true;
   let raf = 0;
   let audio;
-  let stage;
+  let stage, lane;
   function destroy() {
     alive = false;
     cancelAnimationFrame(raf);
     ac.abort();
     audio?.pause();
     awake.release();
+    lane?.destroy();
     stage?.destroy();
     root.replaceChildren();
     root.classList.remove("mvg-game", "polygon");
@@ -114,7 +115,7 @@ export async function mountPolygonParty(target, options = {}) {
     tm.setDownbeat(SECTIONS.drop);
     const CHART = chart(tm);
     stage = createStage($("stage"));
-    const lane = createLane(root);
+    lane = createLane(root);
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
     audio = new Audio(params.get("audio") || songAudioUrl(WORK));
@@ -232,15 +233,20 @@ export async function mountPolygonParty(target, options = {}) {
 
     /** The next unjudged note, and the one a tap at t would hit. */
     const nextNote = () => notes.find((n) => n.state === "wait");
+    const aheadPool = [];
+    const ahead = [];
     /** The next few unjudged notes, as seconds ahead and how long their cue takes to close. */
     function upcoming(t) {
-      const out = [];
+      ahead.length = 0;
       for (const n of notes) {
         if (n.state !== "wait") continue;
-        if (out.length === 4 || n.t - t > n.lead) break;
-        out.push({ ahead: n.t - t, lead: n.lead });
+        if (ahead.length === 4 || n.t - t > n.lead) break;
+        const slot = aheadPool[ahead.length] || (aheadPool[ahead.length] = { ahead: 0, lead: 0 });
+        slot.ahead = n.t - t;
+        slot.lead = n.lead;
+        ahead.push(slot);
       }
-      return out;
+      return ahead;
     }
     function hit(n, t) {
       const err = Math.abs(t - n.t);
@@ -425,15 +431,19 @@ export async function mountPolygonParty(target, options = {}) {
     }
 
     // ---------- note lane ----------
-    const laneBeats = [];
-    const laneNotes = [];
+    const laneBeats = [], laneNotes = [], beatPool = [], notePool = [];
+    const beatSlot = (i) => beatPool[i] || (beatPool[i] = [0, false]);
+    const noteSlot = (i) => notePool[i] || (notePool[i] = { t: 0, sides: 0, color: "", last: false, state: "wait", at: 0 });
     /** The lane: beat lines in view, and notes in view with the shape each will draw (or drew). */
     function drawLane(t, due) {
       laneBeats.length = laneNotes.length = 0;
       for (let i = Math.max(0, tm.beatIndexAt(t - 0.4)); i < tm.beats.length; i++) {
         const bt = tm.beatTime(i);
         if (bt > t + LANE_AHEAD) break;
-        laneBeats.push([bt, (((i - tm.dropBeat) % 4) + 4) % 4 === 0]);
+        const b = beatSlot(laneBeats.length);
+        b[0] = bt;
+        b[1] = (((i - tm.dropBeat) % 4) + 4) % 4 === 0;
+        laneBeats.push(b);
       }
       let i = shapeI, e = edges;
       for (const n of notes) {
@@ -442,10 +452,18 @@ export async function mountPolygonParty(target, options = {}) {
           const s = SHAPES[i];
           const last = e + 1 === s.sides;
           if (n.t - t > LANE_AHEAD) break;
-          if (n.t - t > -0.6) laneNotes.push({ t: n.t, sides: s.sides, color: s.color, last, state: "wait", at: 0 });
+          if (n.t - t > -0.6) {
+            const slot = noteSlot(laneNotes.length);
+            slot.t = n.t; slot.sides = s.sides; slot.color = s.color; slot.last = last; slot.state = "wait"; slot.at = 0;
+            laneNotes.push(slot);
+          }
           e = last ? 0 : e + 1;
           if (last) i = (i + 1) % SHAPES.length;
-        } else if (now() - n.at < 0.5) laneNotes.push({ t: n.t, sides: n.sides, color: shapeOf(n.sides).color, last: false, state: n.state, at: n.at });
+        } else if (now() - n.at < 0.5) {
+          const slot = noteSlot(laneNotes.length);
+          slot.t = n.t; slot.sides = n.sides; slot.color = shapeOf(n.sides).color; slot.last = false; slot.state = n.state; slot.at = n.at;
+          laneNotes.push(slot);
+        }
       }
       lane.draw(t, { beats: laneBeats, notes: laneNotes, now: now(), due, sides: current().sides, color: current().color, hitAt: lastHitAt });
     }
@@ -463,10 +481,33 @@ export async function mountPolygonParty(target, options = {}) {
       [...el.children].forEach((s, i) => s.classList.toggle("sung", at.cue.words[i].start <= t + 0.02));
     }
 
+    // ---------- frame log ----------
+    // Gaps between frames. The screen refreshes about every 13ms, so 26ms means a frame was dropped.
+    const hitches = [];
+    const buckets = [0, 0, 0, 0, 0];
+    const longs = [];
+    let frameCount = 0, lastWall = performance.now(), pending = null;
+    try {
+      new PerformanceObserver((list) => {
+        for (const e of list.getEntries()) if (longs.length < 20) longs.push(Math.round(e.duration));
+      }).observe({ type: "longtask" });
+    } catch { /* older browsers have no long-task entries */ }
+    function noteFrame(gap) {
+      frameCount++;
+      buckets[gap <= 16 ? 0 : gap <= 22 ? 1 : gap <= 33 ? 2 : gap <= 50 ? 3 : 4]++;
+      if (gap < 26 || !pending || hitches.length >= 40) return;
+      const row = { gap: Math.round(gap), ...pending };
+      hitches.push(row);
+      console.info(`[polygon] ${row.gap}ms at ${row.t}s ${row.shot}${row.moving ? " moving" : ""} fans ${row.fans} colors ${row.colors} lasers ${row.lasers} draw ${row.draw}ms hud ${row.hud}ms`);
+    }
+
     // ---------- frame ----------
     function frame() {
       if (!alive) return;
       raf = requestAnimationFrame(frame);
+      const wall = performance.now();
+      noteFrame(wall - lastWall);
+      lastWall = wall;
       let t;
       if (state === "title") {
         t = ATTRACT[0] + (now() % (ATTRACT[1] - ATTRACT[0]));
@@ -491,7 +532,9 @@ export async function mountPolygonParty(target, options = {}) {
         demo: state === "title",
         reducedMotion: reducedMotion.matches,
       });
+      const drawn = performance.now();
       if (state !== "title") hud(t, view, n);
+      pending = { t: +t.toFixed(2), shot: view.shot, moving: view.moving, fans: view.fans, colors: view.colors, lasers: view.lasers, draw: Math.round(drawn - wall), hud: Math.round(performance.now() - drawn) };
     }
 
     function hud(t, view, n) {
@@ -529,6 +572,8 @@ export async function mountPolygonParty(target, options = {}) {
       press: () => state === "play" && press(songTime()),
       audio,
       diagnostics: () => stage.diagnostics(),
+      /** Frame gaps so far: refresh buckets, the slow frames, and long tasks. */
+      frames: () => ({ frames: frameCount, buckets, hitches: hitches.slice(), longs: longs.slice() }),
       destroy,
     };
     root.mvgGame = api;

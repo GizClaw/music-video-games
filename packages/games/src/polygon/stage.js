@@ -170,7 +170,8 @@ class Performer {
       const lit = done || (this.count > 0 && (k === 0 || k <= this.count));
       const litAt = k === 0 ? this.drawnAt[0] : this.drawnAt[Math.min(k - 1, this.n - 1)];
       const pop = lit ? easeOutBack(clamp((now - litAt) / 0.22, 0, 1)) : 0;
-      dot.material = lit ? shared.lit : shared.dim;
+      const mat = lit ? shared.lit : shared.dim;
+      if (dot.material !== mat) dot.material = mat;
       dot.scale.setScalar(lit ? 0.7 + pop * 0.5 + flash * 0.2 : 0.55);
       label.material.opacity = lit && focus > 0.6 ? (focus - 0.6) / 0.4 : 0;
     });
@@ -183,22 +184,29 @@ class Performer {
 
 /** The 3D party: the ring of performers on the video's stage inside an arena. */
 export function createStage(host) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+  // A retina framebuffer plus half-float bloom is what drops frames. The HUD is DOM, so it stays sharp.
+  const pixelCap = matchMedia("(pointer: coarse)").matches ? 1.25 : 1.5;
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, pixelCap));
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   host.appendChild(renderer.domElement);
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2("#0c0418", 0.028);
   const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 200);
-  const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 });
+  const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 0 });
   const composer = new EffectComposer(renderer, target);
   const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.5, 0.45, 0.8);
+  // Bloom already blurs at half resolution; half again keeps the glow and drops most of its cost.
+  const bloomSetSize = bloom.setSize.bind(bloom);
+  bloom.setSize = (w, h) => bloomSetSize(Math.max(1, Math.round(w * 0.5)), Math.max(1, Math.round(h * 0.5)));
   const post = new ShaderPass(GamePostShader);
   [new RenderPass(scene, camera), new ShaderPass(SanitizeShader), bloom, post, new OutputPass()].forEach((p) => composer.addPass(p));
   let view = { w: 1, h: 1 };
   const resize = () => {
-    view = { w: Math.max(1, host.clientWidth), h: Math.max(1, host.clientHeight) };
+    const w = Math.max(1, host.clientWidth), h = Math.max(1, host.clientHeight);
+    if (w === view.w && h === view.h) return;
+    view = { w, h };
     renderer.setSize(view.w, view.h, false);
     composer.setPixelRatio(renderer.getPixelRatio());
     composer.setSize(view.w, view.h);
@@ -345,36 +353,60 @@ export function createStage(host) {
   sparks.renderOrder = 8;
   scene.add(sparks);
   sparkPos.fill(1e5);
-  let sparkHead = 0;
+  let sparkHead = 0, sparkLive = 0;
   function burst(at, count, color, speed, spread = 1) {
     for (let k = 0; k < count; k++) {
       const i = sparkHead;
       sparkHead = (sparkHead + 1) % SPARKS;
       const a = Math.random() * Math.PI * 2, b = (Math.random() - 0.5) * Math.PI * spread;
       const s = speed * (0.35 + Math.random() * 0.8);
-      sparkPos.set([at.x, at.y, at.z], i * 3);
-      sparkVel.set([Math.cos(a) * Math.cos(b) * s, Math.sin(b) * s + speed * 0.3, Math.sin(a) * Math.cos(b) * s], i * 3);
+      const o = i * 3;
+      sparkPos[o] = at.x; sparkPos[o + 1] = at.y; sparkPos[o + 2] = at.z;
+      sparkVel[o] = Math.cos(a) * Math.cos(b) * s;
+      sparkVel[o + 1] = Math.sin(b) * s + speed * 0.3;
+      sparkVel[o + 2] = Math.sin(a) * Math.cos(b) * s;
       tint.copy(color).multiplyScalar(0.5 + Math.random() * 0.45);
-      sparkCol.set([tint.r, tint.g, tint.b], i * 3);
+      sparkCol[o] = tint.r; sparkCol[o + 1] = tint.g; sparkCol[o + 2] = tint.b;
       sparkLife[i] = 0.45 + Math.random() * 0.7;
+      sparkLive = SPARKS;
     }
   }
 
-  // Bunting loops round over the ring, sagging between ten anchors.
-  const buntingY = (a, t) => BUNTING.y - BUNTING.sag * Math.abs(Math.sin(5 * a)) + Math.sin(t * 1.1) * 0.035;
+  // Bunting loops round over the ring, sagging between ten anchors. The shape is fixed; only the sway changes.
   const flagGeo = new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute([-0.24, 0, 0, 0.24, 0, 0, 0, -0.3, 0], 3));
   const flags = Array.from({ length: BUNTING.flags }, (_, i) => {
     const flag = new THREE.Mesh(flagGeo, new THREE.MeshBasicMaterial({ color: SHAPES[i % 10].color, side: THREE.DoubleSide }));
     scene.add(flag);
     return flag;
   });
-  const stringPos = new Float32Array(BUNTING.points * 3);
+  const stringPos = new Float32Array(BUNTING.points * 3), stringBaseY = new Float32Array(BUNTING.points);
+  for (let i = 0; i < BUNTING.points; i++) {
+    const a = (i / (BUNTING.points - 1)) * Math.PI * 2;
+    stringPos[i * 3] = Math.sin(a) * BUNTING.radius;
+    stringPos[i * 3 + 2] = Math.cos(a) * BUNTING.radius;
+    stringBaseY[i] = BUNTING.y - BUNTING.sag * Math.abs(Math.sin(5 * a));
+  }
+  const flagX = new Float32Array(BUNTING.flags), flagY = new Float32Array(BUNTING.flags), flagZ = new Float32Array(BUNTING.flags), flagAngle = new Float32Array(BUNTING.flags);
+  for (let i = 0; i < BUNTING.flags; i++) {
+    const a = ((i + 0.5) / BUNTING.flags) * Math.PI * 2;
+    flagAngle[i] = a;
+    flagX[i] = Math.sin(a) * BUNTING.radius;
+    flagZ[i] = Math.cos(a) * BUNTING.radius;
+    flagY[i] = BUNTING.y - BUNTING.sag * Math.abs(Math.sin(5 * a));
+  }
   const stringGeo = new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(stringPos, 3));
   scene.add(new THREE.Line(stringGeo, new THREE.LineBasicMaterial({ color: "#e8c4dc", transparent: true, opacity: 0.55 })));
 
-  // Confetti drifting down over the stage.
-  const confettiPos = new Float32Array(CONFETTI * 3), confettiCol = new Float32Array(CONFETTI * 3);
-  for (let i = 0; i < CONFETTI; i++) tint.set(SHAPES[i % 10].color).toArray(confettiCol, i * 3);
+  // Confetti drifting down over the stage. Seeds are fixed so a frame allocates nothing.
+  const confettiPos = new Float32Array(CONFETTI * 3), confettiCol = new Float32Array(CONFETTI * 3), confettiSeed = new Float32Array(CONFETTI * 4);
+  for (let i = 0; i < CONFETTI; i++) {
+    tint.set(SHAPES[i % 10].color).toArray(confettiCol, i * 3);
+    const o = i * 4;
+    confettiSeed[o] = hash(i * 1.7) * Math.PI * 2;
+    confettiSeed[o + 1] = 1 + hash(i * 2.3) * 11;
+    confettiSeed[o + 2] = hash(i * 3.1) * 10;
+    confettiSeed[o + 3] = 0.25 + hash(i * 4.7) * 0.3;
+  }
   const confettiGeo = new THREE.BufferGeometry();
   confettiGeo.setAttribute("position", new THREE.BufferAttribute(confettiPos, 3));
   confettiGeo.setAttribute("color", new THREE.BufferAttribute(confettiCol, 3));
@@ -382,7 +414,11 @@ export function createStage(host) {
   confetti.frustumCulled = false;
   scene.add(confetti);
 
+  const cueGold = new THREE.Color("#ffd23f"), cueWhite = new THREE.Color("#ffffff");
   const director = new ShotDirector();
+  // Compile while the song is still loading, so the first painted frame does not stall on a new shader.
+  renderer.compile(scene, camera);
+  composer.render();
   const proj = new THREE.Vector3(), forward = new THREE.Vector3(), tip = new THREE.Vector3(), subject = new THREE.Vector3(), lookAt = new THREE.Vector3();
   let active = null, lastPhase = null, lastBar = null, chorusLevel = 0, outroLevel = 0;
   let enteredAt = performance.now() / 1000, lastNow = enteredAt, ending = null, completeFlash = -100;
@@ -432,6 +468,7 @@ export function createStage(host) {
       enteredAt = performance.now() / 1000;
       sparkLife.fill(0);
       sparkPos.fill(1e5);
+      sparkLive = 0;
       waves.forEach((w) => (w.at = -100));
     },
     /** Pull back over the whole arena for the results. */
@@ -521,7 +558,7 @@ export function createStage(host) {
         const scale = 1 + close * 1.6;
         ring.scale.setScalar(scale);
         glowRing.scale.setScalar(scale * 1.02);
-        ring.material.color.set(due ? "#ffd23f" : "#ffffff").multiplyScalar(due ? 1.3 : 0.8);
+        ring.material.color.copy(due ? cueGold : cueWhite).multiplyScalar(due ? 1.3 : 0.8);
         ring.material.opacity = clamp((1 - close) * 3, 0, 1) * (note.ahead < 0 ? clamp(1 + note.ahead / 0.25, 0, 1) : 1) * (i === 0 ? 1 : 0.55 - i * 0.1);
         glowRing.material.color.copy(ring.material.color);
         glowRing.material.opacity = ring.material.opacity * 0.2;
@@ -535,36 +572,40 @@ export function createStage(host) {
         w.mesh.material.opacity = (1 - u) ** 1.5 * (w.big ? 0.6 : 0.55);
       }
 
-      // Sparks fall and fade.
-      for (let i = 0; i < SPARKS; i++) {
-        if (sparkLife[i] <= 0) continue;
-        sparkLife[i] -= dt;
-        sparkVel[i * 3 + 1] -= 3.2 * dt;
-        for (let a = 0; a < 3; a++) {
-          sparkVel[i * 3 + a] *= 1 - dt * 0.6;
-          sparkPos[i * 3 + a] += sparkVel[i * 3 + a] * dt;
+      // Sparks fall and fade. With none alive the buffers stay on the GPU.
+      if (sparkLive > 0) {
+        let alive = 0;
+        for (let i = 0; i < SPARKS; i++) {
+          if (sparkLife[i] <= 0) continue;
+          sparkLife[i] -= dt;
+          sparkVel[i * 3 + 1] -= 3.2 * dt;
+          for (let a = 0; a < 3; a++) {
+            sparkVel[i * 3 + a] *= 1 - dt * 0.6;
+            sparkPos[i * 3 + a] += sparkVel[i * 3 + a] * dt;
+          }
+          const fade = clamp(sparkLife[i] / 0.4, 0, 1);
+          for (let a = 0; a < 3; a++) sparkCol[i * 3 + a] *= 0.985 + 0.015 * fade;
+          if (sparkLife[i] <= 0) sparkPos[i * 3 + 1] = 1e5;
+          else alive++;
         }
-        const fade = clamp(sparkLife[i] / 0.4, 0, 1);
-        for (let a = 0; a < 3; a++) sparkCol[i * 3 + a] *= 0.985 + 0.015 * fade;
-        if (sparkLife[i] <= 0) sparkPos[i * 3 + 1] = 1e5;
+        sparkLive = alive;
+        sparkGeo.attributes.position.needsUpdate = true;
+        sparkGeo.attributes.color.needsUpdate = true;
       }
-      sparkGeo.attributes.position.needsUpdate = true;
-      sparkGeo.attributes.color.needsUpdate = true;
 
-      for (let i = 0; i < BUNTING.points; i++) {
-        const a = (i / (BUNTING.points - 1)) * Math.PI * 2;
-        stringPos.set([Math.sin(a) * BUNTING.radius, buntingY(a, t), Math.cos(a) * BUNTING.radius], i * 3);
-      }
+      const sway = Math.sin(t * 1.1) * 0.035;
+      for (let i = 0; i < BUNTING.points; i++) stringPos[i * 3 + 1] = stringBaseY[i] + sway;
       stringGeo.attributes.position.needsUpdate = true;
-      flags.forEach((f, i) => {
-        const a = ((i + 0.5) / BUNTING.flags) * Math.PI * 2;
-        f.position.set(Math.sin(a) * BUNTING.radius, buntingY(a, t), Math.cos(a) * BUNTING.radius);
-        f.rotation.set(Math.sin(t * 2 + i) * 0.2 * motion, a, Math.sin(t * 1.3 + i) * 0.04 * motion);
-      });
+      for (let i = 0; i < BUNTING.flags; i++) {
+        flags[i].position.set(flagX[i], flagY[i] + sway, flagZ[i]);
+        flags[i].rotation.set(Math.sin(t * 2 + i) * 0.2 * motion, flagAngle[i], Math.sin(t * 1.3 + i) * 0.04 * motion);
+      }
       const fall = chorus ? 1.4 : 0.6;
       for (let i = 0; i < CONFETTI; i++) {
-        const a = hash(i * 1.7) * Math.PI * 2, r = 1 + hash(i * 2.3) * 11;
-        confettiPos.set([Math.sin(a) * r + Math.sin(t + i) * 0.2, 9 - (((hash(i * 3.1) * 10 + t * (0.25 + hash(i * 4.7) * 0.3) * fall) % 10) + 10) % 10, Math.cos(a) * r], i * 3);
+        const o = i * 4, p = i * 3, a = confettiSeed[o], r = confettiSeed[o + 1];
+        confettiPos[p] = Math.sin(a) * r + Math.sin(t + i) * 0.2;
+        confettiPos[p + 1] = 9 - (((confettiSeed[o + 2] + t * confettiSeed[o + 3] * fall) % 10) + 10) % 10;
+        confettiPos[p + 2] = Math.cos(a) * r;
       }
       confettiGeo.attributes.position.needsUpdate = true;
 
@@ -592,7 +633,8 @@ export function createStage(host) {
       const head = toScreen(subject);
       subject.set(0, 0, 0).applyMatrix4(p.group.matrixWorld);
       const centre = toScreen(subject);
-      return { head, centre, size: Math.abs(head.y - centre.y) };
+      const load = venue.load();
+      return { head, centre, size: Math.abs(head.y - centre.y), shot: director.shot, moving: director.pose.moving, fans: load.fans, colors: load.colors, lasers: load.lasers };
     },
     diagnostics() {
       return { camera: { shot: director.shot, moving: director.pose.moving, position: camera.position.toArray(), target: lookAt.toArray(), fov: camera.fov }, active, performers: performers.map((p) => ({ sides: p.n, count: p.count, position: p.group.position.toArray(), yaw: p.group.rotation.y })), venue: venue.diagnostics() };

@@ -22,6 +22,9 @@ export function createLane(root) {
   const chipKey = new Array(CHIPS).fill("");
   let targetKey = "";
   let lastHit = -1;
+  let width = el.clientWidth;
+  const watch = new ResizeObserver(() => { width = el.clientWidth; });
+  watch.observe(el);
   return {
     /**
      * Draw at song time t: `beats` is `[time, isBarLine]` for the beats in
@@ -30,7 +33,7 @@ export function createLane(root) {
      * wall time, `due` whether the next note is inside its window.
      */
     draw(t, { beats, notes, now, due, sides, color, hitAt }) {
-      const w = el.clientWidth;
+      const w = width;
       const x0 = w * TARGET;
       const px = (w - x0) / LANE_AHEAD;
       const at = (time) => x0 + (time - t) * px;
@@ -77,5 +80,6 @@ export function createLane(root) {
         target.classList.add("hit");
       }
     },
+    destroy() { watch.disconnect(); },
   };
 }
