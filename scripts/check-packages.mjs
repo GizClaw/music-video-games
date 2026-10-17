@@ -43,7 +43,7 @@ try {
     mountSpectrumSlide("#game");
   `);
   // The complete entry must build from the installed SDK alone, including
-  // its default catalog, styles, core logo and all five lazy game loaders.
+  // its default catalog, styles, core logo and all lazy game loaders.
   writeFileSync(join(consumer, "universe.html"), '<div id="universe" style="height: 100vh"></div><script type="module" src="/universe.js"></script>');
   writeFileSync(join(consumer, "universe.js"), `
     import { mountUniverse, SERIES } from "@gizclaw/mvg-games/universe.js";
@@ -59,7 +59,7 @@ try {
   const games = join(consumer, "node_modules/@gizclaw/mvg-games/src");
   const catalog = JSON.parse(readFileSync(join(games, "universe/universe.json"), "utf8"));
   assert(catalog.series.length > 0);
-  for (const id of ["spectrum-slide", "planet-parade", "binary-boogie", "prime-time", "penguin-steps"]) {
+  for (const id of ["spectrum-slide", "planet-parade", "binary-boogie", "prime-time", "penguin-steps", "states-of-matter"]) {
     assert(catalog.series.some((s) => s.works.some((w) => w.id === id)), `Packaged universe is missing ${id}`);
     assert(existsSync(join(games, `${id}.js`)), `Packaged universe cannot load ${id}`);
   }

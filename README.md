@@ -38,6 +38,12 @@ Every frame is a function of the song's time. No generative video model, no keyf
   </tr>
 </table>
 
+## Matter Run
+
+**One little drop, four superpowers.** A 3D runner for *States of Matter*: change into ice, water, vapor or plasma with **A S D F** or the left touch controls, then press **Space** or the right action button to smash, slide, jump or zap through the laboratory obstacles on the beat. Combos build speed and score bonuses; misses slow the runner, and reaching the minimum speed ends the run. The English song and highlighted lyrics keep their original tempo. Finish the song for a score and grade.
+
+Run locally with `npm run dev`, then `npm run play -- states-of-matter`. The game is also selectable from the States of Matter planet in the STEM galaxy. See the [game guide](packages/games/README.md#matter-run--states-of-matter) for scoring, audio sync and embedding.
+
 ## The videos
 
 All twenty-five songs from the STEM Institute album, each 1080×1920 at 30 fps and cut to
@@ -180,7 +186,7 @@ the mouse works throughout.
 Games are reached through the universe only; there are no per-game pages, and
 hosts can mount the entire entrance with `mountUniverse(target)` (the bundled
 catalog and styles are included), or mount a single game from `@gizclaw/mvg-games`
-(`mountSpectrumSlide`, `mountPlanetParade`, `mountBinaryBoogie`, `mountPrimeTime`). A route
+(`mountSpectrumSlide`, `mountPlanetParade`, `mountBinaryBoogie`, `mountPrimeTime`, `mountPenguinSteps`, `mountStatesOfMatter`). A route
 straight into a game skips the opening stage, and it can carry game options:
 `#/stem-institute/binary-boogie/play?start=31&auto`. From the browser console,
 `__universe.play("binary-boogie", { start: 31, auto: true })` jumps there and
@@ -199,7 +205,7 @@ owns packaging; Deploy owns publication to the TOS npm registry.
 
 - [`@gizclaw/mvg-core`](packages/core/README.md): timing, HUD, opening, post-processing and shared assets.
 - [`@gizclaw/mvg-video`](packages/video/README.md): analysis, lyric alignment and placement, song modules, rendering and deliverables.
-- [`@gizclaw/mvg-games`](packages/games/README.md): embeddable universe entrance, catalog, game layout and the Slide Down the Spectrum, Planet Parade, Binary Boogie and Prime Time charts.
+- [`@gizclaw/mvg-games`](packages/games/README.md): embeddable universe entrance, catalog, game layout and the Slide Down the Spectrum, Planet Parade, Binary Boogie, Prime Time, Penguin Step Party and Matter Run charts.
 
 ## Releases
 

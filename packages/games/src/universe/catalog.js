@@ -89,7 +89,14 @@ const WORK_EXTRA = {
   [`${STEM}/pi-keeps-going`]: { colors: ["#ff4f6d", "#ffc93d", "#3dff8a"], look: "swirl", feature: "spiral", preview: 26.77 },
   [`${STEM}/polygon-party`]: { colors: ["#ff3d5a", "#ffd23f", "#2fe0ff"], look: "facet", feature: "crystals", preview: 29.21 },
   [`${STEM}/molecule-shapes`]: { colors: ["#ff4fd8", "#3de8ff", "#7cff4f"], look: "swirl", feature: "atoms", preview: 26.29 },
-  [`${STEM}/states-of-matter`]: { colors: ["#6fc3ff", "#3dffc8", "#ff4fd8"], look: "ice", feature: "vapor", preview: 31.95 },
+  [`${STEM}/states-of-matter`]: {
+    colors: ["#96dcff", "#64f1c5", "#dfb1ff"], look: "ice", feature: "vapor", preview: 31.95,
+    howto: {
+      zh: ["A S D F 或左侧按钮切换形态", "靠近机关时按空格或右侧动作键，撞击、滑行、跳跃、放电", "连击提速、失误减速，太慢就出局；音乐保持原速"],
+      en: ["Choose ice, water, vapor or plasma with A S D F or the left controls", "Press Space or the right action button at the gate: smash, slide, jump or zap", "Combos speed you up; misses slow you down. Keep moving to survive; the music stays at its original tempo"],
+    },
+    game: () => import("../states-of-matter.js").then((m) => m.mountStatesOfMatter),
+  },
   [`${STEM}/newtons-three`]: { colors: ["#3de8ff", "#8c7bff", "#ff9a3d"], look: "gas", feature: "ellipse", preview: 27.86 },
   [`${STEM}/prefix-power`]: { colors: ["#ff4fd8", "#ffd23f", "#4a1d6b"], look: "rock", feature: "nested", preview: 31.75 },
   [`${STEM}/energy-shapeshifter`]: { colors: ["#ff8a1f", "#ffe14a", "#b45dff"], look: "lava", feature: "flares", preview: 45.19 },

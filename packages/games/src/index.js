@@ -7,4 +7,5 @@ export { mountPlanetParade } from "./planet-parade.js";
 export { mountPrimeTime } from "./prime-time.js";
 export { Sfx, sfx } from "./sfx.js";
 export { mountSpectrumSlide } from "./spectrum-slide.js";
+export { mountStatesOfMatter } from "./states-of-matter.js";
 export { mountUniverse, SERIES } from "./universe.js";
