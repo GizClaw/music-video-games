@@ -186,7 +186,7 @@ the mouse works throughout.
 Games are reached through the universe only; there are no per-game pages, and
 hosts can mount the entire entrance with `mountUniverse(target)` (the bundled
 catalog and styles are included), or mount a single game from `@gizclaw/mvg-games`
-(`mountSpectrumSlide`, `mountPlanetParade`, `mountBinaryBoogie`, `mountPrimeTime`, `mountPenguinSteps`, `mountStatesOfMatter`). A route
+(`mountSpectrumSlide`, `mountPlanetParade`, `mountBinaryBoogie`, `mountPrimeTime`, `mountPenguinSteps`, `mountStatesOfMatter`, `mountPolygonParty`). A route
 straight into a game skips the opening stage, and it can carry game options:
 `#/stem-institute/binary-boogie/play?start=31&auto`. From the browser console,
 `__universe.play("binary-boogie", { start: 31, auto: true })` jumps there and
@@ -205,7 +205,7 @@ owns packaging; Deploy owns publication to the TOS npm registry.
 
 - [`@gizclaw/mvg-core`](packages/core/README.md): timing, HUD, opening, post-processing and shared assets.
 - [`@gizclaw/mvg-video`](packages/video/README.md): analysis, lyric alignment and placement, song modules, rendering and deliverables.
-- [`@gizclaw/mvg-games`](packages/games/README.md): embeddable universe entrance, catalog, game layout and the Slide Down the Spectrum, Planet Parade, Binary Boogie, Prime Time, Penguin Step Party and Matter Run charts.
+- [`@gizclaw/mvg-games`](packages/games/README.md): embeddable universe entrance, catalog, game layout and the Slide Down the Spectrum, Planet Parade, Binary Boogie, Prime Time, Penguin Step Party, Matter Run and Polygon Party charts.
 
 ## Releases
 
