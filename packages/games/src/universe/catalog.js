@@ -30,6 +30,17 @@ const SERIES_EXTRA = {
 const STEM = "songs/music/stem-institute/en-us";
 const ANIMAL_EN = "songs/music/animal-dance-en/en-us";
 const WORK_EXTRA = {
+  [`${ANIMAL_EN}/frog-hop-stop`]: {
+    colors: ["#3fc84a", "#ffb000", "#ff9cc4"],
+    look: "swirl",
+    feature: "moons",
+    preview: 32.29,
+    howto: {
+      zh: ["音符落到圆按钮上时按 ← ↑ → 或点按钮，青蛙跳到那片荷叶", "紫色长条：唱 Bend 时按住中间，唱 stop 时松手；Hooray 左右一起按", "跳得准小青蛙会加入，唱 freeze 时别动"],
+      en: ["Press ← ↑ → or tap a round button as a note lands on it", "Purple bars: hold the middle on Bend, let go on stop; Hooray is left and right together", "Hop well and little frogs join; on freeze, don't move"],
+    },
+    game: () => import("../frog-hop-stop.js").then((m) => m.mountFrogHopStop),
+  },
   [`${ANIMAL_EN}/penguin-steps`]: {
     colors: ["#2fb8f0", "#ff4fa3", "#fff4e4"],
     look: "ice",
