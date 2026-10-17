@@ -1,3 +1,4 @@
+import { lifeMarkup } from "../finale.js";
 import { COMMON, overlays } from "../lang.js";
 import { spectrumStyle } from "../spectrum/style.js";
 
@@ -76,13 +77,13 @@ export const frogStyle = `${spectrumStyle}
 const TITLE = {
   zh: {
     sub: "荷叶跳跳！音符落到圆按钮上时按下，青蛙就跳到那片荷叶上",
-    keys: ["<kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> 左、中、右（空格和 <kbd>↓</kbd> 也算中间）", "紫色长条：唱 Bend 时按住中间，唱 stop 时松手", "Hooray 左右一起按；唱到 freeze 时别动！"],
-    touchKeys: ["音符落到圆按钮上时点那个按钮", "紫色长条：按住中间不放，到 STOP 再松手", "Hooray 左右一起按；唱到 freeze 时别动！"],
+    keys: ["<kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> 左、中、右（空格和 <kbd>↓</kbd> 也算中间）", "紫色长条：唱 Bend 时按住中间，唱 stop 时松手", "漏拍、按错会掉血，血条空了就失败；跳完整首歌就通关"],
+    touchKeys: ["音符落到圆按钮上时点那个按钮", "紫色长条：按住中间不放，到 STOP 再松手", "漏拍会掉血，血条空了就失败；跳完整首歌就通关"],
   },
   en: {
     sub: "Lily pad hop! Press a round button as a note lands on it and the frog leaps to that pad",
-    keys: ["<kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> left, middle, right (Space and <kbd>↓</kbd> are the middle too)", "Purple bars: hold the middle on Bend, let go on stop", "Hooray: left and right together; on freeze, don't move!"],
-    touchKeys: ["Tap a round button as a note lands on it", "Purple bars: hold the middle, let go at STOP", "Hooray: left and right together; on freeze, don't move!"],
+    keys: ["<kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> left, middle, right (Space and <kbd>↓</kbd> are the middle too)", "Purple bars: hold the middle on Bend, let go on stop", "Misses and wrong buttons drain your life; hop to the end of the song to clear"],
+    touchKeys: ["Tap a round button as a note lands on it", "Purple bars: hold the middle, let go at STOP", "Misses drain your life; hop to the end of the song to clear"],
   },
 };
 export const titleKeys = (lang, touch) => (touch ? TITLE[lang].touchKeys : TITLE[lang].keys);
@@ -97,7 +98,7 @@ export const frogMarkup = (lang) => {
   <div class="hud" id="hud" hidden>
     <div class="progress" id="progress"><i></i></div>
     <div class="crew" id="crew"></div>
-    <div class="score" id="score"><b>0</b><span>SCORE</span></div>
+    <div class="score" id="score"><b>0</b><span>SCORE</span>${lifeMarkup}</div>
     <div class="combo" id="combo"><b>0</b><span>COMBO</span><em>×1</em></div>
     <div class="band" id="band"></div>
     <div class="lyric" id="lyric"></div>
