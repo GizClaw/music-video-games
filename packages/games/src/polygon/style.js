@@ -1,3 +1,4 @@
+import { lifeMarkup } from "../finale.js";
 import { COMMON, overlays } from "../lang.js";
 import { spectrumStyle } from "../spectrum/style.js";
 import { SHAPES } from "./song.js";
@@ -82,22 +83,19 @@ export const polygonStyle = `${spectrumStyle}
 @media (max-height: 500px) {
   .mvg-game.polygon .overlay { justify-content: flex-start; padding-top: 14px; }
   .mvg-game.polygon h1 br { display: none; }
-  .mvg-game.polygon .grade { font-size: 72px; }
-  .mvg-game.polygon .final { font-size: 26px; margin-bottom: 6px; }
-  .mvg-game.polygon .stats { font-size: 12px; border-spacing: 16px 1px; margin-bottom: 10px; }
 }
 `;
 
 export const TITLE = {
   zh: {
     sub: "跟着节拍，一拍画一条边",
-    keys: ["外圈缩到形状上的那一下，点屏幕或按 <kbd>空格</kbd>", "画满所有边，镜头就转到下一位", "越往后越快：从两拍一下到半拍一下"],
-    touchKeys: ["外圈缩到形状上的那一下，敲下面的鼓，点屏幕哪里都行", "画满所有边，镜头就转到下一位", "越往后越快：从两拍一下到半拍一下"],
+    keys: ["外圈缩到形状上的那一下，点屏幕或按 <kbd>空格</kbd>", "画满所有边，镜头就转到下一位", "越往后越快：漏拍会掉血，血条空了就失败；画到最后一笔就通关"],
+    touchKeys: ["外圈缩到形状上的那一下，敲下面的鼓，点屏幕哪里都行", "画满所有边，镜头就转到下一位", "越往后越快：漏拍会掉血，血条空了就失败；画到最后一笔就通关"],
   },
   en: {
     sub: "Draw one edge on every beat",
-    keys: ["Tap or press <kbd>Space</kbd> as the outer outline closes onto the shape", "Close the shape and the camera swings to the next one", "It speeds up: from every other beat to every half beat"],
-    touchKeys: ["Hit a drum pad as the outer outline closes onto the shape; anywhere on screen works", "Close the shape and the camera swings to the next one", "It speeds up: from every other beat to every half beat"],
+    keys: ["Tap or press <kbd>Space</kbd> as the outer outline closes onto the shape", "Close the shape and the camera swings to the next one", "It speeds up; misses drain your life, and drawing to the last edge clears the stage"],
+    touchKeys: ["Hit a drum pad as the outer outline closes onto the shape; anywhere on screen works", "Close the shape and the camera swings to the next one", "It speeds up; misses drain your life, and drawing to the last edge clears the stage"],
   },
 };
 
@@ -119,7 +117,7 @@ export const polygonMarkup = (lang) => {
   <div class="hud" id="hud" hidden>
     <div class="progress" id="progress"><i></i></div>
     <div class="shapes" id="shapes">${SHAPES.map((s) => `<i style="--shape:${clip(s.sides)};--c:${s.color}"><span>${s.sides}</span></i>`).join("")}</div>
-    <div class="score" id="score"><b>0</b><span>SCORE</span></div>
+    <div class="score" id="score"><b>0</b><span>SCORE</span>${lifeMarkup}</div>
     <div class="combo" id="combo"><b>0</b><span>COMBO</span><em>×1</em></div>
     <div class="band" id="band"></div>
     <div class="tag" id="tag"><b></b><small></small><div class="pips"></div></div>

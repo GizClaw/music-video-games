@@ -1,3 +1,5 @@
+import { finaleStyle, resultMarkup } from "../finale.js";
+import { COMMON } from "../lang.js";
 import { STATES } from "./song.js";
 import { ACTION_NAMES } from "./action.js";
 const readingFont = new URL("./assets/Nunito-Variable.ttf", import.meta.url).href;
@@ -28,7 +30,7 @@ export const TEXT = {
     act: "发动动作", space: "空格", tap: "点击", actionReady: "现在！", actionWait: "准备", actionDone: "就绪！", early: "再靠近一点", noAction: "记得按动作键", actionTip: "先选形态 · 靠近时按空格", touchTip: "左边变身 · 右边行动",
     restart: "重新开始", pauseCaption: "PAUSED / 暂停", runScore: "本次得分", runCombo: "连续通过",
     activeForm: "当前形态", nextForm: "下一拍", mute: "静音", unmute: "开启声音",
-    title: "物态冲刺", tagline: "一个小水滴，四种超能力。", desc: "跟着音乐变身，穿过奇妙的粒子实验室。", start: "开始冲刺", loading: "音乐准备中…", retry: "重新载入音乐", ready: "约 2 分钟 · 节拍闯关", controls: "A S D F 或点击下方形态", tip: "先选对形态，再踩准节拍按动作。", pause: "暂停", resume: "继续冲刺", again: "再跑一次", paused: "暂停", pausedSub: "音乐等你，准备好了再出发。", score: "得分", combo: "连击", energy: "速度", next: "下个机关", practice: "连击提速 · 失误减速", perfect: "PERFECT", great: "GREAT", good: "PASS", miss: "形态错误", complete: "冲刺完成", over: "速度太低", maxCombo: "最高连击", accuracy: "通过率", passed: "通过机关", music: "原曲 · States of Matter", audioError: "音乐暂时无法播放，请重试。", gesture: "点击继续，让音乐响起来。", sound: "声音", syncing: "正在缓冲音乐…", watch: "自动演示", keys: "先切换形态，到机关前按空格", introTip: "试试四种形态", countdown: "听好节拍，准备变身", back: "返回音乐宇宙", sync: "音画同步", best: "最佳成绩", tail: "跑得漂亮，享受最后一段音乐！",
+    title: "物态冲刺", tagline: "一个小水滴，四种超能力。", desc: "跟着音乐变身，穿过奇妙的粒子实验室。", start: "开始冲刺", loading: "音乐准备中…", retry: "重新载入音乐", ready: "约 2 分钟 · 节拍闯关", controls: "A S D F 或点击下方形态", tip: "先选对形态，再踩准节拍按动作。", pause: "暂停", resume: "继续冲刺", again: "再跑一次", paused: "暂停", pausedSub: "音乐等你，准备好了再出发。", score: "得分", combo: "连击", energy: "速度", next: "下个机关", practice: "连击提速 · 失误减速", perfect: "PERFECT", great: "GREAT", good: "PASS", miss: "形态错误", maxCombo: "最高连击", accuracy: "通过率", passed: "通过机关", music: "原曲 · States of Matter", audioError: "音乐暂时无法播放，请重试。", gesture: "点击继续，让音乐响起来。", sound: "声音", syncing: "正在缓冲音乐…", watch: "自动演示", keys: "先切换形态，到机关前按空格", introTip: "试试四种形态", countdown: "听好节拍，准备变身", back: "返回音乐宇宙", sync: "音画同步", tail: "跑得漂亮，享受最后一段音乐！",
   },
   en: {
     speedTrial: "TRY THIS PACE", speedBonus: "SPEED BONUS", speedUp: "SHIFT UP!", speedDown: "EASY NOW!",
@@ -36,7 +38,7 @@ export const TEXT = {
     act: "Perform action", space: "SPACE", tap: "TAP", actionReady: "NOW!", actionWait: "READY", actionDone: "SET!", early: "A little closer!", noAction: "PRESS ACTION!", actionTip: "Choose a form · Press Space at the gate", touchTip: "Change on the left · Act on the right",
     restart: "Restart run", pauseCaption: "MUSIC ON HOLD", runScore: "RUN SCORE", runCombo: "CURRENT STREAK",
     activeForm: "ACTIVE", nextForm: "UP NEXT", mute: "Mute", unmute: "Turn sound on",
-    title: "MATTER RUN", tagline: "One little drop. Four superpowers.", desc: "Change your state. Find your rhythm. Run the particle lab.", start: "LET'S RUN", loading: "Loading the music…", retry: "Retry audio", ready: "2 MIN · RHYTHM ADVENTURE", controls: "A S D F or tap a form below", tip: "Choose a form first. Press Space on the beat to act.", pause: "Pause", resume: "Keep running", again: "Run again", paused: "TAKE A BEAT", pausedSub: "Your music is waiting right here.", score: "SCORE", combo: "COMBO", energy: "SPEED", next: "UP NEXT", practice: "COMBO TO SPEED UP", perfect: "PERFECT", great: "GREAT", good: "NICE PASS", miss: "CHANGE YOUR FORM!", complete: "YOU MADE IT", over: "OUT OF SPEED", maxCombo: "Best combo", accuracy: "Pass rate", passed: "Gates cleared", music: "SOUNDTRACK · States of Matter", audioError: "The music could not play. Please try again.", gesture: "Tap to get the music going.", sound: "Sound", syncing: "Buffering music…", watch: "AUTOPILOT", keys: "Choose a form, then press Space at the gate", introTip: "TRY A TRANSFORMATION", countdown: "Listen in. Your first gate is coming.", back: "Back to the music universe", sync: "Audio sync", best: "PERSONAL BEST", tail: "Beautiful run. Enjoy the last few beats!",
+    title: "MATTER RUN", tagline: "One little drop. Four superpowers.", desc: "Change your state. Find your rhythm. Run the particle lab.", start: "LET'S RUN", loading: "Loading the music…", retry: "Retry audio", ready: "2 MIN · RHYTHM ADVENTURE", controls: "A S D F or tap a form below", tip: "Choose a form first. Press Space on the beat to act.", pause: "Pause", resume: "Keep running", again: "Run again", paused: "TAKE A BEAT", pausedSub: "Your music is waiting right here.", score: "SCORE", combo: "COMBO", energy: "SPEED", next: "UP NEXT", practice: "COMBO TO SPEED UP", perfect: "PERFECT", great: "GREAT", good: "NICE PASS", miss: "CHANGE YOUR FORM!", maxCombo: "Best combo", accuracy: "Pass rate", passed: "Gates cleared", music: "SOUNDTRACK · States of Matter", audioError: "The music could not play. Please try again.", gesture: "Tap to get the music going.", sound: "Sound", syncing: "Buffering music…", watch: "AUTOPILOT", keys: "Choose a form, then press Space at the gate", introTip: "TRY A TRANSFORMATION", countdown: "Listen in. Your first gate is coming.", back: "Back to the music universe", sync: "Audio sync", tail: "Beautiful run. Enjoy the last few beats!",
   },
 };
 
@@ -64,7 +66,7 @@ export function matterMarkup(lang) {
     </section>
     <div class="mr-hud" id="hud" hidden>
       <div class="mr-progress"><i id="progress"></i></div>
-      <div class="mr-score"><span>${t.score}</span><b id="score">00000</b><div class="mr-energy" role="meter" aria-label="${t.energy}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="energy"></i></div><div class="mr-speed-meter" id="speed-meter"><span id="speed-state">${t.speedBonus}</span><strong id="speed-bonus">×1.0</strong></div><span class="mr-auto" id="auto" hidden>${t.watch}</span></div>
+      <div class="mr-score"><span>${t.score}</span><b id="score">00000</b><div class="hp" role="meter" aria-label="${t.energy}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="energy"></i></div><div class="mr-speed-meter" id="speed-meter"><span id="speed-state">${t.speedBonus}</span><strong id="speed-bonus">×1.0</strong></div><span class="mr-auto" id="auto" hidden>${t.watch}</span></div>
       <div class="mr-section"><span id="section"></span><small id="practice"></small></div>
       <div class="mr-combo"><b id="combo">0</b><span>${t.combo}</span></div>
       <div class="mr-next"><small>${t.next}</small><b id="next"></b><div class="mr-next-dots" id="upcoming"></div><p class="mr-action-tip" id="action-tip"><span class="mr-desktop-hint">${t.actionTip}</span><span class="mr-touch-hint">${t.touchTip}</span></p></div>
@@ -90,11 +92,11 @@ export function matterMarkup(lang) {
     <section class="overlay mr-modal mr-pause" id="pause" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden>
       <div class="mr-pause-center"><span class="mr-eyebrow">PAUSED</span><h2 id="pause-title">${t.paused}</h2><div class="mr-pause-status"><span id="pause-time">0:00</span><span>/</span><span id="pause-duration">2:01</span></div><div class="mr-action-row"><button class="mr-primary" id="resume"><span class="mr-button-leading">${PLAY_ICON}</span><span class="mr-button-label">${t.resume}</span><kbd>Esc</kbd></button><button class="mr-secondary" id="restart" aria-label="${t.restart}" title="${t.restart}"><span>${RESTART_ICON}</span></button></div><p id="play-error" role="status"></p></div>
     </section>
-    <section class="overlay mr-modal mr-results" id="result" role="dialog" aria-modal="true" aria-labelledby="result-label" hidden><div class="mr-results-stage"><span class="mr-eyebrow">RESULT</span><h2 id="result-label"></h2><div class="mr-award"><b class="mr-grade" id="grade"></b></div><div class="mr-score-total"><b id="final"></b><span>${t.score}</span></div><div class="mr-stats" id="stats"></div><p class="mr-personal" id="best"></p><button class="mr-primary" id="again"><span class="mr-button-leading">${RESTART_ICON}</span><span class="mr-button-label">${t.again}</span><kbd>R</kbd></button></div></section>`;
+    ${resultMarkup(COMMON[lang])}`;
 
 }
 
-export const matterStyle = /* css */ `
+export const matterStyle = /* css */ `${finaleStyle}
 @font-face { font-family:"Matter Nunito"; src:url("${readingFont}") format("truetype"); font-style:normal; font-weight:200 1000; font-display:swap; }
 .uv:has(> .uv-play.open > .matter) { overflow:clip; }
 .uv-play:has(> .matter)>.uv-exit { display:none; }
@@ -171,8 +173,6 @@ export const matterStyle = /* css */ `
 .mvg-game.matter .mr-score { position:absolute; top:85px; left:6%; display:grid; gap:6px; }
 .mvg-game.matter .mr-score>span,.mvg-game.matter .mr-combo>span { color:#9fb6c1; font-size:9px; letter-spacing:2px; }
 .mvg-game.matter .mr-score b { font-size:28px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:1px; }
-.mvg-game.matter .mr-energy { margin-top:4px; width:110px; height:3px; background:#d6eaf418; border-radius:4px; overflow:hidden; }
-.mvg-game.matter .mr-energy i { display:block; height:100%; background:#abd8cd; transition:width .15s; }
 .mvg-game.matter .mr-progress { position:absolute; top:0; width:100%; height:2px; background:#e5f1f008; }
 .mvg-game.matter .mr-progress i { display:block; width:0; height:100%; background:#a4d1c5; }
 .mvg-game.matter .mr-combo { position:absolute; top:133px; right:6%; display:grid; justify-items:center; gap:5px; }
@@ -193,22 +193,6 @@ export const matterStyle = /* css */ `
 .mvg-game.matter .mr-action-row .mr-primary { width:88px; height:88px; }
 .mvg-game.matter #play-error { font-size:12px; line-height:1.6; color:#f0b6c1; max-width:330px; }
 .mvg-game.matter #play-error:empty { display:none; }
-.mvg-game.matter .mr-results-stage { --rank-color:#a4e9f3; display:flex; flex-direction:column; align-items:center; width:min(620px,96%); padding:0; border:0; background:none; box-shadow:none; }
-.mvg-game.matter .mr-results-stage h2 { margin:12px 0 0; font-size:21px; font-weight:800; letter-spacing:4px; color:#d3e6ed; }
-.mvg-game.matter .mr-award { position:relative; width:190px; height:190px; margin:10px auto 6px; display:grid; place-items:center; animation:mr-award-in .6s cubic-bezier(.16,1.3,.3,1) both; }
-.mvg-game.matter .mr-award:before { content:""; position:absolute; inset:-20px; border-radius:50%; background:radial-gradient(circle,color-mix(in srgb,var(--rank-color) 23%,transparent),transparent 68%); }
-.mvg-game.matter .mr-award:after { content:""; position:absolute; inset:5px; border:1px solid color-mix(in srgb,var(--rank-color) 45%,transparent); border-left-color:transparent; border-right-color:transparent; border-radius:50%; transform:rotate(-30deg); }
-.mvg-game.matter .mr-grade { position:relative; font:900 italic 160px/1 "Avenir Next",sans-serif; color:var(--rank-color); text-shadow:0 4px 0 #12314c,0 0 30px color-mix(in srgb,var(--rank-color) 55%,transparent); }
-@keyframes mr-award-in { from {opacity:0;transform:scale(1.5) rotate(-9deg)} to {opacity:1;transform:none} }
-.mvg-game.matter .mr-score-total { display:flex; align-items:baseline; gap:12px; }
-.mvg-game.matter .mr-score-total b { font:800 italic 43px/1.2 "Avenir Next",sans-serif; font-variant-numeric:tabular-nums; text-shadow:0 2px 12px #0008; }
-.mvg-game.matter .mr-score-total>span { font-size:13px; color:#b6cfd8; }
-.mvg-game.matter .mr-stats { display:flex; gap:42px; margin:22px 0 12px; }
-.mvg-game.matter .mr-stats b { display:block; font-size:24px; font-weight:800; font-variant-numeric:tabular-nums; }
-.mvg-game.matter .mr-stats span { display:block; margin-top:7px; font-size:10px; color:#97b4c3; }
-.mvg-game.matter .mr-personal { margin:3px 0 26px; color:#c0d5a8; font:10px monospace; letter-spacing:1px; }
-.mvg-game.matter .mr-results-stage>.mr-primary { width:76px; height:76px; margin-bottom:26px; }
-.mvg-game.matter .mr-results-stage .mr-button-leading { width:32px; height:32px; }
 @media (max-width:700px) {
  .mvg-game.matter .mr-brand { top:29px; font-size:9px; letter-spacing:1px; }
  .mvg-game.matter .mr-tools { top:78px; right:17px; }
@@ -282,25 +266,11 @@ export const matterStyle = /* css */ `
  .mvg-game.matter .mr-pause-center h2 { font-size:48px; margin:10px 0; }
  .mvg-game.matter .mr-action-row { margin:25px 0 35px; }
  .mvg-game.matter .mr-action-row .mr-primary { width:66px; height:66px; }
- .mvg-game.matter .mr-results-stage { display:grid; grid-template-columns:130px 1fr 84px; gap:8px 28px; width:min(690px,95%); align-items:center; }
- .mvg-game.matter .mr-results-stage>.mr-eyebrow { grid-column:1/-1; }
- .mvg-game.matter .mr-results-stage h2 { grid-column:1/-1; font-size:16px; margin:0 0 8px; }
- .mvg-game.matter .mr-award { grid-column:1; grid-row:3/6; width:130px; height:130px; }
- .mvg-game.matter .mr-grade { font-size:112px; }
- .mvg-game.matter .mr-score-total { grid-column:2; justify-content:center; }
- .mvg-game.matter .mr-score-total b { font-size:32px; }
- .mvg-game.matter .mr-stats { grid-column:2; gap:24px; margin:10px 0; justify-content:center; }
- .mvg-game.matter .mr-stats b { font-size:20px; }
- .mvg-game.matter .mr-personal { grid-column:2; margin:0; }
- .mvg-game.matter .mr-results-stage>.mr-primary { grid-column:3; grid-row:3/6; margin:0; width:70px; height:70px; }
 }
 @media (max-width:560px) {
  .mvg-game.matter .mr-title-heading { top:10%; }
  .mvg-game.matter .mr-launch { top:67%; }
  .mvg-game.matter .mr-primary { width:82px; height:82px; }
- .mvg-game.matter .mr-award { width:160px; height:160px; }
- .mvg-game.matter .mr-grade { font-size:138px; }
- .mvg-game.matter .mr-stats { gap:28px; }
 }
 /* Soft, toy-like launch controls; language and sound share one top-right row. */
 .mvg-game.matter .mr-primary { width:120px; height:120px; color:#f5fffa; border:2px solid #bbfff0cc; background:radial-gradient(ellipse at 32% 22%,#d7fff1 0%,#8fe2ca 28%,#43b8aa 65%,#247f88 100%); box-shadow:inset 0 4px 7px #ffffff85,inset 0 -8px 13px #085b6a73,0 9px 24px #00243c80,0 0 30px #66d9dc26; }
@@ -318,7 +288,6 @@ export const matterStyle = /* css */ `
 .uv-play:has(> .matter)>.uv-langplay { top:19px; right:75px; width:46px; height:46px; padding:0; border-radius:50%; border:1px solid #adcecf59; background:radial-gradient(ellipse at 30% 20%,#35576c,#142e42 75%); box-shadow:inset 0 2px #d3f3fc25,0 3px 9px #0003; font-size:15px; font-weight:750; }
 .mvg-game.matter.mr-suspended .mr-tools { opacity:1; pointer-events:auto; z-index:8; }
 .mvg-game.matter .mr-action-row .mr-primary { width:96px; height:96px; }
-.mvg-game.matter .mr-results-stage>.mr-primary { width:90px; height:90px; }
 @media (max-width:560px) {
  .mvg-game.matter .mr-primary { width:92px; height:92px; }
  .mvg-game.matter .mr-button-label { font-size:18px; }
@@ -330,11 +299,8 @@ export const matterStyle = /* css */ `
  .mvg-game.matter .mr-button-label { font-size:16px; }
  .mvg-game.matter .mr-form-name { font-size:12px; }
  .mvg-game.matter .mr-form kbd { width:19px; height:19px; font-size:10px; }
- .mvg-game.matter .mr-results-stage>.mr-primary { width:72px; height:72px; }
 }
 .mvg-game.matter .mr-score>span,.mvg-game.matter .mr-combo>span { font-size:11px; }
-.mvg-game.matter .mr-stats span { font-size:12px; }
-.mvg-game.matter .mr-personal { font-size:12px; }
 .mvg-game.matter .mr-pause-status { font-size:13px; }
 @media (min-height:481px) and (max-height:640px) and (min-aspect-ratio:1/1) { .mvg-game.matter .mr-controls { --orb:68px; } }
 /* Reading is part of the game: one generous line, a clear singing cursor,
@@ -437,7 +403,6 @@ export const matterStyle = /* css */ `
 .mvg-game.matter .mr-form[aria-pressed="true"] .mr-orb { border-color:var(--phase-ink); box-shadow:inset 0 2px 2px #fff,inset 0 -3px 7px #5f899b28,0 0 0 4px color-mix(in srgb,var(--phase) 30%,transparent),0 4px 12px #4f85951f; }
 .mvg-game.matter .mr-score>span,.mvg-game.matter .mr-combo>span { color:#50748a; }
 .mvg-game.matter .mr-combo b { color:#218e83; }
-.mvg-game.matter .mr-energy { background:#719aae40; }
 .mvg-game.matter .mr-judge { text-shadow:0 3px 0 #416680,0 0 20px #fff9; -webkit-text-stroke:.6px #41668088; }
 .mvg-game.matter .mr-auto { color:#54798d; }
 .mvg-game.matter .mr-lyric { text-shadow:0 2px 0 #ffffffc7,0 0 10px #fff9; }
@@ -450,11 +415,7 @@ export const matterStyle = /* css */ `
 .mvg-game.matter .mr-modal { background:radial-gradient(ellipse at center,#eaf8ff99,#d7ecf2d9 75%,#cde7efed); }
 .mvg-game.matter .mr-modal .mr-eyebrow { color:#328fa2; text-shadow:0 2px 0 #fffc; }
 .mvg-game.matter .mr-pause-center h2 { text-shadow:0 4px 0 #ffffffb0,0 7px 20px #799fb333; }
-.mvg-game.matter .mr-pause-status,.mvg-game.matter .mr-stats span,.mvg-game.matter .mr-score-total>span { color:#53798f; }
-.mvg-game.matter .mr-results-stage h2 { color:#365f76; }
-.mvg-game.matter .mr-grade { text-shadow:0 4px 0 #6c8fa5,0 0 30px #fffb; -webkit-text-stroke:1px #6c8fa580; }
-.mvg-game.matter .mr-score-total b { text-shadow:0 2px 0 #fff8; }
-.mvg-game.matter .mr-personal { color:#36866d; }
+.mvg-game.matter .mr-pause-status { color:#53798f; }
 .mvg-game.matter .mr-secondary { color:#527d95; border-color:#fff; background:radial-gradient(ellipse at 35% 25%,#fff,#c2e2ed); box-shadow:inset 0 2px #fff,0 4px 12px #60899e33; }
 /* Two hands: choose a form on the left, perform its action on the right. */
 .mvg-game.matter .mr-touch-hint { display:none; }
@@ -554,7 +515,6 @@ export const matterStyle = /* css */ `
 .mvg-game.matter .mr-speed-meter:before { content:"»"; color:#21a78d; font-size:24px; line-height:1; transform:scaleX(calc(1 + var(--speed,0) * .3)); }
 .mvg-game.matter .mr-speed-meter strong { font:900 italic clamp(19px,1.6vw,28px)/1 "Matter Nunito",sans-serif; color:#188b79; }
 .mvg-game.matter .mr-speed-meter.mr-speed-low,.mvg-game.matter .mr-speed-meter.mr-speed-low strong { color:#ba4b60; }
-.mvg-game.matter .mr-energy { width:140px; height:7px; border-radius:7px; box-shadow:inset 0 1px 2px #305b6b33; }
 .mvg-game.matter .mr-score>.mr-auto { position:static; font-size:11px; letter-spacing:0; }
 .mvg-game.matter.mr-title.mr-help-caption .mr-caption { visibility:hidden; }
 .mvg-game.matter .mr-help-keys { white-space:nowrap; }

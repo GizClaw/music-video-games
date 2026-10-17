@@ -10,6 +10,7 @@ import { BRIDGE_VALUES, GRAY, NES, NES_CYCLE, PLACES, SECTIONS, VERSE2_VALUES, W
 import analysis from "./binary/analysis.json";
 import { binaryMarkup, binaryStyle } from "./binary/style.js";
 import { COMMON, gameLang } from "./lang.js";
+import { Life, createFinale } from "./finale.js";
 import { backGuard, buzz, goFullscreen, isTouch, lockGestures, wakeLock } from "./mobile.js";
 import { sfx } from "./sfx.js";
 
@@ -25,7 +26,7 @@ const TUTOR_END = SECTIONS.chorus1 - 3; // lessons run until here
 const MARCH = [20, 4]; // beats an invader takes to reach the line: after the lessons, and at the fastest
 const SPEEDUP = 24; // beats of play per beat taken off the march
 const LIVES = 3;
-const MAX_LIVES = 5;
+const ROUNDS = 2; // passes through the song to clear the stage
 const LESSON_MARCH = 16; // lessons come down this slowly, then wait on the line
 const LESSONS = [
   { value: 1, tip: { zh: "拨出 1：打开最右边的「1」开关", en: "Dial 1: flip on the rightmost “1” switch" } },
@@ -39,7 +40,7 @@ const LESSONS = [
 ];
 const TEXT = {
   zh: {
-    touchKeys: ["下面四个开关是 8 · 4 · 2 · 1，点一下开、再点一下关，红色键一键清零", "拨出外星人身上的数字，下一拍就开火打爆它", "3 条命，溜走一只扣一条；无限循环，越来越快 · 横屏玩更舒服"],
+    touchKeys: ["下面四个开关是 8 · 4 · 2 · 1，点一下开、再点一下关，红色键一键清零", "拨出外星人身上的数字，下一拍就开火打爆它", "3 条命，溜走一只扣一条，命没了就失败；撑过 2 轮就通关 · 横屏玩更舒服"],
     training: "先学会拨开关",
     ready: "它会等你，拨对下一拍就开火",
     oneFlip: "每只只差一个开关",
@@ -58,7 +59,7 @@ const TEXT = {
     collected: "集齐 0–15",
   },
   en: {
-    touchKeys: ["The four switches below are 8 · 4 · 2 · 1: tap to flip, the red one clears", "Spell the number an invader carries and it is shot on the next beat", "Three lives, one lost for each that gets through; loops for ever, faster each time · best played sideways"],
+    touchKeys: ["The four switches below are 8 · 4 · 2 · 1: tap to flip, the red one clears", "Spell the number an invader carries and it is shot on the next beat", "Three lives, one lost for each that gets through; last 2 rounds to clear · best played sideways"],
     training: "learn the switches first",
     ready: "it waits; spell it and it is shot on the next beat",
     oneFlip: "each one a single flip away",
@@ -395,7 +396,7 @@ export async function mountBinaryBoogie(target, options = {}) {
     let score = 0;
     let combo = 0;
     let maxCombo = 0;
-    const tally = { hits: 0, misses: 0, bosses: 0, bossTotal: 0, flips: 0 };
+    const tally = { hits: 0, lessons: 0, misses: 0, bosses: 0, bossTotal: 0, flips: 0 };
     const got = new Set();
     const history = [];
     let cur = null;
@@ -407,7 +408,8 @@ export async function mountBinaryBoogie(target, options = {}) {
     let fireY = LINE_Y;
     let crash = -9;
     let clearAt = Infinity;
-    let lives = LIVES;
+    const life = new Life($("hp"), { max: LIVES, cells: LIVES, miss: 1, boss: 1 });
+    const finale = createFinale(root, { c: ui, audio, signal });
     let pass = 1;
     let beatBase = 0;
     let startedAt = 0;
@@ -454,9 +456,6 @@ export async function mountBinaryBoogie(target, options = {}) {
       });
       readout.textContent = `= ${reg}`;
     }
-    function showLives() {
-      $("lives").innerHTML = Array.from({ length: Math.max(LIVES, lives) }, (_, i) => `<i class="${i < lives ? "on" : ""}">♥</i>`).join("");
-    }
     function setTip(text) {
       $("tip").textContent = text;
       $("tip").classList.toggle("on", !!text);
@@ -473,8 +472,7 @@ export async function mountBinaryBoogie(target, options = {}) {
       pass = 1;
       setTip("");
       if (!fresh) return;
-      lives = LIVES;
-      showLives();
+      life.reset();
       reg = 0;
       score = combo = maxCombo = 0;
       Object.keys(tally).forEach((k) => (tally[k] = 0));
@@ -616,6 +614,7 @@ export async function mountBinaryBoogie(target, options = {}) {
     function kill(n, t, bi) {
       Object.assign(n, { done: true, result: "hit", at: now(), next: bi + 2 });
       tally.hits++;
+      if (n.lesson) tally.lessons++;
       if (n.boss) tally.bosses++;
       combo++;
       maxCombo = Math.max(maxCombo, combo);
@@ -638,11 +637,9 @@ export async function mountBinaryBoogie(target, options = {}) {
         else if (combo % 10 === 0) sfx.combo();
       }
       const bits = n.value.toString(2).padStart(4, "0");
-      if (n.boss && lives < MAX_LIVES) {
-        lives++;
-        showLives();
-      }
-      judgeText(n.boss ? "BOSS DOWN! +1 ♥" : combo >= 6 && combo % 5 === 0 ? `${combo} COMBO!` : `${n.value} = ${bits}`, n.boss ? NES.pink : NES_CYCLE[n.value % NES_CYCLE.length]);
+      const heal = n.boss && loud() && life.value < life.max;
+      if (heal) life.heal("boss");
+      judgeText(n.boss ? (heal ? "BOSS DOWN! +1 ♥" : "BOSS DOWN!") : combo >= 6 && combo % 5 === 0 ? `${combo} COMBO!` : `${n.value} = ${bits}`, n.boss ? NES.pink : NES_CYCLE[n.value % NES_CYCLE.length]);
       if (n.lesson) setTip(lesson >= LESSONS.length ? "" : T.nice);
       updateScore();
     }
@@ -652,14 +649,13 @@ export async function mountBinaryBoogie(target, options = {}) {
       tally.misses++;
       combo = 0;
       crash = now();
-      lives--;
-      showLives();
       burst(xOf(n.value), LINE_Y, 16, NES.red, 3);
       buzz(45);
-      if (loud()) sfx.wrong();
       judgeText(T.want(n.value, n.value.toString(2).padStart(4, "0")), NES.red);
       updateScore();
-      if (lives <= 0 && state === "play") finish();
+      if (!loud()) return;
+      sfx.wrong();
+      if (life.hurt("miss")) finish(false);
     }
 
     /** The demo and `?auto`: flips toward the invader a beat after it lands. */
@@ -701,6 +697,7 @@ export async function mountBinaryBoogie(target, options = {}) {
     $("again").addEventListener("click", start);
 
     function start() {
+      finale.reset();
       reset();
       sfx.unlock();
       sfx.start();
@@ -733,7 +730,7 @@ export async function mountBinaryBoogie(target, options = {}) {
         audio.play();
       }
     }
-    /** The song never ends: on the bar before its end, jump back to the first chorus and speed up. */
+    /** On the bar before the song's end, jump back to the first chorus and speed up. */
     function loopBack(t) {
       const to = tm.beatTime(LOOP_TO) + Math.max(0, t - tm.beatTime(LOOP_FROM));
       audio.currentTime = to;
@@ -742,37 +739,37 @@ export async function mountBinaryBoogie(target, options = {}) {
       pass++;
       picks = {};
       lastCall = -1;
-      slam(ui.round(pass), NES.yellow, ui.faster);
+      slam(ui.round(pass), NES.yellow, pass === ROUNDS ? ui.lastRound : ui.faster);
       return to;
     }
+    /** How much of the whole run (all rounds) song time t has covered. */
+    const runProgress = (t) => clamp(gBeatFloat(t) / (LOOP_FROM + (ROUNDS - 1) * (LOOP_FROM - LOOP_TO)), 0, 1);
 
-    function finish() {
+    /** The last round played out (`cleared`) or the last life lost. */
+    function finish(cleared) {
       state = "result";
-      audio.pause();
       awake.release();
       setTip("");
-      const played = tally.hits + tally.misses;
-      const grade = tally.hits >= 60 ? "S" : tally.hits >= 40 ? "A" : tally.hits >= 25 ? "B" : tally.hits >= 12 ? "C" : "D";
-      const gradeColor = { S: NES.yellow, A: NES.blue, B: NES.green, C: NES.orange, D: NES.red }[grade];
+      const fought = tally.hits - tally.lessons + tally.misses;
+      const ratio = fought ? (tally.hits - tally.lessons) / fought : 0;
       const secs = Math.round(now() - startedAt);
-      $("result").querySelector(".kicker").textContent = "GAME OVER";
-      $("grade").textContent = grade;
-      $("grade").style.color = gradeColor;
-      $("grade").style.textShadow = `0 6px 0 #1d2b53, 0 0 40px ${gradeColor}`;
-      $("final").textContent = ui.points(score.toLocaleString("en-US"));
-      sfx.result(grade <= "B");
-      $("stats").innerHTML = [
-        [T.shot, T.shotN(tally.hits)],
-        [T.through, `${tally.misses} / ${played}`],
-        ["Boss", `${tally.bosses} / ${tally.bossTotal}`],
-        [ui.lasted, ui.round(pass)],
-        [ui.survived, ui.duration(secs)],
-        [T.collected, `${got.size} / 16`],
-        [ui.maxCombo, maxCombo],
-      ]
-        .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
-        .join("");
-      $("result").hidden = false;
+      finale.end({
+        cleared,
+        score,
+        ratio,
+        reached: `${ui.round(pass)} · ${Math.round(runProgress(lastT) * 100)}%`,
+        best: "binary-game-best",
+        record: !auto && !params.has("start"),
+        stats: [
+          [T.shot, T.shotN(tally.hits)],
+          [T.through, `${tally.misses} / ${tally.hits + tally.misses}`],
+          ["Boss", `${tally.bosses} / ${tally.bossTotal}`],
+          [ui.rounds, `${pass} / ${ROUNDS} · ${ui.duration(secs)}`],
+          [T.collected, `${got.size} / 16`],
+          [ui.accuracy, `${(ratio * 100).toFixed(1)}%`],
+          [ui.maxCombo, maxCombo],
+        ],
+      });
     }
 
     // ---------- lyrics ----------
@@ -806,8 +803,11 @@ export async function mountBinaryBoogie(target, options = {}) {
         direct(t);
       } else {
         t = state === "play" ? songTime() : lastT;
+        if (state === "play" && (t >= tm.beatTime(LOOP_FROM) || audio.ended)) {
+          if (pass >= ROUNDS) finish(true);
+          else t = loopBack(t);
+        }
         if (state === "play") {
-          if (t >= tm.beatTime(LOOP_FROM) || audio.ended) t = loopBack(t);
           if (auto) autopilot(t);
           direct(t);
         }
@@ -895,7 +895,7 @@ export async function mountBinaryBoogie(target, options = {}) {
     }
 
     function hudFrame(t) {
-      $("progress").firstElementChild.style.width = `${clamp(t / SECTIONS.end, 0, 1) * 100}%`;
+      $("progress").firstElementChild.style.width = `${runProgress(t) * 100}%`;
       drawLyric(t);
       if (state !== "play") return;
       const c = calls.findLast((x) => x.t <= t);
@@ -906,12 +906,11 @@ export async function mountBinaryBoogie(target, options = {}) {
     }
 
     showReg();
-    showLives();
     $("start").disabled = false;
     $("start").textContent = ui.start;
     if (params.has("play")) start();
     frame();
-    const api = { history, tally: () => ({ ...tally, score, combo, maxCombo, collected: got.size, reg, lives, pass, beatBase, current: cur && { value: cur.value, done: cur.done, lesson: !!cur.lesson } }), destroy };
+    const api = { history, tally: () => ({ ...tally, score, combo, maxCombo, collected: got.size, reg, lives: life.value, pass, beatBase, current: cur && { value: cur.value, done: cur.done, lesson: !!cur.lesson } }), destroy };
     root.mvgGame = api;
     window.__game = api;
     return api;

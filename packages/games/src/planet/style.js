@@ -1,3 +1,4 @@
+import { lifeMarkup } from "../finale.js";
 import { COMMON, overlays } from "../lang.js";
 import { spectrumStyle } from "../spectrum/style.js";
 
@@ -55,11 +56,11 @@ export const planetStyle = `${spectrumStyle}
 const TITLE = {
   zh: {
     sub: "行星点名！唱到哪颗行星，光圈就落在哪颗，跟着节拍点它",
-    keys: ["光圈收紧时点击行星，或按它的序号 <kbd>1</kbd> 水星 … <kbd>8</kbd> 海王星", "march · hey · hooray 时点太阳或按 <kbd>空格</kbd>", "冥王星出现时按 <kbd>9</kbd>"],
+    keys: ["光圈收紧时点击行星，或按它的序号 <kbd>1</kbd> 水星 … <kbd>8</kbd> 海王星", "march · hey · hooray 时点太阳或按 <kbd>空格</kbd>", "冥王星出现时按 <kbd>9</kbd>", "漏拍、点错会掉血，血条空了就失败；点名到最后就通关"],
   },
   en: {
     sub: "Planet roll call! A ring closes on each planet the song names: hit it on the beat",
-    keys: ["Click the planet as its ring closes, or press its number <kbd>1</kbd> Mercury … <kbd>8</kbd> Neptune", "On march · hey · hooray hit the Sun or press <kbd>Space</kbd>", "Press <kbd>9</kbd> when Pluto shows up"],
+    keys: ["Click the planet as its ring closes, or press its number <kbd>1</kbd> Mercury … <kbd>8</kbd> Neptune", "On march · hey · hooray hit the Sun or press <kbd>Space</kbd>", "Press <kbd>9</kbd> when Pluto shows up", "Misses and wrong hits drain your life; last to the final roll call to clear"],
   },
 };
 
@@ -73,7 +74,7 @@ export const planetMarkup = (lang) => {
   <div class="hud" id="hud" hidden>
     <div class="progress" id="progress"><i></i></div>
     <div class="lineup" id="lineup"></div>
-    <div class="score" id="score"><b>0</b><span>SCORE</span></div>
+    <div class="score" id="score"><b>0</b><span>SCORE</span>${lifeMarkup}</div>
     <div class="combo" id="combo"><b>0</b><span>COMBO</span><em>×1</em></div>
     <div class="band" id="band"></div>
     <div class="judge" id="judge"></div>

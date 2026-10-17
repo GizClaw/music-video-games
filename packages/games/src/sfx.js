@@ -288,6 +288,25 @@ export class Sfx {
     const steps = good ? [0, 2, 4, 5, 7, 10] : [4, 2, 0];
     steps.forEach((s, k) => this.bell(t + k * 0.09, note(s), 0.08, 0.9));
   }
+
+  /** A run cleared: a cymbal swell under a fanfare that climbs an octave. */
+  clear() {
+    const t = this.at();
+    if (t == null) return;
+    this.noise(t, { f0: 6000, f1: 9000, dur: 0.9, gain: 0.05, type: "highpass", attack: 0.05 });
+    [0, 2, 4, 7, 10].forEach((s, k) => this.bell(t + k * 0.08, note(s), 0.09, 0.7, (k - 2) * 0.2));
+    this.tone(t + 0.4, { type: "triangle", f0: note(10), dur: 0.9, gain: 0.06 });
+  }
+
+  /** A run lost: a heavy thud, then a sad trombone of three falling slurs. */
+  fail() {
+    const t = this.at();
+    if (t == null) return;
+    this.tone(t, { f0: 120, f1: 38, dur: 0.5, gain: 0.32 });
+    this.noise(t, { f0: 500, f1: 120, dur: 0.4, gain: 0.08, type: "lowpass" });
+    [392, 370, 349].forEach((f, k) => this.tone(t + 0.25 + k * 0.28, { type: "sawtooth", f0: f, f1: f * 0.94, dur: 0.26, gain: 0.05, lp: 1200 }));
+    this.tone(t + 1.09, { type: "sawtooth", f0: 330, f1: 262, dur: 0.7, gain: 0.05, lp: 1000 });
+  }
 }
 
 /** One shared instance for the site and its games. */

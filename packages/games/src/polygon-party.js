@@ -1,6 +1,7 @@
 import { Timing, clamp } from "@gizclaw/mvg-core/timing.js";
 import { AudioClock, songAudioUrl } from "./kit.js";
 import { COMMON, gameLang } from "./lang.js";
+import { Life, createFinale } from "./finale.js";
 import { backGuard, buzz, goFullscreen, isTouch, lockGestures, wakeLock } from "./mobile.js";
 import { sfx } from "./sfx.js";
 import analysis from "./polygon/analysis.json";
@@ -40,6 +41,7 @@ const TEXT = {
   },
 };
 const OFFSET_KEY = "polygon-game-offset";
+const LIFE_RULES = { miss: 10, shape: 5 };
 const START = 6.5; // standalone play starts here, just before the first sung line
 const TIPS = 4; // the first notes carry the tip
 const HIT_KEYS = new Set([" ", "j", "f", "k", "d", "enter"]);
@@ -127,6 +129,7 @@ export async function mountPolygonParty(target, options = {}) {
 
     // ---------- state ----------
     let state = "title";
+    let lost = false; // the song winds down under a failed run's results instead of playing on
     let notes = [];
     let shapeI = 0;
     let edges = 0; // drawn on the current shape
@@ -140,6 +143,8 @@ export async function mountPolygonParty(target, options = {}) {
     let tipShown = "";
     const auto = params.has("auto");
     const loud = () => state === "play";
+    const life = new Life($("hp"), LIFE_RULES);
+    const finale = createFinale(root, { c: ui, audio, signal });
     const now = () => performance.now() / 1000;
     const guard = backGuard({ signal, playing: () => state === "play", onBack: () => togglePause() });
     const chips = [...$("shapes").children];
@@ -221,6 +226,7 @@ export async function mountPolygonParty(target, options = {}) {
       tagFor = "";
       setTip("");
       if (!fresh) return;
+      life.reset();
       score = combo = maxCombo = 0;
       Object.keys(tally).forEach((k) => (tally[k] = 0));
       got.clear();
@@ -263,6 +269,7 @@ export async function mountPolygonParty(target, options = {}) {
       stage.hit(s.sides, now(), grade);
       edges++;
       if (loud()) {
+        life.heal(grade);
         sfx.hit(edges - 1, grade === "perfect");
         buzz(grade === "perfect" ? 12 : 8);
       }
@@ -283,6 +290,7 @@ export async function mountPolygonParty(target, options = {}) {
       chip.classList.add("pop");
       judgeText(T.complete(s), s.color, T.sides(s.sides));
       if (loud()) {
+        life.heal("shape");
         sfx.collect(s.sides - 3);
         if (fresh && got.size === SHAPES.length) sfx.combo();
         buzz(30);
@@ -301,8 +309,10 @@ export async function mountPolygonParty(target, options = {}) {
       combo = 0;
       stage.miss(current().sides, now());
       judgeText("MISS", "#c8b8ff");
-      if (loud()) sfx.miss();
       updateScore();
+      if (!loud()) return;
+      sfx.miss();
+      if (life.hurt("miss")) finish(false);
     }
     /** A tap at song time t: the nearest note in its window, an early tap that breaks the combo, or a harmless tick. */
     function press(t = lastT) {
@@ -315,12 +325,13 @@ export async function mountPolygonParty(target, options = {}) {
         combo = 0;
         judgeText(T.early, "#ffb36b");
         updateScore();
+        if (loud() && life.hurt("wrong")) finish(false);
       }
     }
     /** Misses for song time t. */
     function sweep(t) {
       for (const n of notes) {
-        if (n.t > t - WINDOW.good) break;
+        if (n.t > t - WINDOW.good || state !== "play") break;
         if (n.state === "wait") miss(n);
       }
     }
@@ -372,6 +383,7 @@ export async function mountPolygonParty(target, options = {}) {
 
     function start() {
       const from = params.has("start") ? Number(params.get("start")) || 0 : START;
+      finale.reset();
       reset(from);
       sfx.unlock();
       sfx.start();
@@ -402,32 +414,31 @@ export async function mountPolygonParty(target, options = {}) {
         audio.play();
       }
     }
-    function finish() {
+    /** The last landed edge (`cleared`) or the end of the performer's life. */
+    function finish(cleared) {
       state = "result";
+      lost = !cleared;
       awake.release();
       setTip("");
-      stage.finish(now());
+      if (cleared) stage.finish(now());
       const total = notes.filter((n) => n.state !== "skip").length;
       const weighted = (tally.perfect + tally.good * 0.6) / Math.max(1, total);
-      const grade = weighted >= 0.95 ? "S" : weighted >= 0.85 ? "A" : weighted >= 0.7 ? "B" : weighted >= 0.5 ? "C" : "D";
-      const gradeColor = { S: GOLD, A: "#2fe0ff", B: "#4dff7a", C: "#ff8a1f", D: "#ff3d5a" }[grade];
-      $("result").querySelector(".kicker").textContent = "PARTY OVER";
-      $("grade").textContent = grade;
-      $("grade").style.color = gradeColor;
-      $("grade").style.textShadow = `0 0 40px ${gradeColor}`;
-      $("final").textContent = ui.points(score.toLocaleString("en-US"));
-      sfx.result(grade <= "B");
-      $("stats").innerHTML = [
-        ["PERFECT", tally.perfect],
-        ["GOOD", tally.good],
-        [T.missed, tally.miss],
-        [T.collected, `${got.size} / ${SHAPES.length}`],
-        [ui.accuracy, `${Math.round(((tally.perfect + tally.good) / Math.max(1, total)) * 100)}%`],
-        [ui.maxCombo, maxCombo],
-      ]
-        .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
-        .join("");
-      $("result").hidden = false;
+      finale.end({
+        cleared,
+        score,
+        ratio: weighted,
+        reached: clamp((lastT - START) / (END - START), 0, 1),
+        best: "polygon-game-best",
+        record: !auto && !params.has("start"),
+        stats: [
+          ["PERFECT", tally.perfect],
+          ["GOOD", tally.good],
+          [T.missed, tally.miss],
+          [T.collected, `${got.size} / ${SHAPES.length}`],
+          [ui.accuracy, `${Math.round(((tally.perfect + tally.good) / Math.max(1, total)) * 100)}%`],
+          [ui.maxCombo, maxCombo],
+        ],
+      });
     }
 
     // ---------- note lane ----------
@@ -514,11 +525,11 @@ export async function mountPolygonParty(target, options = {}) {
         if (t < lastT) reset(ATTRACT[0], false);
         autopilot(t);
       } else {
-        t = state === "play" || (state === "result" && !audio.paused) ? songTime() : lastT;
+        t = state === "play" || (state === "result" && !audio.paused && !lost) ? songTime() : lastT;
         if (state === "play") {
           if (auto) autopilot(t);
           sweep(t);
-          if (t >= END || audio.ended) finish();
+          if (state === "play" && (t >= END || audio.ended)) finish(true);
         }
       }
       lastT = t;

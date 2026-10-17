@@ -1,7 +1,8 @@
+import { finaleStyle, lifeMarkup } from "../finale.js";
 import { COMMON, overlays } from "../lang.js";
 
 /** Layout for a mounted Slide Down the Spectrum. Scoped to `.mvg-game`. */
-export const spectrumStyle = `
+export const spectrumStyle = `${finaleStyle}
 .mvg-game { position: relative; width: 100%; height: 100%; overflow: hidden; background: #020208; color: #fff; font-family: "Avenir Next", "PingFang SC", sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
 .mvg-game .stage, .mvg-game .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .mvg-game kbd { display: inline-block; min-width: 1.4em; padding: 0.1em 0.4em; margin: 0 0.15em; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; font-family: Menlo, monospace; font-size: 0.85em; background: rgba(255,255,255,0.08); }
@@ -38,11 +39,6 @@ export const spectrumStyle = `
 .mvg-game .keys { display: flex; flex-direction: column; gap: 8px; font-size: 15px; opacity: 0.85; margin-bottom: 30px; }
 .mvg-game button { font: 800 22px "Avenir Next", "PingFang SC", sans-serif; letter-spacing: 2px; color: #020208; background: #fff; border: 0; border-radius: 999px; padding: 14px 44px; cursor: pointer; box-shadow: 0 0 28px rgba(160,200,255,0.65); }
 .mvg-game button:disabled { opacity: 0.5; cursor: default; }
-.mvg-game .grade { font: 800 clamp(110px, 22vh, 220px) / 1 "Avenir Next Condensed", sans-serif; margin: 8px 0 0; }
-.mvg-game .final { font: 800 40px "Avenir Next Condensed", sans-serif; margin-bottom: 18px; font-variant-numeric: tabular-nums; }
-.mvg-game .stats { font: 600 16px Menlo, monospace; margin-bottom: 28px; border-spacing: 22px 6px; }
-.mvg-game .stats td:first-child { text-align: left; opacity: 0.7; }
-.mvg-game .stats td:last-child { text-align: right; }
 .mvg-game a.back { margin-top: 22px; color: rgba(255,255,255,0.6); font-size: 15px; text-decoration: none; }
 .mvg-game a.back:hover { color: #fff; }
 `;
@@ -50,11 +46,11 @@ export const spectrumStyle = `
 const TITLE = {
   zh: {
     sub: "接住每一拍的光子，从 γ 闸门的缺口钻过去",
-    keys: ["<kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> 绕隧道滑动", "鼠标或手指左右拖动也可以"],
+    keys: ["<kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> 绕隧道滑动", "鼠标或手指左右拖动也可以", "漏接光子、撞上闸门都会掉血，血条空了就失败；滑到隧道尽头就通关"],
   },
   en: {
     sub: "Catch a photon on every beat and slip through the gap in each γ gate",
-    keys: ["<kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> slide round the tunnel", "or drag sideways with a mouse or finger"],
+    keys: ["<kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> slide round the tunnel", "or drag sideways with a mouse or finger", "Missed photons and gate crashes drain your life; reach the end of the tunnel to clear"],
   },
 };
 
@@ -67,7 +63,7 @@ export const spectrumMarkup = (lang) => {
   <div class="hud" id="hud" hidden>
     <div class="progress" id="progress"><i></i></div>
     <div class="ruler" id="ruler"></div>
-    <div class="score" id="score"><b>0</b><span>SCORE</span></div>
+    <div class="score" id="score"><b>0</b><span>SCORE</span>${lifeMarkup}</div>
     <div class="combo" id="combo"><b>0</b><span>COMBO</span><em>×1</em></div>
     <div class="band" id="band"></div>
     <div class="judge" id="judge"></div>

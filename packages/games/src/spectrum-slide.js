@@ -11,10 +11,12 @@ import { BANDS, SECTIONS, WORD_COLORS } from "./spectrum/song.js";
 import analysis from "./spectrum/analysis.json";
 import { spectrumMarkup, spectrumStyle } from "./spectrum/style.js";
 import { COMMON, gameLang } from "./lang.js";
+import { Life, createFinale } from "./finale.js";
 import { backGuard, buzz, goFullscreen, lockGestures, wakeLock } from "./mobile.js";
 import { sfx } from "./sfx.js";
 
 const WORK = "songs/music/stem-institute/en-us/spectrum-slide";
+const LIFE_RULES = { miss: 6, gate: 12, gatePass: 4 };
 const SP = 2.6; // world units travelled per beat
 const RINGS = 44;
 const RING_R = 2.3;
@@ -421,9 +423,12 @@ function makeRings() {
   let countdownShown = -1;
   let lastT = 0;
   const auto = params.has("auto");
+  const life = new Life($("hp"), LIFE_RULES);
+  const finale = createFinale(root, { c: ui, audio, signal });
 
   function reset() {
     for (const n of chart) Object.assign(n, { judged: false, best: Infinity, result: null });
+    life.reset();
     score = combo = maxCombo = 0;
     Object.keys(tally).forEach((k) => (tally[k] = 0));
     theta = omega = camTheta = prevTheta = 0;
@@ -486,12 +491,14 @@ function makeRings() {
         // The opening is crossed between frames; either side of the crossing counts.
         const pass = Math.min(d, Math.abs(wrap(prevTheta - n.angle))) < GAP - 0.12;
         n.result = pass ? "pass" : "hit";
+        let dead = false;
         if (pass) {
           tally.gatePass++;
           combo++;
           score += 500 * mult();
           judgeText("γ GATE +500", "#7cff4f");
           if (state === "play") sfx.collect(2);
+          if (state === "play") life.heal("gatePass");
           burst(player.position, "#7cff4f", 40, 5);
         } else {
           tally.gateHit++;
@@ -500,10 +507,12 @@ function makeRings() {
           judgeText("γ HIT", GATE_COLOR);
           if (state === "play") sfx.wrong();
           if (state === "play") buzz(45);
+          if (state === "play") dead = life.hurt("gate");
           burst(player.position, GATE_COLOR, 60, 6);
         }
         maxCombo = Math.max(maxCombo, combo);
         updateScore();
+        if (dead) return finish(false);
         continue;
       }
       if (t >= n.t - WINDOW) n.best = Math.min(n.best, d);
@@ -513,9 +522,15 @@ function makeRings() {
       n.result = n.best < PERFECT ? "perfect" : n.best < GOOD ? "good" : "miss";
       if (n.result === "miss") {
         tally.miss++;
-        if (state === "play") sfx.miss();
         if (combo >= 10) judgeText("MISS", "#8890b0");
         combo = 0;
+        if (state === "play") {
+          sfx.miss();
+          if (life.hurt("miss")) {
+            updateScore();
+            return finish(false);
+          }
+        }
       } else {
         tally[n.result]++;
         combo++;
@@ -523,6 +538,7 @@ function makeRings() {
         hitFlash = t;
         hitColor = noteColors[i];
         if (state === "play") {
+          life.heal(n.result);
           buzz(8);
           sfx.hit(Math.round((((n.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)) % 8, n.result === "perfect");
           if (combo >= 10 && combo % 10 === 0) sfx.combo();
@@ -583,6 +599,7 @@ function makeRings() {
 
   const guard = backGuard({ signal, playing: () => state === "play", onBack: () => togglePause() });
   function start() {
+    finale.reset();
     reset();
     sfx.unlock();
     sfx.start();
@@ -615,31 +632,29 @@ function makeRings() {
       audio.play();
     }
   }
-  function finish() {
+  /** The end of the tunnel (`cleared`) or the end of the photon's life. */
+  function finish(cleared) {
     state = "result";
-    audio.pause();
     awake.release();
     const notes = chart.filter((n) => !n.gate).length;
     const gates = chart.filter((n) => n.gate).length;
     const acc = (tally.perfect + tally.good * 0.6 + tally.gatePass) / Math.max(1, notes + gates);
-    const grade = acc >= 0.95 ? "S" : acc >= 0.85 ? "A" : acc >= 0.7 ? "B" : acc >= 0.5 ? "C" : "D";
-    const gradeColor = { S: "#fff6a0", A: "#3de8ff", B: "#7cff4f", C: "#ff8c42", D: "#ff3d7f" }[grade];
-    $("grade").textContent = grade;
-    $("grade").style.color = gradeColor;
-    $("grade").style.textShadow = `0 0 40px ${gradeColor}`;
-    $("final").textContent = ui.points(score.toLocaleString("en-US"));
-    sfx.result(acc >= 0.7);
-    $("stats").innerHTML = [
-      ["PERFECT", tally.perfect],
-      ["GOOD", tally.good],
-      ["MISS", tally.miss],
-      [lang === "zh" ? "γ 闸门" : "γ gates", `${tally.gatePass} / ${gates}`],
-      [ui.maxCombo, maxCombo],
-      [ui.accuracy, `${(acc * 100).toFixed(1)}%`],
-    ]
-      .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
-      .join("");
-    $("result").hidden = false;
+    finale.end({
+      cleared,
+      score,
+      ratio: acc,
+      reached: clamp(lastT / SECTIONS.end, 0, 1),
+      best: "spectrum-game-best",
+      record: !auto && !params.has("start"),
+      stats: [
+        ["PERFECT", tally.perfect],
+        ["GOOD", tally.good],
+        ["MISS", tally.miss],
+        [lang === "zh" ? "γ 闸门" : "γ gates", `${tally.gatePass} / ${gates}`],
+        [ui.maxCombo, maxCombo],
+        [ui.accuracy, `${(acc * 100).toFixed(1)}%`],
+      ],
+    });
   }
 
   // ---------- lyrics ----------
@@ -676,7 +691,7 @@ function makeRings() {
         theta += omega * dt;
         if (auto) theta = autopilot(t);
         judge(t);
-        if (t >= SECTIONS.end || audio.ended) finish();
+        if (state === "play" && (t >= SECTIONS.end || audio.ended)) finish(true);
       }
     }
     lastT = t;

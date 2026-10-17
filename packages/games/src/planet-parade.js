@@ -16,7 +16,7 @@ import { COMMON, gameLang } from "./lang.js";
 const TEXT = {
   zh: {
     simpleSub: "跟着节奏点一下，让八大行星排好队",
-    simpleKeys: ["光圈收到下面的大按钮上时，点屏幕任意位置", "唱到哪颗行星时点中，就把它收进队伍", "别乱点，太早点会断连击"],
+    simpleKeys: ["光圈收到下面的大按钮上时，点屏幕任意位置", "唱到哪颗行星时点中，就把它收进队伍", "漏拍会掉血，血条空了就失败；太早点会断连击"],
     lineup: "按 1–8 给行星点名",
     parade: "从左到右 1 → 8",
     pluto: "它出现时按 9",
@@ -33,7 +33,7 @@ const TEXT = {
   },
   en: {
     simpleSub: "Tap on the beat and line up the eight planets",
-    simpleKeys: ["Tap anywhere as the ring reaches the big button below", "Hit each planet as it is sung to bring it into line", "Don't tap early: it breaks the combo"],
+    simpleKeys: ["Tap anywhere as the ring reaches the big button below", "Hit each planet as it is sung to bring it into line", "Misses drain your life; tapping early breaks the combo"],
     lineup: "Press 1–8 to call each planet",
     parade: "Left to right, 1 → 8",
     pluto: "Press 9 when it shows up",
@@ -49,6 +49,7 @@ const TEXT = {
     missed: "missed",
   },
 };
+import { Life, createFinale } from "./finale.js";
 import { backGuard, buzz, goFullscreen, isTouch, lockGestures, wakeLock } from "./mobile.js";
 import { sfx } from "./sfx.js";
 
@@ -444,6 +445,8 @@ export async function mountPlanetParade(target, options = {}) {
     let hover = -1;
     const auto = params.has("auto");
     const loud = () => state === "play";
+    const life = new Life($("hp"));
+    const finale = createFinale(root, { c: ui, audio, signal });
     const guard = backGuard({ signal, playing: () => state === "play", onBack: () => togglePause() });
     /** Pitch step for body k: planets climb the scale, Pluto sits above Neptune, the Sun at the bottom. */
     const pitch = (k) => (k === SUN_T ? 0 : k === PLUTO_T ? 9 : k);
@@ -478,6 +481,7 @@ export async function mountPlanetParade(target, options = {}) {
 
     function reset() {
       for (const n of chart) Object.assign(n, { judged: false, result: null });
+      life.reset();
       score = combo = maxCombo = 0;
       Object.keys(tally).forEach((k) => (tally[k] = 0));
       got.clear();
@@ -551,6 +555,7 @@ export async function mountPlanetParade(target, options = {}) {
       burst(bodyPos(n.target, t, tmpV), color, big ? 50 : n.target === SUN_T ? 40 : 20, big ? 5 : 3.5);
       buzz(big ? 20 : 8);
       if (loud()) {
+        life.heal(n.result);
         if (n.target === SUN_T) sfx.stomp();
         else sfx.hit(pitch(n.target), n.result === "perfect");
         if (combo >= 10 && combo % 10 === 0) sfx.combo();
@@ -586,6 +591,7 @@ export async function mountPlanetParade(target, options = {}) {
       const want = BODIES[open.target];
       judgeText(open.target === SUN_T ? T.wrongSun : T.wrongPlanet(open.target === PLUTO_T ? 9 : open.target + 1, want.name), "#ff6b8a");
       updateScore();
+      if (loud() && life.hurt("wrong")) finish(false);
     }
 
     /** One-button tap: hits the earliest open note whatever its target; tapping well early breaks the combo. */
@@ -613,10 +619,12 @@ export async function mountPlanetParade(target, options = {}) {
         n.at = t;
         n.result = "miss";
         tally.miss++;
-        if (loud()) sfx.miss();
         if (combo >= 10) judgeText("MISS", "#8890b0");
         combo = 0;
         updateScore();
+        if (!loud()) continue;
+        sfx.miss();
+        if (life.hurt("miss")) return finish(false);
       }
     }
 
@@ -676,6 +684,7 @@ export async function mountPlanetParade(target, options = {}) {
     $("again").addEventListener("click", start);
 
     function start() {
+      finale.reset();
       reset();
       sfx.unlock();
       sfx.start();
@@ -707,32 +716,30 @@ export async function mountPlanetParade(target, options = {}) {
         audio.play();
       }
     }
-    function finish() {
+    /** The end of the parade (`cleared`) or of the player's life. */
+    function finish(cleared) {
       state = "result";
-      audio.pause();
       awake.release();
       const acc = (tally.perfect + tally.good * 0.6) / Math.max(1, chart.length);
-      const grade = acc >= 0.95 ? "S" : acc >= 0.85 ? "A" : acc >= 0.7 ? "B" : acc >= 0.5 ? "C" : "D";
-      const gradeColor = { S: "#fff6a0", A: "#3de8ff", B: "#7cff4f", C: "#ff8c42", D: "#ff3d7f" }[grade];
-      $("grade").textContent = grade;
-      $("grade").style.color = gradeColor;
-      $("grade").style.textShadow = `0 0 40px ${gradeColor}`;
-      $("final").textContent = ui.points(score.toLocaleString("en-US"));
-      sfx.result(acc >= 0.7);
-      $("stats").innerHTML = [
-        ["PERFECT", tally.perfect],
-        ["GOOD", tally.good],
-        ["MISS", tally.miss],
-        [T.wrongTaps, tally.wrong],
-        [T.named, `${tally.named} / ${namedTotal}`],
-        [T.planets, `${tally.planets} / 8`],
-        [T.plutoRow, tally.pluto ? T.found : T.missed],
-        [ui.maxCombo, maxCombo],
-        [ui.accuracy, `${(acc * 100).toFixed(1)}%`],
-      ]
-        .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
-        .join("");
-      $("result").hidden = false;
+      finale.end({
+        cleared,
+        score,
+        ratio: acc,
+        reached: clamp(lastT / SECTIONS.end, 0, 1),
+        best: "planet-game-best",
+        record: !auto && !params.has("start"),
+        stats: [
+          ["PERFECT", tally.perfect],
+          ["GOOD", tally.good],
+          ["MISS", tally.miss],
+          [T.wrongTaps, tally.wrong],
+          [T.named, `${tally.named} / ${namedTotal}`],
+          [T.planets, `${tally.planets} / 8`],
+          [T.plutoRow, tally.pluto ? T.found : T.missed],
+          [ui.maxCombo, maxCombo],
+          [ui.accuracy, `${(acc * 100).toFixed(1)}%`],
+        ],
+      });
     }
 
     // ---------- lyrics ----------
@@ -768,7 +775,7 @@ export async function mountPlanetParade(target, options = {}) {
         if (state === "play") {
           if (auto) autopilot(t);
           sweep(t);
-          if (t >= SECTIONS.end || audio.ended) finish();
+          if (state === "play" && (t >= SECTIONS.end || audio.ended)) finish(true);
         }
       }
       lastT = t;
