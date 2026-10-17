@@ -4,6 +4,7 @@ export { gameLang } from "./lang.js";
 export { backGuard, buzz, goFullscreen, isTouch, lockGestures, wakeLock } from "./mobile.js";
 export { mountPenguinSteps } from "./penguin-steps.js";
 export { mountPlanetParade } from "./planet-parade.js";
+export { mountPolygonParty } from "./polygon-party.js";
 export { mountPrimeTime } from "./prime-time.js";
 export { Sfx, sfx } from "./sfx.js";
 export { mountSpectrumSlide } from "./spectrum-slide.js";

@@ -87,7 +87,17 @@ const WORK_EXTRA = {
     game: () => import("../prime-time.js").then((m) => m.mountPrimeTime),
   },
   [`${STEM}/pi-keeps-going`]: { colors: ["#ff4f6d", "#ffc93d", "#3dff8a"], look: "swirl", feature: "spiral", preview: 26.77 },
-  [`${STEM}/polygon-party`]: { colors: ["#ff3d5a", "#ffd23f", "#2fe0ff"], look: "facet", feature: "crystals", preview: 29.21 },
+  [`${STEM}/polygon-party`]: {
+    colors: ["#ff3d5a", "#ffd23f", "#2fe0ff"],
+    look: "facet",
+    feature: "crystals",
+    preview: 29.21,
+    howto: {
+      zh: ["外圈缩到形状上的那一下，点屏幕或按空格", "一拍画一条边，画满镜头转到下一位", "从三角形一直画到十二边形"],
+      en: ["Tap or press Space as the outline closes onto the shape", "One edge a beat; close it and the camera swings on", "From the triangle all the way to the dodecagon"],
+    },
+    game: () => import("../polygon-party.js").then((m) => m.mountPolygonParty),
+  },
   [`${STEM}/molecule-shapes`]: { colors: ["#ff4fd8", "#3de8ff", "#7cff4f"], look: "swirl", feature: "atoms", preview: 26.29 },
   [`${STEM}/states-of-matter`]: {
     colors: ["#96dcff", "#64f1c5", "#dfb1ff"], look: "ice", feature: "vapor", preview: 31.95,
