@@ -1,3 +1,4 @@
+import { lifeMarkup } from "../finale.js";
 import { COMMON, overlays } from "../lang.js";
 import { spectrumStyle } from "../spectrum/style.js";
 import { ICONS, SNOWFLAKE } from "./icons.js";
@@ -57,13 +58,13 @@ export const penguinStyle = `${spectrumStyle}
 const TITLE = {
   zh: {
     sub: "企鹅劲舞团！音符落到底时按下对应的键，跳得好就有企鹅加入你的舞队",
-    keys: ["<kbd>←</kbd> 左脚　<kbd>↑</kbd> 翅膀　<kbd>↓</kbd> 拍手　<kbd>→</kbd> 右脚（D F J K 也行）", "两个一起落下时一起按 · 唱到 Freeze 时别动", "手机上直接按底部四个大按钮"],
-    touchKeys: ["音符落到底部按钮上时按下去", "两个一起落下就两只手一起按", "唱到 Freeze 时千万别动！"],
+    keys: ["<kbd>←</kbd> 左脚　<kbd>↑</kbd> 翅膀　<kbd>↓</kbd> 拍手　<kbd>→</kbd> 右脚（D F J K 也行）", "两个一起落下时一起按 · 唱到 Freeze 时别动", "漏拍、按错会掉血，血条空了就失败；跳完整首歌就通关"],
+    touchKeys: ["音符落到底部按钮上时按下去", "两个一起落下就两只手一起按 · 唱到 Freeze 时千万别动！", "漏拍会掉血，血条空了就失败；跳完整首歌就通关"],
   },
   en: {
     sub: "A penguin dance-off! Hit each pad as its note lands and your dance crew grows",
-    keys: ["<kbd>←</kbd> left foot　<kbd>↑</kbd> flap　<kbd>↓</kbd> clap　<kbd>→</kbd> right foot (or D F J K)", "Press both when two land together · don't move on Freeze", "On a phone, tap the four big pads"],
-    touchKeys: ["Tap a pad as its note lands on it", "Two notes at once? Use both thumbs", "When they sing Freeze, don't move!"],
+    keys: ["<kbd>←</kbd> left foot　<kbd>↑</kbd> flap　<kbd>↓</kbd> clap　<kbd>→</kbd> right foot (or D F J K)", "Press both when two land together · don't move on Freeze", "Misses and wrong pads drain your life; dance to the end of the song to clear"],
+    touchKeys: ["Tap a pad as its note lands on it", "Two notes at once? Use both thumbs · when they sing Freeze, don't move!", "Misses drain your life; dance to the end of the song to clear"],
   },
 };
 export const titleKeys = (lang, touch) => (touch ? TITLE[lang].touchKeys : TITLE[lang].keys);
@@ -80,7 +81,7 @@ export const penguinMarkup = (lang) => {
   <div class="hud" id="hud" hidden>
     <div class="progress" id="progress"><i></i></div>
     <div class="crew" id="crew"></div>
-    <div class="score" id="score"><b>0</b><span>SCORE</span></div>
+    <div class="score" id="score"><b>0</b><span>SCORE</span>${lifeMarkup}</div>
     <div class="combo" id="combo"><b>0</b><span>COMBO</span><em>×1</em></div>
     <div class="band" id="band"></div>
     <div class="lyric" id="lyric"></div>

@@ -5,6 +5,7 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { Timing, clamp, easeOutCubic, lerp, smooth } from "@gizclaw/mvg-core/timing.js";
 import { AudioClock, songAudioUrl } from "./kit.js";
 import { COMMON, gameLang } from "./lang.js";
+import { Life, createFinale } from "./finale.js";
 import { backGuard, buzz, isTouch, lockGestures, wakeLock } from "./mobile.js";
 import { sfx } from "./sfx.js";
 import analysis from "./penguin/analysis.json";
@@ -317,6 +318,8 @@ export async function mountPenguinSteps(target, options = {}) {
     let missCount = 0;
     const auto = params.has("auto");
     const loud = () => state === "play";
+    const life = new Life($("hp"), { freeze: 12 });
+    const finale = createFinale(root, { c: ui, audio, signal });
     const guard = backGuard({ signal, playing: () => state === "play", onBack: () => togglePause() });
     const firstNote = chart[0]?.t ?? SECTIONS.verse1;
     const calls = [
@@ -329,6 +332,7 @@ export async function mountPenguinSteps(target, options = {}) {
 
     function reset() {
       for (const n of chart) Object.assign(n, { judged: false, result: null });
+      life.reset();
       score = combo = maxCombo = hits = missCount = 0;
       members = 1;
       Object.keys(tally).forEach((k) => (tally[k] = k === "frozen" ? null : 0));
@@ -411,6 +415,7 @@ export async function mountPenguinSteps(target, options = {}) {
       flashPad(n.lane);
       buzz(n.word ? 18 : 8);
       if (loud()) {
+        life.heal(n.result);
         if (n.lane === CLAP) sfx.stomp();
         else sfx.hit(n.lane * 2 + (n.word ? 5 : 0), n.result === "perfect");
         if (combo >= 10 && combo % 10 === 0) sfx.combo();
@@ -445,6 +450,7 @@ export async function mountPenguinSteps(target, options = {}) {
           judgeText(T.moved, "#ff3d5a");
           if (loud()) sfx.wrong();
           buzz(60);
+          if (loud() && life.hurt("freeze")) finish(false);
         }
         return;
       }
@@ -477,6 +483,7 @@ export async function mountPenguinSteps(target, options = {}) {
       combo = 0;
       judgeText(`✗ ${LANES[other.lane].label[lang]}`, "#ff6b8a");
       updateScore();
+      if (loud() && life.hurt("wrong")) finish(false);
     }
 
     function sweep(t) {
@@ -489,10 +496,12 @@ export async function mountPenguinSteps(target, options = {}) {
         tally.miss++;
         missCount++;
         crew[members > 1 ? 1 + (missCount % (members - 1)) : 0].slip = t;
-        if (loud()) sfx.miss();
         if (combo >= 5) judgeText("MISS", "#c9d6ff");
         combo = 0;
         updateScore();
+        if (!loud()) continue;
+        sfx.miss();
+        if (life.hurt("miss")) return finish(false);
       }
       if (tally.frozen === null && t >= ev.freeze[1] && t < ev.freeze[1] + 1) {
         tally.frozen = true;
@@ -556,6 +565,7 @@ export async function mountPenguinSteps(target, options = {}) {
       document.documentElement.requestFullscreen?.({ navigationUI: "hide" }).then(() => screen.orientation?.lock?.("portrait")).catch(() => {});
     }
     function start() {
+      finale.reset();
       reset();
       sfx.unlock();
       sfx.start();
@@ -587,34 +597,32 @@ export async function mountPenguinSteps(target, options = {}) {
         audio.play();
       }
     }
-    function finish() {
+    /** The end of the dance (`cleared`) or of the player's life. */
+    function finish(cleared) {
       state = "result";
-      audio.pause();
       awake.release();
       root.classList.remove("frozen", "fever");
       const acc = (tally.perfect + tally.great * 0.8 + tally.good * 0.5) / Math.max(1, chart.length);
-      const grade = acc >= 0.95 ? "S" : acc >= 0.85 ? "A" : acc >= 0.7 ? "B" : acc >= 0.5 ? "C" : "D";
-      const gradeColor = { S: "#fff6a0", A: "#3de8ff", B: "#7cff4f", C: "#ff8c42", D: "#ff3d7f" }[grade];
-      $("grade").textContent = grade;
-      $("grade").style.color = gradeColor;
-      $("grade").style.textShadow = `0 4px 0 #1c2547, 0 0 40px ${gradeColor}`;
-      $("final").textContent = ui.points(score.toLocaleString("en-US"));
-      sfx.result(acc >= 0.7);
-      $("stats").innerHTML = [
-        ["PERFECT", tally.perfect],
-        ["GREAT", tally.great],
-        ["GOOD", tally.good],
-        ["MISS", tally.miss],
-        [T.wrongPad, tally.wrong],
-        [T.crewRow, `${members} / ${CREW_MAX}`],
-        [T.freezeRow, tally.frozen == null ? "—" : tally.frozen ? T.passed : T.failed],
-        [T.feverRow, tally.fever],
-        [ui.maxCombo, maxCombo],
-        [ui.accuracy, `${(acc * 100).toFixed(1)}%`],
-      ]
-        .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
-        .join("");
-      $("result").hidden = false;
+      finale.end({
+        cleared,
+        score,
+        ratio: acc,
+        reached: clamp(lastT / SECTIONS.end, 0, 1),
+        best: "penguin-game-best",
+        record: !auto && !params.has("start"),
+        stats: [
+          ["PERFECT", tally.perfect],
+          ["GREAT", tally.great],
+          ["GOOD", tally.good],
+          ["MISS", tally.miss],
+          [T.wrongPad, tally.wrong],
+          [T.crewRow, `${members} / ${CREW_MAX}`],
+          [T.freezeRow, tally.frozen == null ? "—" : tally.frozen ? T.passed : T.failed],
+          [T.feverRow, tally.fever],
+          [ui.maxCombo, maxCombo],
+          [ui.accuracy, `${(acc * 100).toFixed(1)}%`],
+        ],
+      });
     }
 
     // ---------- lyrics ----------
@@ -648,7 +656,7 @@ export async function mountPenguinSteps(target, options = {}) {
         if (state === "play") {
           if (auto) autopilot(t);
           sweep(t);
-          if (t >= SECTIONS.end || audio.ended) finish();
+          if (state === "play" && (t >= SECTIONS.end || audio.ended)) finish(true);
         }
       }
       lastT = t;

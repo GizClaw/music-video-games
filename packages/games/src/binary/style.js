@@ -1,3 +1,4 @@
+import { lifeMarkup } from "../finale.js";
 import { COMMON, overlays } from "../lang.js";
 import { spectrumStyle } from "../spectrum/style.js";
 
@@ -11,9 +12,6 @@ export const binaryStyle = `${spectrumStyle}
 .mvg-game.binary .lyric { top: 50px; bottom: auto; font-size: clamp(16px, 2.8vh, 28px); }
 .mvg-game.binary .band { top: 30%; }
 .mvg-game.binary .judge { top: 46%; font-family: Menlo, monospace; }
-.mvg-game .lives { display: flex; gap: 4px; margin-top: 8px; font: 700 20px/1 Menlo, monospace; }
-.mvg-game .lives i { font-style: normal; color: #2a3566; }
-.mvg-game .lives i.on { color: #ff004d; text-shadow: 0 0 10px #ff004d; }
 .mvg-game .nums { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
 .mvg-game .nums i { width: 22px; height: 22px; display: grid; place-items: center; font: 700 10px Menlo, monospace; font-style: normal; color: rgba(255,255,255,0.35); background: rgba(29,43,83,0.6); border: 1px solid rgba(131,118,156,0.5); }
 .mvg-game .nums i.got { color: #05061a; background: #ffec27; border-color: #fff; box-shadow: 0 0 10px #ffa300; }
@@ -63,7 +61,7 @@ const TITLE = {
     keys: [
       "<kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd> 开关 8 · 4 · 2 · 1，<kbd>空格</kbd> 一键清零，也可以点下面的开关",
       "拨出外星人身上的数字，下一拍就开火打爆它，打完自动清零",
-      "3 条命，溜走一只扣一条；歌曲无限循环，越来越快",
+      "3 条命，溜走一只扣一条，命没了就失败；歌曲循环 2 轮、越来越快，撑到最后就通关",
     ],
   },
   en: {
@@ -71,7 +69,7 @@ const TITLE = {
     keys: [
       "<kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd> flip the 8 · 4 · 2 · 1 switches, <kbd>Space</kbd> clears them, or click the switches below",
       "Spell the number an invader carries and it is shot on the next beat; the switches clear after each shot",
-      "Three lives, one lost for each invader that gets through; the song loops for ever, faster each time",
+      "Three lives, one lost for each invader that gets through; the song plays twice, faster the second time: last to the end to clear",
     ],
   },
 };
@@ -85,7 +83,7 @@ export const binaryMarkup = (lang) => {
   <div class="hud" id="hud" hidden>
     <div class="progress" id="progress"><i></i></div>
     <div class="nums" id="nums"></div>
-    <div class="score" id="score"><b>0</b><span>SCORE</span><div class="lives" id="lives"></div></div>
+    <div class="score" id="score"><b>0</b><span>SCORE</span>${lifeMarkup}</div>
     <div class="combo" id="combo"><b>0</b><span>COMBO</span><em>×1</em></div>
     <div class="band" id="band"></div>
     <div class="judge" id="judge"></div>

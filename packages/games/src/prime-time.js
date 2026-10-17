@@ -11,10 +11,11 @@ import analysis from "./prime/analysis.json";
 import { COLORS, FAKES, GOLD, ORDER, PRIMES, RANGES, SECTIONS, SIEVES, WORD_COLORS, explain, isPrime, numberWord, sungNumbers, wordKey } from "./prime/song.js";
 import { primeMarkup, primeStyle } from "./prime/style.js";
 import { COMMON, gameLang } from "./lang.js";
+import { Life, createFinale } from "./finale.js";
 
 const TEXT = {
   zh: {
-    touchKeys: ["质数会踩着节拍弹起来", "跟着节拍闪到最亮时点它", "合数不会弹，漏掉质数会掉电"],
+    touchKeys: ["质数会踩着节拍弹起来", "跟着节拍闪到最亮时点它", "漏掉质数会掉血，血条空了就失败；撑过 2 轮就通关"],
     intro: "只有质数会弹起来，闪到最亮时点它",
     singAlong: "跟着唱！",
     verse1: "唱到的质数都会弹起来",
@@ -36,7 +37,7 @@ const TEXT = {
     times: (n) => `${n} 次`,
   },
   en: {
-    touchKeys: ["Primes pop up on the beat", "Tap them as they flash brightest", "Other numbers stay down; a missed prime drains power"],
+    touchKeys: ["Primes pop up on the beat", "Tap them as they flash brightest", "A missed prime drains your life; last 2 rounds to clear"],
     intro: "only primes pop up: hit them as they flash brightest",
     singAlong: "SING ALONG!",
     verse1: "every prime sung pops up",
@@ -65,7 +66,8 @@ const WORK = "songs/music/stem-institute/en-us/prime-time";
 const TILE = 0.9;
 const BEST = { perfect: 0.09, great: 0.18 }; // seconds either side of a beat a hit counts as on it
 const RISE = 0.08; // seconds a tile takes to pop up
-const HP = { max: 100, miss: 10, good: 1, great: 2, perfect: 3, board: 30 };
+const LIFE_RULES = { miss: 10, good: 1, great: 2, perfect: 3, board: 30 };
+const ROUNDS = 2; // passes through the song to clear the stage
 const LABELS = 10; // multiplication labels on screen at once
 const LESSON = [2, 4, 3, 9, 5, 6, 7, 8, 3, 10, 2, 9]; // the intro's fillers: primes and non-primes taking turns
 const AIM = { mouse: 1.25, touch: 1.6 }; // how far from a tile that is up a tap still counts, in its own half-widths
@@ -504,7 +506,8 @@ export async function mountPrimeTime(target, options = {}) {
     let score = 0;
     let combo = 0;
     let maxCombo = 0;
-    let hp = HP.max;
+    const life = new Life($("hp"), LIFE_RULES);
+    const finale = createFinale(root, { c: ui, audio, signal });
     const tally = { perfect: 0, great: 0, good: 0, miss: 0, passed: 0, sieves: 0, boards: 0 };
     /** Board slot k: lit gold (a prime hit), crossed out (a non-prime hit or sieved), the last tap and the last miss. */
     const board = Array.from({ length: 101 }, () => ({ lit: 0, litAt: -9, cross: 0, crossAt: -9, tapAt: -9, redAt: -9, hitAt: -9 }));
@@ -543,15 +546,6 @@ export async function mountPrimeTime(target, options = {}) {
       { t: SECTIONS.outro, text: "FINAL CHECK", color: GOLD, sub: T.outro },
     ];
 
-    function showHp(hurt = false) {
-      const el = $("hp");
-      el.firstElementChild.style.width = `${clamp(hp / HP.max, 0, 1) * 100}%`;
-      el.classList.toggle("low", hp <= 30);
-      if (!hurt) return;
-      el.classList.remove("hurt");
-      void el.offsetWidth;
-      el.classList.add("hurt");
-    }
     function showTally(pop = false) {
       const el = $("tally");
       el.innerHTML = `PRIMES <b>${litCount}</b> / 25`;
@@ -584,8 +578,7 @@ export async function mountPrimeTime(target, options = {}) {
       pass = 1;
       gameOff = 0;
       notes = [...buildPass(1), ...buildPass(2)];
-      hp = HP.max;
-      showHp();
+      life.reset();
       score = combo = maxCombo = 0;
       Object.keys(tally).forEach((k) => (tally[k] = 0));
       lastCall = -1;
@@ -664,8 +657,7 @@ export async function mountPrimeTime(target, options = {}) {
       tally.boards++;
       score += 2000 * mult();
       winAt = now();
-      hp = Math.min(HP.max, hp + HP.board);
-      showHp();
+      if (loud()) life.heal("board");
       slam("FULL BOARD!", GOLD, T.fullBoard);
       burst(0, 0, 220, [GOLD, "#ffe6a8", COLORS.orange, "#ffffff"], 9);
       buzz(40);
@@ -697,10 +689,7 @@ export async function mountPrimeTime(target, options = {}) {
       maxCombo = Math.max(maxCombo, combo);
       tally[grade]++;
       score += { perfect: 300, great: 200, good: 100 }[grade] * mult();
-      if (!n.practice) {
-        hp = Math.min(HP.max, hp + HP[grade]);
-        showHp();
-      }
+      if (!n.practice && loud()) life.heal(grade);
       const x = tileX(n.n);
       const y = tileY(n.n);
       board[n.n].hitAt = now();
@@ -754,16 +743,14 @@ export async function mountPrimeTime(target, options = {}) {
       tally.miss++;
       combo = 0;
       board[n.n].redAt = now();
-      if (!n.practice) {
-        crash = now();
-        hp -= HP.miss;
-        showHp(true);
-        buzz(30);
-        if (hp <= 0 && state === "play") setTimeout(() => state === "play" && finish(), 700);
-      }
       judgeText("MISS", "#c8b8ff", n.n);
-      if (loud()) sfx.miss();
       updateScore();
+      if (!loud()) return;
+      sfx.miss();
+      if (n.practice) return;
+      crash = now();
+      buzz(30);
+      if (life.hurt("miss")) finish(false);
     }
 
     const open = (g) => notes.filter((n) => isUp(n, g));
@@ -845,6 +832,7 @@ export async function mountPrimeTime(target, options = {}) {
     $("again").addEventListener("click", start);
 
     function start() {
+      finale.reset();
       reset();
       sfx.unlock();
       sfx.start();
@@ -879,7 +867,7 @@ export async function mountPrimeTime(target, options = {}) {
         audio.play();
       }
     }
-    /** The song never ends: on the bar before its end, jump back to the first chorus with a fresh board; the next pass is dealt ahead. */
+    /** On the bar before the song's end, jump back to the first chorus with a fresh board, faster; the next pass is dealt ahead. */
     function loopBack(t) {
       const to = T_TO + Math.max(0, t - T_FROM);
       audio.currentTime = to;
@@ -889,39 +877,40 @@ export async function mountPrimeTime(target, options = {}) {
       notes.push(...buildPass(pass + 1));
       clearBoard();
       lastCall = calls.findLast((c) => c.t <= to + 0.5)?.t ?? -1;
-      slam(ui.round(pass), GOLD, ui.faster);
+      slam(ui.round(pass), GOLD, pass === ROUNDS ? ui.lastRound : ui.faster);
       return to;
     }
+    /** How much of the whole run (all rounds) game time g has covered. */
+    const runProgress = (g) => clamp(g / (T_FROM + (ROUNDS - 1) * SPAN), 0, 1);
 
-    function finish() {
+    /** The last round played out (`cleared`) or the power ran out. */
+    function finish(cleared) {
       state = "result";
-      audio.pause();
       awake.release();
       setTip("");
       setExplain("");
-      const right = tally.perfect + tally.great + tally.good;
-      const grade = right >= 260 ? "S" : right >= 180 ? "A" : right >= 110 ? "B" : right >= 50 ? "C" : "D";
-      const gradeColor = { S: GOLD, A: COLORS.cyan, B: "#7cff4f", C: COLORS.orange, D: COLORS.red }[grade];
+      const judged = tally.perfect + tally.great + tally.good + tally.miss;
+      const ratio = (tally.perfect + tally.great * 0.8 + tally.good * 0.5) / Math.max(1, judged);
       const secs = Math.round(now() - startedAt);
-      $("result").querySelector(".kicker").textContent = "GAME OVER";
-      $("grade").textContent = grade;
-      $("grade").style.color = gradeColor;
-      $("grade").style.textShadow = `0 0 40px ${gradeColor}`;
-      $("final").textContent = ui.points(score.toLocaleString("en-US"));
-      sfx.result(grade <= "B");
-      $("stats").innerHTML = [
-        ["PERFECT", tally.perfect],
-        ["GREAT", tally.great],
-        ["GOOD", tally.good],
-        [T.missed, tally.miss],
-        [T.sieves, T.times(tally.sieves)],
-        [T.boards, T.times(tally.boards)],
-        [ui.lasted, `${ui.round(pass)} · ${ui.duration(secs)}`],
-        [ui.maxCombo, maxCombo],
-      ]
-        .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
-        .join("");
-      $("result").hidden = false;
+      finale.end({
+        cleared,
+        score,
+        ratio,
+        reached: `${ui.round(pass)} · ${Math.round(runProgress(gNow()) * 100)}%`,
+        best: "prime-game-best",
+        record: !auto && !params.has("start"),
+        stats: [
+          ["PERFECT", tally.perfect],
+          ["GREAT", tally.great],
+          ["GOOD", tally.good],
+          [T.missed, tally.miss],
+          [T.sieves, T.times(tally.sieves)],
+          [T.boards, T.times(tally.boards)],
+          [ui.rounds, `${pass} / ${ROUNDS} · ${ui.duration(secs)}`],
+          [ui.accuracy, `${(ratio * 100).toFixed(1)}%`],
+          [ui.maxCombo, maxCombo],
+        ],
+      });
     }
 
     // ---------- lyrics ----------
@@ -956,8 +945,11 @@ export async function mountPrimeTime(target, options = {}) {
         direct(gNow());
       } else {
         t = state === "play" ? songTime() : lastT;
+        if (state === "play" && (t >= T_FROM || audio.ended)) {
+          if (pass >= ROUNDS) finish(true);
+          else t = loopBack(t);
+        }
         if (state === "play") {
-          if (t >= T_FROM || audio.ended) t = loopBack(t);
           lastT = t;
           if (auto) autopilot();
           direct(gNow());
@@ -1095,7 +1087,7 @@ export async function mountPrimeTime(target, options = {}) {
     }
 
     function hudFrame(t, g) {
-      $("progress").firstElementChild.style.width = `${clamp(t / SECTIONS.end, 0, 1) * 100}%`;
+      $("progress").firstElementChild.style.width = `${runProgress(g) * 100}%`;
       drawLyric(t);
       const [jx, jy] = toScreen(judgeAt[0], judgeAt[1]);
       const edge = Math.min(120, view.w / 2);
@@ -1132,7 +1124,7 @@ export async function mountPrimeTime(target, options = {}) {
       tally: () => {
         const g = gNow();
         const n = notes.find((x) => x.state === "wait" && g <= x.g + x.stay);
-        return { ...tally, score, combo, maxCombo, hp, lit: litCount, pass, g, next: n && { n: n.n, kind: n.kind, g: n.g, practice: n.practice }, up: open(g).map((x) => ({ n: x.n, g: x.g, kind: x.kind })) };
+        return { ...tally, score, combo, maxCombo, hp: life.value, lit: litCount, pass, g, next: n && { n: n.n, kind: n.kind, g: n.g, practice: n.practice }, up: open(g).map((x) => ({ n: x.n, g: x.g, kind: x.kind })) };
       },
       chart: (p = 1) => buildPass(p).map((n) => [Math.round(n.t * 100) / 100, n.n, n.kind[0]]),
       /** Tap the tile of number k, as a player would. */

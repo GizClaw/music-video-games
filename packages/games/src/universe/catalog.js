@@ -36,8 +36,8 @@ const WORK_EXTRA = {
     feature: "moons",
     preview: 32.29,
     howto: {
-      zh: ["音符落到圆按钮上时按 ← ↑ → 或点按钮，青蛙跳到那片荷叶", "紫色长条：唱 Bend 时按住中间，唱 stop 时松手；Hooray 左右一起按", "跳得准小青蛙会加入，唱 freeze 时别动"],
-      en: ["Press ← ↑ → or tap a round button as a note lands on it", "Purple bars: hold the middle on Bend, let go on stop; Hooray is left and right together", "Hop well and little frogs join; on freeze, don't move"],
+      zh: ["音符落到圆按钮上时按 ← ↑ → 或点按钮，青蛙跳到那片荷叶", "紫色长条：唱 Bend 时按住中间，唱 stop 时松手；Hooray 左右一起按", "漏拍会掉血，血条空了就失败；跳完整首歌就通关"],
+      en: ["Press ← ↑ → or tap a round button as a note lands on it", "Purple bars: hold the middle on Bend, let go on stop; Hooray is left and right together", "Misses drain your life; hop to the end of the song to clear"],
     },
     game: () => import("../frog-hop-stop.js").then((m) => m.mountFrogHopStop),
   },
@@ -81,8 +81,8 @@ const WORK_EXTRA = {
     feature: "bits",
     preview: 30.85,
     howto: {
-      zh: ["A S D F 拨 8 · 4 · 2 · 1，拨出外星人身上的数字", "下一拍自动开火，空格一键清零", "3 条命，无限循环，越来越快"],
-      en: ["A S D F flip 8 · 4 · 2 · 1 to dial the invader's number", "It fires on the next beat; Space clears", "Three lives; loops for ever, faster each time"],
+      zh: ["A S D F 拨 8 · 4 · 2 · 1，拨出外星人身上的数字", "下一拍自动开火，空格一键清零", "3 条命，撑过越来越快的 2 轮就通关"],
+      en: ["A S D F flip 8 · 4 · 2 · 1 to dial the invader's number", "It fires on the next beat; Space clears", "Three lives; last 2 rounds, faster each time, to clear"],
     },
     game: () => import("../binary-boogie.js").then((m) => m.mountBinaryBoogie),
   },
@@ -92,8 +92,8 @@ const WORK_EXTRA = {
     feature: "primes",
     preview: 23.32,
     howto: {
-      zh: ["只有质数会踩着节拍弹起来", "闪到最亮的那一拍点它，就是 PERFECT", "合数被乘法划掉，无限循环越来越快"],
-      en: ["Only primes pop up, on the beat", "Hit them as they flash brightest for a PERFECT", "Multiplication crosses out the rest; loops for ever, faster each time"],
+      zh: ["只有质数会踩着节拍弹起来", "闪到最亮的那一拍点它，就是 PERFECT", "漏掉质数会掉血，撑过越来越快的 2 轮就通关"],
+      en: ["Only primes pop up, on the beat", "Hit them as they flash brightest for a PERFECT", "Missed primes drain your life; last 2 rounds, faster each time, to clear"],
     },
     game: () => import("../prime-time.js").then((m) => m.mountPrimeTime),
   },

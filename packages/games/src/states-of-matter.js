@@ -1,6 +1,7 @@
 import { Timing, clamp } from "@gizclaw/mvg-core/timing.js";
 import { AudioClock, songAudioUrl } from "./kit.js";
-import { gameLang } from "./lang.js";
+import { COMMON, gameLang } from "./lang.js";
+import { createFinale } from "./finale.js";
 import { backGuard, buzz, lockGestures, wakeLock } from "./mobile.js";
 import { sfx } from "./sfx.js";
 import analysis from "./matter/analysis.json";
@@ -54,6 +55,7 @@ export async function mountStatesOfMatter(target, options = {}) {
   audio.muted = sfx.muted;
   audio.src = options.audio ?? params.get("audio") ?? songAudioUrl(WORK);
   const clock = new AudioClock(audio);
+  const finale = createFinale(root, { c: COMMON[lang], audio, signal });
   const pace = new AdaptivePace();
   const timing = new Timing(analysis);
   const chart = buildChart(analysis);
@@ -102,7 +104,6 @@ export async function mountStatesOfMatter(target, options = {}) {
 
   const songTime = () => clamp(clock.now() + offset, 0, analysis.duration);
   const nextNote = () => notes[cursor];
-  const displayNumber = (n) => Math.round(n).toLocaleString("en-US");
   const timeLabel = (t) => `${Math.floor(Math.max(0, t) / 60)}:${String(Math.floor(Math.max(0, t) % 60)).padStart(2, "0")}`;
   const setStartLabel = (label) => { $("start").querySelector(".mr-button-label").textContent = label; };
   $("pause-duration").textContent = timeLabel(analysis.duration);
@@ -155,7 +156,7 @@ export async function mountStatesOfMatter(target, options = {}) {
     $("score").textContent = String(score).padStart(5, "0");
     $("combo").textContent = combo;
     $("energy").style.width = `${energy}%`;
-    $("energy").style.background = energy <= 30 ? "#dc91a0" : "#abd8cd";
+    $("energy").parentElement.classList.toggle("low", energy <= 30);
     $("energy").parentElement.setAttribute("aria-valuenow", String(energy));
   }
 
@@ -210,6 +211,10 @@ export async function mountStatesOfMatter(target, options = {}) {
       combo = 0;
       portalSound(n.phase, "miss");
       buzz(24);
+      const gauge = $("energy").parentElement;
+      gauge.classList.remove("hurt");
+      void gauge.offsetWidth;
+      gauge.classList.add("hurt");
     } else {
       combo++;
       maxCombo = Math.max(maxCombo, combo);
@@ -231,17 +236,11 @@ export async function mountStatesOfMatter(target, options = {}) {
     const message = result === "miss" ? (shift < 0 ? ui.speedDown : n.attempt ? ui.miss : ui.noAction) : shift > 0 && combo % 3 === 0 ? ui.speedUp : combo % 12 === 0 ? `${combo} COMBO!` : `${ui[result]} +${n.points}`;
     announce(message, result === "miss" ? "#ff698b" : STATES[n.phase].color);
     updateScore();
-    if (pace.failed) {
-      // Let the final collision land before covering it with the result screen.
-      lastT = songTime();
-      mode = "ending";
-      endingAt = performance.now();
-      audio.pause();
-      awake.release();
-    }
+    if (pace.failed) finish(false);
   }
 
   function reset() {
+    finale.reset();
     notes = chart.filter((n) => n.t >= from + 0.65).map((n) => ({ ...n }));
     cursor = autoCursor = 0;
     tally = { perfect: 0, great: 0, good: 0, miss: 0 };
@@ -346,10 +345,12 @@ export async function mountStatesOfMatter(target, options = {}) {
     await playAudio();
   }
 
+  /** The song played out (`complete`) or the runner fell to the speed floor. The scene plays on under the ending banner. */
   function finish(complete) {
-    if (mode !== "play" && mode !== "ending") return;
-    mode = "result";
-    audio.pause();
+    if (mode !== "play") return;
+    lastT = songTime();
+    mode = "ending";
+    endingAt = performance.now();
     awake.release();
     $("pause-toggle").hidden = true;
     $("buffer").hidden = true;
@@ -357,26 +358,25 @@ export async function mountStatesOfMatter(target, options = {}) {
     const judged = passed + tally.miss;
     const accuracy = judged ? Math.round(passed / judged * 100) : 0;
     const quality = judged ? (tally.perfect + tally.great * 0.75 + tally.good * 0.4) / judged : 0;
-    const grade = !complete ? "D" : quality >= 0.9 ? "S" : quality >= 0.72 ? "A" : quality >= 0.5 ? "B" : "C";
-    $("grade").textContent = grade;
-    $("result").querySelector(".mr-results-stage").style.setProperty("--rank-color", {S:"#ffe8a0",A:"#88efff",B:"#9df7bf",C:"#c6acff",D:"#ff8aaf"}[grade]);
-    $("result-label").textContent = complete ? ui.complete : ui.over;
-    $("final").textContent = displayNumber(score);
-    $("stats").replaceChildren();
-    for (const [value, label] of [[`${accuracy}%`, ui.accuracy], [maxCombo, ui.maxCombo], [`${passed}/${notes.length}`, ui.passed]]) {
-      const cell = document.createElement("div");
-      const num = document.createElement("b"); num.textContent = value;
-      const name = document.createElement("span"); name.textContent = label;
-      cell.append(num, name); $("stats").appendChild(cell);
-    }
-    // Practice, seeked runs and autoplay never overwrite a full manual run.
-    const previous = Number(localStorage.getItem("matter-game-best") ?? 0) || 0;
-    const best = !auto && from === 0 ? Math.max(previous, score) : previous;
-    if (!auto && from === 0) localStorage.setItem("matter-game-best", String(best));
-    $("best").textContent = auto ? ui.watch : `${ui.best} · ${displayNumber(best)}`;
-    $("result").hidden = false;
-    $("again").focus({ preventScroll: true });
-    sfx.result(complete);
+    finale.end({
+      cleared: complete,
+      score,
+      ratio: quality,
+      reached: clamp(lastT / analysis.duration, 0, 1),
+      // Practice, seeked runs and autoplay never overwrite a full manual run.
+      best: "matter-game-best",
+      record: !auto && from === 0,
+      stats: [
+        [ui.perfect, tally.perfect],
+        [ui.great, tally.great],
+        [ui.good, tally.good],
+        ["MISS", tally.miss],
+        [ui.passed, `${passed} / ${notes.length}`],
+        [ui.accuracy, `${accuracy}%`],
+        [ui.maxCombo, maxCombo],
+      ],
+      onShow: () => { mode = "result"; },
+    });
   }
 
   function updateHud(t) {
@@ -466,8 +466,7 @@ export async function mountStatesOfMatter(target, options = {}) {
       settleGates(t);
       if (audio.ended || t >= analysis.duration - 0.05) finish(true);
     } else if (mode === "ending") {
-      t = lastT + (now - endingAt) / 1000;
-      if (now - endingAt >= 650) finish(false);
+      t = lastT + Math.min(0.65, (now - endingAt) / 1000);
     }
     const muted = sfx.muted;
     root.classList.toggle("mr-title", mode === "title");

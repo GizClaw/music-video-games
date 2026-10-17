@@ -5,6 +5,7 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { Timing, clamp, hash, lerp, smooth } from "@gizclaw/mvg-core/timing.js";
 import { AudioClock, glowTexture, songAudioUrl } from "./kit.js";
 import { COMMON, gameLang } from "./lang.js";
+import { Life, createFinale } from "./finale.js";
 import { backGuard, buzz, isTouch, lockGestures, wakeLock } from "./mobile.js";
 import { sfx } from "./sfx.js";
 import analysis from "./frog/analysis.json";
@@ -367,6 +368,8 @@ export async function mountFrogHopStop(target, options = {}) {
     let lastT = 0;
     const auto = params.has("auto");
     const loud = () => state === "play";
+    const life = new Life($("hp"), { freeze: 12 });
+    const finale = createFinale(root, { c: ui, audio, signal });
     const guard = backGuard({ signal, playing: () => state === "play", onBack: () => togglePause() });
     const firstNote = chart[0]?.t ?? SECTIONS.verse1;
     const calls = [
@@ -377,6 +380,7 @@ export async function mountFrogHopStop(target, options = {}) {
 
     function reset() {
       for (const n of chart) Object.assign(n, { judged: false, result: null, tail: null, at: undefined });
+      life.reset();
       score = combo = maxCombo = hits = members = 0;
       Object.assign(hop, { from: 1, to: 1, at: -9, big: false, splash: false });
       shakeAt = holdStart = stopAt = -9;
@@ -448,6 +452,7 @@ export async function mountFrogHopStop(target, options = {}) {
         slam("+1", "#ffffff", T.joined);
         if (loud()) sfx.collect(members);
       }
+      if (loud()) life.heal(result);
       if (combo >= 10 && combo % 10 === 0 && loud()) sfx.combo();
       judgeText(result === "perfect" ? (combo >= 10 && combo % 10 === 0 ? `${combo} COMBO!` : "PERFECT") : result.toUpperCase(), result === "perfect" ? COLORS.big : "#ffffff");
       updateScore();
@@ -504,6 +509,7 @@ export async function mountFrogHopStop(target, options = {}) {
           judgeText(T.moved, COLORS.stop);
           if (loud()) sfx.wrong();
           buzz(60);
+          if (loud() && life.hurt("freeze")) finish(false);
         }
         return;
       }
@@ -520,6 +526,7 @@ export async function mountFrogHopStop(target, options = {}) {
         combo = 0;
         updateScore();
         if (loud()) sfx.wrong();
+        if (loud() && life.hurt("wrong")) finish(false);
         return;
       }
       if (loud()) sfx.tap(lane * 2 + 1);
@@ -545,6 +552,7 @@ export async function mountFrogHopStop(target, options = {}) {
         updateScore();
         judgeText(T.soon, "#c9d6ff");
         if (loud()) sfx.miss();
+        if (loud() && life.hurt("miss")) finish(false);
       }
     }
 
@@ -562,7 +570,9 @@ export async function mountFrogHopStop(target, options = {}) {
         combo = 0;
         updateScore();
         hopTo(n.lane, t, { splash: true });
+        if (loud() && life.hurt("miss")) return finish(false);
       }
+      if (state !== "play") return;
       if (holding && t > holding.end + GOOD) {
         const n = holding;
         holding = null;
@@ -571,6 +581,8 @@ export async function mountFrogHopStop(target, options = {}) {
         combo = 0;
         updateScore();
         judgeText(T.late, "#c9d6ff");
+        if (loud()) sfx.miss();
+        if (loud() && life.hurt("miss")) finish(false);
       }
       if (tally.frozen === null && t >= ev.freeze[1] && t < ev.freeze[1] + 1) {
         tally.frozen = true;
@@ -642,6 +654,7 @@ export async function mountFrogHopStop(target, options = {}) {
       document.documentElement.requestFullscreen?.({ navigationUI: "hide" }).then(() => screen.orientation?.lock?.("portrait")).catch(() => {});
     }
     function start() {
+      finale.reset();
       reset();
       sfx.unlock();
       sfx.start();
@@ -677,34 +690,32 @@ export async function mountFrogHopStop(target, options = {}) {
         audio.play();
       }
     }
-    function finish() {
+    /** The end of the song (`cleared`) or of the player's life. */
+    function finish(cleared) {
       state = "result";
-      audio.pause();
       awake.release();
       root.classList.remove("frozen");
       const total = chart.length + chart.filter((n) => n.kind === "hold").length;
       const acc = (tally.perfect + tally.great * 0.8 + tally.good * 0.5) / Math.max(1, total);
-      const g = acc >= 0.95 ? "S" : acc >= 0.85 ? "A" : acc >= 0.7 ? "B" : acc >= 0.5 ? "C" : "D";
-      const gradeColor = { S: "#fff6a0", A: "#3de8ff", B: "#7cff4f", C: "#ff8c42", D: "#ff3d7f" }[g];
-      $("grade").textContent = g;
-      $("grade").style.color = gradeColor;
-      $("grade").style.textShadow = `0 4px 0 #1c2547, 0 0 40px ${gradeColor}`;
-      $("final").textContent = ui.points(score.toLocaleString("en-US"));
-      sfx.result(acc >= 0.7);
-      $("stats").innerHTML = [
-        ["PERFECT", tally.perfect],
-        ["GREAT", tally.great],
-        ["GOOD", tally.good],
-        ["MISS", tally.miss],
-        [T.holdRow, `${tally.stops} / ${CHORUSES.length}`],
-        [T.crewRow, `${members + 1} / ${CREW_MAX + 1}`],
-        [T.freezeRow, tally.frozen == null ? "—" : tally.frozen ? T.passed : T.failed],
-        [ui.maxCombo, maxCombo],
-        [ui.accuracy, `${(acc * 100).toFixed(1)}%`],
-      ]
-        .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
-        .join("");
-      $("result").hidden = false;
+      finale.end({
+        cleared,
+        score,
+        ratio: acc,
+        reached: clamp(lastT / SECTIONS.end, 0, 1),
+        best: "frog-game-best",
+        record: !auto && !params.has("start"),
+        stats: [
+          ["PERFECT", tally.perfect],
+          ["GREAT", tally.great],
+          ["GOOD", tally.good],
+          ["MISS", tally.miss],
+          [T.holdRow, `${tally.stops} / ${CHORUSES.length}`],
+          [T.crewRow, `${members + 1} / ${CREW_MAX + 1}`],
+          [T.freezeRow, tally.frozen == null ? "—" : tally.frozen ? T.passed : T.failed],
+          [ui.maxCombo, maxCombo],
+          [ui.accuracy, `${(acc * 100).toFixed(1)}%`],
+        ],
+      });
     }
 
     // ---------- lyrics ----------
@@ -744,7 +755,7 @@ export async function mountFrogHopStop(target, options = {}) {
         if (state === "play") {
           if (auto) autopilot(t);
           sweep(t);
-          if (t >= SECTIONS.end || audio.ended) finish();
+          if (state === "play" && (t >= SECTIONS.end || audio.ended)) finish(true);
         }
       }
       lastT = t;
