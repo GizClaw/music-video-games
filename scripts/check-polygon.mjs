@@ -3,15 +3,21 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { Timing } from "../packages/core/src/timing.js";
-import { END, SECTIONS, SHAPES, chart } from "../packages/games/src/polygon/song.js";
+import { END, LEVELS, SECTIONS, SHAPES, chart } from "../packages/games/src/polygon/song.js";
 import { STAGE_RADIUS, ShotDirector, polygonAngle, polygonPosition } from "../packages/games/src/polygon/camera.js";
 
 const tm = new Timing(JSON.parse(readFileSync(new URL("../packages/games/src/polygon/analysis.json", import.meta.url))));
 tm.setDownbeat(SECTIONS.drop);
 const notes = chart(tm);
 assert(Math.abs(notes[0].t - tm.beatTime(tm.dropBeat)) < 1e-9, "The first note is the drop's downbeat");
-notes.forEach((n, i) => i && assert.equal(n.beat - notes[i - 1].beat, 2, "A note on every second beat"));
+notes.forEach((n, i) => i && assert(n.beat - notes[i - 1].beat >= 0.5, "Notes are at least half a beat apart"));
 assert(notes.at(-1).t < END);
+// It gets harder: each section is at least as busy as the first, its cue no slower, and the last chorus is busiest.
+const perBar = (from, to) => notes.filter((n) => n.t >= from && n.t < to).length / ((to - from) / (tm.period * 4));
+const busy = LEVELS.map((l, i) => perBar(l.from, LEVELS[i + 1]?.from ?? END));
+busy.forEach((b) => assert(b >= busy[0] - 0.05, "No section is easier than the opening"));
+assert.equal(Math.max(...busy), busy[LEVELS.findIndex((l) => l.from === SECTIONS.chorus3)], "The final chorus is the busiest");
+LEVELS.forEach((l) => assert(l.lead <= LEVELS[0].lead, "Cues never close slower than at the start"));
 const edges = SHAPES.reduce((sum, s) => sum + s.sides, 0);
 assert(notes.length > edges, "The song is long enough to draw every shape at least once");
 

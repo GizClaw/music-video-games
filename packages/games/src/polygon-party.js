@@ -6,29 +6,33 @@ import { sfx } from "./sfx.js";
 import analysis from "./polygon/analysis.json";
 import { EARLY, END, GOLD, SECTIONS, SHAPES, WINDOW, WORK, chart, phaseAt, wordColor } from "./polygon/song.js";
 import { createStage } from "./polygon/stage.js";
-import { TITLE, polygonMarkup, polygonStyle } from "./polygon/style.js";
+import { TITLE, clip, polygonMarkup, polygonStyle } from "./polygon/style.js";
 
 const TEXT = {
   zh: {
     tipFirst: "外圈缩到形状上的那一下，点屏幕或按空格",
-    tipTouch: "外圈缩到形状上的那一下，点屏幕",
+    tipTouch: "外圈缩到形状上的那一下，敲下面的鼓（点屏幕哪里都行）",
     early: "早了",
     sides: (n) => `${n} 条边 · ${n} 个角`,
     complete: (s) => `${s.zh}画好了！`,
-    chorus: "数一数有几条边",
-    bridge: "点名！一个接一个",
+    faster: "节奏变快了",
+    every: "每一拍都有",
+    offbeat: "加上半拍",
+    fastest: "最快的一段",
     outro: "画到最后一笔",
     collected: "收集形状",
     missed: "漏拍",
   },
   en: {
     tipFirst: "Tap or press Space as the outer outline closes onto the shape",
-    tipTouch: "Tap as the outer outline closes onto the shape",
+    tipTouch: "Hit a drum pad as the outer outline closes onto the shape (anywhere on screen works)",
     early: "EARLY",
     sides: (n) => `${n} SIDES · ${n} CORNERS`,
     complete: (s) => `${s.en} DONE!`,
-    chorus: "count the sides",
-    bridge: "roll call! one after another",
+    faster: "the beat picks up",
+    every: "a note on every beat",
+    offbeat: "now the off-beats too",
+    fastest: "the fastest part",
     outro: "to the very last edge",
     collected: "Shapes",
     missed: "Missed",
@@ -107,8 +111,6 @@ export async function mountPolygonParty(target, options = {}) {
   try {
     const tm = new Timing(analysis);
     tm.setDownbeat(SECTIONS.drop);
-    const period = tm.period;
-    const LEAD = period * 2;
     const CHART = chart(tm);
     stage = createStage($("stage"));
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -137,11 +139,13 @@ export async function mountPolygonParty(target, options = {}) {
     const now = () => performance.now() / 1000;
     const guard = backGuard({ signal, playing: () => state === "play", onBack: () => togglePause() });
     const chips = [...$("shapes").children];
+    const pads = [$("padL"), $("padR")];
     const calls = [
-      { t: SECTIONS.chorus1, text: "SIDE BY SIDE!", color: "#ff4fd8", sub: T.chorus },
-      { t: SECTIONS.chorus2, text: "HOW MANY?", color: "#2fe0ff", sub: T.chorus },
-      { t: SECTIONS.bridge, text: "ROLL CALL", color: "#5d7bff", sub: T.bridge },
-      { t: SECTIONS.chorus3, text: "POLYGON PARTY!", color: GOLD, sub: T.chorus },
+      { t: SECTIONS.chorus1, text: "SIDE BY SIDE!", color: "#ff4fd8", sub: T.faster },
+      { t: SECTIONS.verse2, text: "FASTER!", color: "#4dff7a", sub: T.faster },
+      { t: SECTIONS.chorus2, text: "HOW MANY?", color: "#2fe0ff", sub: T.every },
+      { t: SECTIONS.bridge, text: "ROLL CALL", color: "#5d7bff", sub: T.offbeat },
+      { t: SECTIONS.chorus3, text: "POLYGON PARTY!", color: GOLD, sub: T.fastest },
       { t: SECTIONS.outro, text: "FINALE", color: GOLD, sub: T.outro },
     ];
     const current = () => SHAPES[shapeI];
@@ -150,7 +154,8 @@ export async function mountPolygonParty(target, options = {}) {
     function setTip(text) {
       if (text === tipShown) return;
       tipShown = text;
-      $("tip").textContent = text;
+      // An empty tip keeps its last words while it fades out.
+      if (text) $("tip").textContent = text;
       $("tip").classList.toggle("on", !!text);
     }
     function updateScore() {
@@ -175,6 +180,10 @@ export async function mountPolygonParty(target, options = {}) {
         tag.querySelector("small").textContent = lang === "zh" ? `${s.en} · ${T.sides(s.sides)}` : T.sides(s.sides);
         tag.querySelector(".pips").innerHTML = "<i></i>".repeat(s.sides);
         chips.forEach((c, i) => c.classList.toggle("now", i === shapeI));
+        for (const pad of pads) {
+          pad.style.setProperty("--shape", clip(s.sides));
+          pad.style.setProperty("--c", s.color);
+        }
       }
       [...tag.querySelector(".pips").children].forEach((p, i) => p.classList.toggle("on", i < count));
       tagFor = key;
@@ -220,6 +229,16 @@ export async function mountPolygonParty(target, options = {}) {
 
     /** The next unjudged note, and the one a tap at t would hit. */
     const nextNote = () => notes.find((n) => n.state === "wait");
+    /** The next few unjudged notes, as seconds ahead and how long their cue takes to close. */
+    function upcoming(t) {
+      const out = [];
+      for (const n of notes) {
+        if (n.state !== "wait") continue;
+        if (out.length === 4 || n.t - t > n.lead) break;
+        out.push({ ahead: n.t - t, lead: n.lead });
+      }
+      return out;
+    }
     function hit(n, t) {
       const err = Math.abs(t - n.t);
       const grade = err <= WINDOW.perfect ? "perfect" : "good";
@@ -300,6 +319,16 @@ export async function mountPolygonParty(target, options = {}) {
     }
 
     // ---------- input ----------
+    for (const pad of pads) {
+      pad.addEventListener("pointerdown", (e) => {
+        sfx.unlock();
+        e.preventDefault();
+        if (state !== "play") return;
+        pad.classList.add("down");
+        setTimeout(() => pad.classList.remove("down"), 90);
+        press(songTime());
+      }, { signal });
+    }
     root.addEventListener("pointerdown", (e) => {
       sfx.unlock();
       if (state !== "play" || e.target.closest("button, a, .overlay")) return;
@@ -424,8 +453,7 @@ export async function mountPolygonParty(target, options = {}) {
         beat: tm.beatFloat(t),
         pulse: tm.pulse(t, 0.12),
         phase: phaseAt(t),
-        ahead: n ? n.t - t : Infinity,
-        lead: LEAD,
+        upcoming: upcoming(t),
         demo: state === "title",
         reducedMotion: reducedMotion.matches,
       });
@@ -443,8 +471,10 @@ export async function mountPolygonParty(target, options = {}) {
       const j = $("judge");
       j.style.left = `${view.centre.x}px`;
       j.style.top = `${view.centre.y - 24}px`;
+      const due = !!n && Math.abs(n.t - t) <= WINDOW.good;
+      for (const pad of pads) pad.classList.toggle("due", due);
       const index = n ? notes.indexOf(n) - notes.findIndex((x) => x.state !== "skip") : Infinity;
-      setTip(state === "play" && index < TIPS && n && n.t - t < LEAD * 2.5 ? (touch ? T.tipTouch : T.tipFirst) : "");
+      setTip(state === "play" && index < TIPS && n && n.t - t < n.lead * 2.5 ? (touch ? T.tipTouch : T.tipFirst) : "");
       if (state !== "play") return;
       const c = calls.findLast((x) => x.t <= t);
       if (c && c.t !== lastCall && t - c.t < 0.5) {

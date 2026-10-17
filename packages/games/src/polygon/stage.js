@@ -17,6 +17,7 @@ const SPARKS = 1400;
 const WAVES = 8;
 const BUNTING = { radius: 8.2, y: 6.7, sag: 0.6, flags: 50, points: 121 };
 const CONFETTI = 500;
+const CUES = 4; // upcoming notes shown closing in at once
 
 const luminance = (c) => c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722;
 /** A colour bright enough to bloom however dark its hue, without washing out to white: red and blue would otherwise read dimmer than yellow. */
@@ -307,11 +308,15 @@ export function createStage(host) {
   const focus = performers.map(() => 0.3);
   const ofSides = (sides) => performers[sides - 3];
 
-  // The cue: the active shape's own outline closing in from outside; it meets the shape on the note.
+  // Cues: the active shape's own outline closing in from outside, one per
+  // upcoming note; each meets the shape on its note.
   const cueGeometry = new Map(SHAPES.map((s) => [s.sides, polygonRing(s.sides, R * 0.985, R * 1.05)]));
-  const cue = new THREE.Mesh(cueGeometry.get(3), new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, depthWrite: false, side: THREE.DoubleSide }));
-  const cueGlow = new THREE.Mesh(cueGeometry.get(3), new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
-  cue.renderOrder = cueGlow.renderOrder = 6;
+  const cues = Array.from({ length: CUES }, () => {
+    const ring = new THREE.Mesh(cueGeometry.get(3), new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+    const glowRing = new THREE.Mesh(cueGeometry.get(3), new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+    ring.renderOrder = glowRing.renderOrder = 6;
+    return { ring, glowRing };
+  });
 
   // Shock waves in the shape of the polygon just hit.
   const waves = Array.from({ length: WAVES }, () => {
@@ -435,10 +440,10 @@ export function createStage(host) {
     },
     /**
      * Draw a frame at song time t (wall time `now`): `sides` is the active
-     * performer, `ahead` seconds until its next note (Infinity for none),
-     * `lead` how long the cue takes to close.
+     * performer and `upcoming` its next notes, each `{ ahead, lead }`: seconds
+     * until the note and how long its cue takes to close.
      */
-    draw(t, now, { sides, beat, pulse, phase, ahead = Infinity, lead = 1.2, demo = false, reducedMotion = false }) {
+    draw(t, now, { sides, beat, pulse, phase, upcoming = [], demo = false, reducedMotion = false }) {
       const dt = clamp(now - lastNow, 0, 0.05);
       lastNow = now;
       const motion = reducedMotion ? 0 : 1;
@@ -453,8 +458,10 @@ export function createStage(host) {
       if (sides !== active) {
         director.aim(sides, now, { snap: active === null, phase, calm: demo || camera.aspect < 1 });
         active = sides;
-        cue.geometry = cueGlow.geometry = cueGeometry.get(sides);
-        ofSides(sides).group.add(cue, cueGlow);
+        for (const c of cues) {
+          c.ring.geometry = c.glowRing.geometry = cueGeometry.get(sides);
+          ofSides(sides).group.add(c.ring, c.glowRing);
+        }
       }
       if (phase !== lastPhase) {
         if (lastPhase !== null && (chorus || phase === "outro") && motion && !demo) director.openWide(now);
@@ -502,20 +509,23 @@ export function createStage(host) {
         pools[i].material.opacity = (0.04 + focus[i] * 0.16 + pulse * 0.05 * focus[i]) * (isActive ? 1.3 : 1);
       });
 
-      // The cue closes from 2.6 times the shape's size onto it, and turns gold inside the hit window.
-      const close = clamp(ahead / lead, 0, 1);
-      const due = Math.abs(ahead) <= 0.22;
-      const showCue = Number.isFinite(ahead) && ahead < lead && ahead > -0.25 && ending === null;
-      cue.visible = cueGlow.visible = showCue;
-      if (showCue) {
+      // Each cue closes from 2.6 times the shape's size onto it; the next one is
+      // brightest and turns gold inside its hit window, later ones are fainter.
+      cues.forEach(({ ring, glowRing }, i) => {
+        const note = upcoming[i];
+        const show = !!note && note.ahead < note.lead && note.ahead > -0.25 && ending === null;
+        ring.visible = glowRing.visible = show;
+        if (!show) return;
+        const close = clamp(note.ahead / note.lead, 0, 1);
+        const due = i === 0 && Math.abs(note.ahead) <= 0.22;
         const scale = 1 + close * 1.6;
-        cue.scale.setScalar(scale);
-        cueGlow.scale.setScalar(scale * 1.02);
-        cue.material.color.set(due ? "#ffd23f" : "#ffffff").multiplyScalar(due ? 1.3 : 0.8);
-        cue.material.opacity = clamp((1 - close) * 3, 0, 1) * (ahead < 0 ? clamp(1 + ahead / 0.25, 0, 1) : 1);
-        cueGlow.material.color.copy(cue.material.color);
-        cueGlow.material.opacity = cue.material.opacity * 0.2;
-      }
+        ring.scale.setScalar(scale);
+        glowRing.scale.setScalar(scale * 1.02);
+        ring.material.color.set(due ? "#ffd23f" : "#ffffff").multiplyScalar(due ? 1.3 : 0.8);
+        ring.material.opacity = clamp((1 - close) * 3, 0, 1) * (note.ahead < 0 ? clamp(1 + note.ahead / 0.25, 0, 1) : 1) * (i === 0 ? 1 : 0.55 - i * 0.1);
+        glowRing.material.color.copy(ring.material.color);
+        glowRing.material.opacity = ring.material.opacity * 0.2;
+      });
       for (const w of waves) {
         const age = now - w.at;
         w.mesh.visible = age >= 0 && age < (w.big ? 0.9 : 0.5);

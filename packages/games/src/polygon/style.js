@@ -34,7 +34,26 @@ export const polygonStyle = `${spectrumStyle}
 .mvg-game.polygon .dock .lyric { position: static; align-self: stretch; min-height: 1.25em; font-size: clamp(18px, 3.2vh, 34px); }
 .mvg-game.polygon .tip { padding: 8px 16px; border: 2px solid #ffd23f; border-radius: 12px; background: rgba(18,4,30,0.86); color: #ffe6a8; font: 700 clamp(13px, 2.2vh, 19px) "Avenir Next", "PingFang SC", sans-serif; text-align: center; opacity: 0; transition: opacity 0.2s; }
 .mvg-game.polygon .tip.on { opacity: 1; }
-@media (pointer: coarse) { .mvg-game.polygon .dock .lyric { font-size: clamp(15px, min(4.6vw, 4.6vh), 22px); } }
+/* Phones: drum pads to tap with the thumbs. They show the shape being drawn and light gold on the note; the whole screen still counts. */
+.mvg-game.polygon .pad { display: none; }
+@media (pointer: coarse) {
+  .mvg-game.polygon { --pad: clamp(96px, 24vh, 150px); }
+  .mvg-game.polygon .pad { position: absolute; bottom: max(14px, 4%); width: var(--pad); height: var(--pad); padding: 0; border-radius: 50%; border: 3px solid rgba(255,255,255,0.55); background: rgba(24,6,40,0.55); display: grid; place-items: center; pointer-events: auto; touch-action: none; box-shadow: 0 6px 0 rgba(0,0,0,0.4); transition: transform 0.05s, border-color 0.1s, box-shadow 0.1s; }
+  .mvg-game.polygon .pad i { width: 54%; height: 54%; background: var(--c, #fff); clip-path: var(--shape); opacity: 0.85; }
+  .mvg-game.polygon .pad.left { left: max(16px, 3%); }
+  .mvg-game.polygon .pad.right { right: max(16px, 3%); }
+  .mvg-game.polygon .pad.due { border-color: #ffd23f; box-shadow: 0 6px 0 rgba(0,0,0,0.4), 0 0 0 6px rgba(255,210,63,0.45), 0 0 36px #ffd23f; }
+  .mvg-game.polygon .pad.down { transform: translateY(4px) scale(0.94); box-shadow: 0 2px 0 rgba(0,0,0,0.4); }
+  .mvg-game.polygon .dock { left: calc(max(16px, 3%) + var(--pad) + 14px); right: calc(max(16px, 3%) + var(--pad) + 14px); }
+  .mvg-game.polygon .dock .lyric { font-size: clamp(15px, min(4.6vw, 4.6vh), 22px); }
+}
+@media (pointer: coarse) and (max-aspect-ratio: 1/1) {
+  .mvg-game.polygon { --pad: clamp(84px, 13vh, 120px); }
+  .mvg-game.polygon .pad.left { right: max(16px, 4%); width: auto; border-radius: 28px; }
+  .mvg-game.polygon .pad.left i { width: calc(var(--pad) * 0.56); height: calc(var(--pad) * 0.56); }
+  .mvg-game.polygon .pad.right { display: none; }
+  .mvg-game.polygon .dock { left: 5%; right: 5%; bottom: calc(max(14px, 4%) + var(--pad) + 12px); }
+}
 @media (max-width: 560px), (max-height: 500px) {
   .mvg-game .shapes { gap: 3px; top: 10px; }
   .mvg-game .shapes i { width: 19px; height: 19px; font-size: 8px; }
@@ -57,18 +76,18 @@ export const polygonStyle = `${spectrumStyle}
 export const TITLE = {
   zh: {
     sub: "跟着节拍，一拍画一条边",
-    keys: ["外圈缩到形状上的那一下，点屏幕或按 <kbd>空格</kbd>", "画满所有边，镜头就转到下一位", "从三角形一直画到十二边形"],
-    touchKeys: ["外圈缩到形状上的那一下，点屏幕", "画满所有边，镜头就转到下一位", "从三角形一直画到十二边形"],
+    keys: ["外圈缩到形状上的那一下，点屏幕或按 <kbd>空格</kbd>", "画满所有边，镜头就转到下一位", "越往后越快：从两拍一下到半拍一下"],
+    touchKeys: ["外圈缩到形状上的那一下，敲下面的鼓，点屏幕哪里都行", "画满所有边，镜头就转到下一位", "越往后越快：从两拍一下到半拍一下"],
   },
   en: {
     sub: "Draw one edge on every beat",
-    keys: ["Tap or press <kbd>Space</kbd> as the outer outline closes onto the shape", "Close the shape and the camera swings to the next one", "From the triangle all the way to the dodecagon"],
-    touchKeys: ["Tap as the outer outline closes onto the shape", "Close the shape and the camera swings to the next one", "From the triangle all the way to the dodecagon"],
+    keys: ["Tap or press <kbd>Space</kbd> as the outer outline closes onto the shape", "Close the shape and the camera swings to the next one", "It speeds up: from every other beat to every half beat"],
+    touchKeys: ["Hit a drum pad as the outer outline closes onto the shape; anywhere on screen works", "Close the shape and the camera swings to the next one", "It speeds up: from every other beat to every half beat"],
   },
 };
 
 /** CSS clip-path of a regular n-gon with a flat bottom, for the collection. */
-const clip = (n) => {
+export const clip = (n) => {
   const pts = Array.from({ length: n }, (_, k) => {
     const a = -Math.PI / 2 + Math.PI / n + (2 * Math.PI * k) / n;
     return `${(50 + Math.cos(a) * 50).toFixed(1)}% ${(50 - Math.sin(a) * 50).toFixed(1)}%`;
@@ -94,6 +113,8 @@ export const polygonMarkup = (lang) => {
       <div class="tip" id="tip"></div>
       <div class="lyric" id="lyric"></div>
     </div>
+    <button class="pad left" id="padL" aria-label="tap"><i></i></button>
+    <button class="pad right" id="padR" aria-label="tap"><i></i></button>
   </div>
   <div class="overlay" id="title">
     <div class="kicker">STEM INSTITUTE · No. 6</div>

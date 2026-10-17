@@ -40,13 +40,35 @@ export const wordColor = (clean) => {
   return n ? shapeOf(n).color : clean === "party" || clean === "polygon" ? GOLD : null;
 };
 
-/** A note on every second beat from the drop: each one draws an edge. */
+/**
+ * The song gets harder as it goes: each section's bar pattern (beats from
+ * the bar's downbeat; .5 is the off-beat) and how many beats ahead the cue
+ * starts closing. Every note draws one edge.
+ */
+export const LEVELS = [
+  { from: SECTIONS.drop, pattern: [0, 2], lead: 2 },
+  { from: SECTIONS.chorus1, pattern: [0, 2, 3], lead: 2 },
+  { from: SECTIONS.verse2, pattern: [0, 1, 2], lead: 2 },
+  { from: SECTIONS.chorus2, pattern: [0, 1, 2, 3], lead: 1.5 },
+  { from: SECTIONS.bridge, pattern: [0, 1, 2, 3, 3.5], lead: 1.5 },
+  { from: SECTIONS.chorus3, pattern: [0, 0.5, 1, 2, 2.5, 3], lead: 1.25 },
+  { from: SECTIONS.outro, pattern: [0, 1, 2, 3], lead: 1.5 },
+];
+export const levelAt = (t) => LEVELS.findLast((l) => t >= l.from - 0.05) ?? LEVELS[0];
+
 export function chart(tm) {
+  const at = (f) => {
+    const i = Math.floor(f);
+    return tm.beatTime(i) + (tm.beatTime(i + 1) - tm.beatTime(i)) * (f - i);
+  };
   const notes = [];
-  for (let i = tm.dropBeat; i < tm.beats.length; i += 2) {
-    const t = tm.beatTime(i);
-    if (t >= END - WINDOW.good) break;
-    notes.push({ t, beat: i });
+  for (let bar = tm.dropBeat; bar + 1 < tm.beats.length; bar += 4) {
+    const level = levelAt(tm.beatTime(bar));
+    for (const o of level.pattern) {
+      const t = at(bar + o);
+      if (t >= END - WINDOW.good) return notes;
+      notes.push({ t, beat: bar + o, lead: level.lead * tm.period });
+    }
   }
   return notes;
 }
