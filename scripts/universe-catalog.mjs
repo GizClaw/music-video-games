@@ -1,6 +1,7 @@
-// Write packages/games/src/universe/universe.json from the mounted AIGC catalog: every song album is
-// a galaxy and every song with audio a planet, named from the album's i18n
-// files (zh-CN, en-US). Run again after the catalog gains albums or songs.
+// Write packages/games/src/universe/universe.json from the mounted AIGC catalog: every song album
+// with English songs is a galaxy and every English song with audio a planet,
+// named from the album's i18n files (zh-CN, en-US). Chinese-language songs
+// are left out. Run again after the catalog gains albums or songs.
 //
 //   node scripts/universe-catalog.mjs [--catalog <dir>] [--verify]
 //
@@ -24,14 +25,17 @@ const titleCase = (id) => id.replace(/-en$/, "").split("-").map((w) => w[0].toUp
 const readJson = (p) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : null);
 
 const series = [];
+/** Chinese album titles, so an English edition can borrow its Chinese album's name. */
+const zhTitles = {};
 const songs = join(catalog, "songs");
 for (const category of dirs(songs)) {
   for (const album of dirs(join(songs, category))) {
     const base = join(songs, category, album);
     const zh = readJson(join(base, "i18n", "zh-CN.json"));
     const en = readJson(join(base, "i18n", "en-US.json"));
+    if (zh?.album?.title) zhTitles[album] = zh.album.title;
     const works = [];
-    for (const lang of dirs(base).filter((d) => d !== "i18n")) {
+    for (const lang of dirs(base).filter((d) => d.startsWith("en-"))) {
       for (const file of readdirSync(join(base, lang)).filter((f) => f.endsWith(".ogg")).sort()) {
         const id = file.slice(0, -4);
         const key = `${lang}/${id}`;
@@ -50,10 +54,10 @@ for (const category of dirs(songs)) {
   }
 }
 
-// An English edition of a Chinese album sits right after it and borrows its Chinese name.
+// An English edition of a Chinese album takes the Chinese album's name.
 for (const s of series) {
-  const pair = s.id.endsWith("-en") && series.find((o) => o.id === s.id.slice(0, -3));
-  if (pair) s.name.zh = `${pair.name.zh} · 英文版`;
+  const zhTitle = s.id.endsWith("-en") && zhTitles[s.id.slice(0, -3)];
+  if (zhTitle) s.name.zh = zhTitle;
 }
 const rank = (s) => {
   const i = FIRST.indexOf(s.id);

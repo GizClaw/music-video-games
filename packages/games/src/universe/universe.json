@@ -236,92 +236,10 @@
       ]
     },
     {
-      "id": "animal-dance",
-      "category": "music",
-      "name": {
-        "zh": "动物律动",
-        "en": "Animal Rhythms"
-      },
-      "works": [
-        {
-          "id": "bird-wings",
-          "work": "songs/music/animal-dance/zh-cn/bird-wings",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "小鸟飞飞",
-            "en": "Flying Little Bird"
-          }
-        },
-        {
-          "id": "cat-stretch",
-          "work": "songs/music/animal-dance/zh-cn/cat-stretch",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "小猫伸懒腰",
-            "en": "Stretching Kitten"
-          }
-        },
-        {
-          "id": "duck-waddle",
-          "work": "songs/music/animal-dance/zh-cn/duck-waddle",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "小鸭摇摇",
-            "en": "Waddling Little Duck"
-          }
-        },
-        {
-          "id": "elephant-trunk",
-          "work": "songs/music/animal-dance/zh-cn/elephant-trunk",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "大象甩鼻",
-            "en": "Waving Elephant Trunk"
-          }
-        },
-        {
-          "id": "frog-hop",
-          "work": "songs/music/animal-dance/zh-cn/frog-hop",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "青蛙跳跳",
-            "en": "Hopping Little Frog"
-          }
-        },
-        {
-          "id": "giraffe-reach",
-          "work": "songs/music/animal-dance/zh-cn/giraffe-reach",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "长颈鹿伸脖子",
-            "en": "Neck-stretching Giraffe"
-          }
-        },
-        {
-          "id": "penguin-walk",
-          "work": "songs/music/animal-dance/zh-cn/penguin-walk",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "企鹅走路",
-            "en": "Walking Penguin"
-          }
-        },
-        {
-          "id": "rabbit-hop",
-          "work": "songs/music/animal-dance/zh-cn/rabbit-hop",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "小兔蹦蹦",
-            "en": "Bouncing Little Bunny"
-          }
-        }
-      ]
-    },
-    {
       "id": "animal-dance-en",
       "category": "music",
       "name": {
-        "zh": "动物律动 · 英文版",
+        "zh": "动物律动",
         "en": "Animal Moves"
       },
       "works": [
@@ -782,92 +700,10 @@
       ]
     },
     {
-      "id": "habit-songs",
-      "category": "music",
-      "name": {
-        "zh": "好习惯儿歌",
-        "en": "Good Habit Nursery Rhymes"
-      },
-      "works": [
-        {
-          "id": "brush-teeth",
-          "work": "songs/music/habit-songs/zh-cn/brush-teeth",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "牙刷轻轻走",
-            "en": "Toothbrush Brushes Gently"
-          }
-        },
-        {
-          "id": "cross-the-road",
-          "work": "songs/music/habit-songs/zh-cn/cross-the-road",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "牵手过路口",
-            "en": "Hold Hands Crossing the Road"
-          }
-        },
-        {
-          "id": "dress-myself",
-          "work": "songs/music/habit-songs/zh-cn/dress-myself",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "衣服找朋友",
-            "en": "Clothes Find Their Friends"
-          }
-        },
-        {
-          "id": "little-bites",
-          "work": "songs/music/habit-songs/zh-cn/little-bites",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "一口尝一尝",
-            "en": "Take a Little Bite"
-          }
-        },
-        {
-          "id": "say-hello",
-          "work": "songs/music/habit-songs/zh-cn/say-hello",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "你好小笑脸",
-            "en": "Hello Little Smiling Face"
-          }
-        },
-        {
-          "id": "tidy-toys",
-          "work": "songs/music/habit-songs/zh-cn/tidy-toys",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "玩具回小家",
-            "en": "Toys Go Back Home"
-          }
-        },
-        {
-          "id": "toilet-time",
-          "work": "songs/music/habit-songs/zh-cn/toilet-time",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "厕所慢慢来",
-            "en": "Take Your Time in the Bathroom"
-          }
-        },
-        {
-          "id": "wash-hands",
-          "work": "songs/music/habit-songs/zh-cn/wash-hands",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "小手洗干净",
-            "en": "Wash Little Hands Clean"
-          }
-        }
-      ]
-    },
-    {
       "id": "habit-songs-en",
       "category": "music",
       "name": {
-        "zh": "好习惯儿歌 · 英文版",
+        "zh": "好习惯儿歌",
         "en": "Good Habit Songs"
       },
       "works": [
@@ -946,110 +782,10 @@
       ]
     },
     {
-      "id": "health-songs",
-      "category": "music",
-      "name": {
-        "zh": "健康歌",
-        "en": "Health Songs"
-      },
-      "works": [
-        {
-          "id": "cover-a-sneeze",
-          "work": "songs/music/health-songs/zh-cn/cover-a-sneeze",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "喷嚏躲进臂弯里",
-            "en": "Sneeze Into Your Elbow"
-          }
-        },
-        {
-          "id": "doctor-with-me",
-          "work": "songs/music/health-songs/zh-cn/doctor-with-me",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "看医生，有你陪",
-            "en": "Going to the Doctor, With You By My Side"
-          }
-        },
-        {
-          "id": "eyes-take-a-break",
-          "work": "songs/music/health-songs/zh-cn/eyes-take-a-break",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "眼睛看看远方",
-            "en": "Eyes Look Far Away"
-          }
-        },
-        {
-          "id": "little-tree-posture",
-          "work": "songs/music/health-songs/zh-cn/little-tree-posture",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "坐正站直小树苗",
-            "en": "Sit Straight, Stand Tall Like a Little Tree"
-          }
-        },
-        {
-          "id": "move-every-day",
-          "work": "songs/music/health-songs/zh-cn/move-every-day",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "每天动一动",
-            "en": "Move a Little Every Day"
-          }
-        },
-        {
-          "id": "plain-water",
-          "work": "songs/music/health-songs/zh-cn/plain-water",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "白开水，慢慢喝",
-            "en": "Plain Water, Drink It Slowly"
-          }
-        },
-        {
-          "id": "rainbow-plate",
-          "work": "songs/music/health-songs/zh-cn/rainbow-plate",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "蔬果彩虹盘",
-            "en": "Rainbow Plate of Fruits and Vegetables"
-          }
-        },
-        {
-          "id": "sleep-and-wake",
-          "work": "songs/music/health-songs/zh-cn/sleep-and-wake",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "睡饱醒来精神好",
-            "en": "Sleep Well, Wake Up Full of Energy"
-          }
-        },
-        {
-          "id": "sun-safe-play",
-          "work": "songs/music/health-songs/zh-cn/sun-safe-play",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "太阳下，护好我",
-            "en": "Stay Protected Under the Sun"
-          }
-        },
-        {
-          "id": "tell-a-grown-up",
-          "work": "songs/music/health-songs/zh-cn/tell-a-grown-up",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "不舒服，告诉大人",
-            "en": "If You Feel Unwell, Tell a Grown-Up"
-          }
-        }
-      ]
-    },
-    {
       "id": "health-songs-en",
       "category": "music",
       "name": {
-        "zh": "健康歌 · 英文版",
+        "zh": "健康歌",
         "en": "Healthy Me Songs"
       },
       "works": [
@@ -1146,92 +882,10 @@
       ]
     },
     {
-      "id": "lullabies",
-      "category": "music",
-      "name": {
-        "zh": "晚安摇篮曲",
-        "en": "Goodnight Lullabies"
-      },
-      "works": [
-        {
-          "id": "animals-goodnight",
-          "work": "songs/music/lullabies/zh-cn/animals-goodnight",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "晚安小动物",
-            "en": "Goodnight Little Animals"
-          }
-        },
-        {
-          "id": "counting-sheep",
-          "work": "songs/music/lullabies/zh-cn/counting-sheep",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "小羊慢慢数",
-            "en": "Counting Lambs Slowly"
-          }
-        },
-        {
-          "id": "dream-boat",
-          "work": "songs/music/lullabies/zh-cn/dream-boat",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "梦的小船",
-            "en": "The Little Boat of Dreams"
-          }
-        },
-        {
-          "id": "little-stars",
-          "work": "songs/music/lullabies/zh-cn/little-stars",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "星光轻轻闪",
-            "en": "Starlight Twinkles Softly"
-          }
-        },
-        {
-          "id": "moon-window",
-          "work": "songs/music/lullabies/zh-cn/moon-window",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "月光在窗边",
-            "en": "Moonlight by the Window"
-          }
-        },
-        {
-          "id": "paper-boat",
-          "work": "songs/music/lullabies/zh-cn/paper-boat",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "纸船停在画里",
-            "en": "Paper Boat Rests in the Painting"
-          }
-        },
-        {
-          "id": "soft-rain",
-          "work": "songs/music/lullabies/zh-cn/soft-rain",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "雨声在窗外",
-            "en": "Rain Outside the Window"
-          }
-        },
-        {
-          "id": "warm-hug",
-          "work": "songs/music/lullabies/zh-cn/warm-hug",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "抱抱好梦来",
-            "en": "Warm Hug for Sweet Dreams"
-          }
-        }
-      ]
-    },
-    {
       "id": "lullabies-en",
       "category": "music",
       "name": {
-        "zh": "晚安摇篮曲 · 英文版",
+        "zh": "晚安摇篮曲",
         "en": "Goodnight Lullabies"
       },
       "works": [
@@ -1310,92 +964,10 @@
       ]
     },
     {
-      "id": "science-songs",
-      "category": "music",
-      "name": {
-        "zh": "Science Nursery Rhymes",
-        "en": "Science Nursery Rhymes"
-      },
-      "works": [
-        {
-          "id": "day-and-night",
-          "work": "songs/music/science-songs/zh-cn/day-and-night",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "Day and Night",
-            "en": "Day and Night"
-          }
-        },
-        {
-          "id": "four-seasons",
-          "work": "songs/music/science-songs/zh-cn/four-seasons",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "Four Seasons Round and Round",
-            "en": "Four Seasons Cycle Around"
-          }
-        },
-        {
-          "id": "heart-beat",
-          "work": "songs/music/science-songs/zh-cn/heart-beat",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "Thumping Heartbeat",
-            "en": "Thumping Heartbeat"
-          }
-        },
-        {
-          "id": "moon-changes",
-          "work": "songs/music/science-songs/zh-cn/moon-changes",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "Moon Changes and Changes",
-            "en": "The Changing Moon"
-          }
-        },
-        {
-          "id": "rainbow-colors",
-          "work": "songs/music/science-songs/zh-cn/rainbow-colors",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "Colors of the Rainbow",
-            "en": "Colors of the Rainbow"
-          }
-        },
-        {
-          "id": "seed-sprouts",
-          "work": "songs/music/science-songs/zh-cn/seed-sprouts",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "Seed Sprouting",
-            "en": "Sprouting Seeds"
-          }
-        },
-        {
-          "id": "shadow-follows",
-          "work": "songs/music/science-songs/zh-cn/shadow-follows",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "Shadow Follows Me",
-            "en": "Shadow Follows Me"
-          }
-        },
-        {
-          "id": "water-travels",
-          "work": "songs/music/science-songs/zh-cn/water-travels",
-          "lang": "zh-cn",
-          "title": {
-            "zh": "Water's Journey",
-            "en": "Water's Journey"
-          }
-        }
-      ]
-    },
-    {
       "id": "science-songs-en",
       "category": "music",
       "name": {
-        "zh": "Science Nursery Rhymes · 英文版",
+        "zh": "Science Nursery Rhymes",
         "en": "Little Science Songs"
       },
       "works": [

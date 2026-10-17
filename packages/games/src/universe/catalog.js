@@ -16,24 +16,31 @@ import universe from "./universe.json";
  */
 const SERIES_EXTRA = {
   "stem-institute": { name: { zh: "STEM 星系", en: "STEM Galaxy" }, colors: ["#2cade4", "#9b5cff", "#ffb347"] },
-  "animal-dance": { colors: ["#7cff4f", "#ffd23f", "#3de8ff"] },
   "animal-dance-en": { colors: ["#3dff8a", "#ffb347", "#6fc3ff"] },
-  "bug-beat-en": { name: { zh: "虫虫节拍 · 英文版", en: "Bug Beat" }, colors: ["#b6ff3d", "#ff8a1f", "#3dffc8"] },
+  "bug-beat-en": { name: { zh: "虫虫节拍", en: "Bug Beat" }, colors: ["#b6ff3d", "#ff8a1f", "#3dffc8"] },
   "english-songs": { name: { zh: "唱着学英语", en: "Sing and Learn English" }, colors: ["#ff4f6d", "#ffd23f", "#2fe0ff"] },
-  "everyday-words-en": { name: { zh: "日常单词 · 英文版", en: "Everyday Words" }, colors: ["#ffc83d", "#ff4fd8", "#3de8ff"] },
-  "grammar-tenses-en": { name: { zh: "英语时态 · 英文版", en: "Grammar Tenses" }, colors: ["#8c7bff", "#3de8ff", "#ff9a3d"] },
-  "habit-songs": { colors: ["#3de8ff", "#7cff4f", "#ffe14a"] },
+  "everyday-words-en": { name: { zh: "日常单词", en: "Everyday Words" }, colors: ["#ffc83d", "#ff4fd8", "#3de8ff"] },
+  "grammar-tenses-en": { name: { zh: "英语时态", en: "Grammar Tenses" }, colors: ["#8c7bff", "#3de8ff", "#ff9a3d"] },
   "habit-songs-en": { colors: ["#2fe0ff", "#b6ff3d", "#ffb347"] },
-  "health-songs": { colors: ["#ff3d5a", "#ffd23f", "#7cff4f"] },
   "health-songs-en": { colors: ["#ff6a3d", "#ffe14a", "#3dff8a"] },
-  lullabies: { colors: ["#6f7bff", "#c9b0ff", "#ffd9a8"] },
   "lullabies-en": { colors: ["#8c7bff", "#9fc4ff", "#ffe2a8"] },
-  "science-songs": { name: { zh: "科学儿歌", en: "Science Nursery Rhymes" }, colors: ["#3de8ff", "#9b5cff", "#ffb347"] },
-  "science-songs-en": { name: { zh: "科学儿歌 · 英文版", en: "Little Science Songs" }, colors: ["#2cade4", "#ff4fd8", "#ffe14a"] },
+  "science-songs-en": { name: { zh: "科学儿歌", en: "Little Science Songs" }, colors: ["#2cade4", "#ff4fd8", "#ffe14a"] },
 };
 
 const STEM = "songs/music/stem-institute/en-us";
+const ANIMAL_EN = "songs/music/animal-dance-en/en-us";
 const WORK_EXTRA = {
+  [`${ANIMAL_EN}/penguin-steps`]: {
+    colors: ["#2fb8f0", "#ff4fa3", "#fff4e4"],
+    look: "ice",
+    feature: "crystals",
+    preview: 32.08,
+    howto: {
+      zh: ["音符落到底时按方向键：← 左脚 · ↑ 翅膀 · ↓ 拍手 · → 右脚", "手机上按底部四个大按钮，两个一起落下就一起按", "跳得好企鹅就来入队，唱到 Freeze 时别动"],
+      en: ["Hit the arrows as the notes land: ← left foot · ↑ flap · ↓ clap · → right foot", "On a phone tap the four big pads, both at once for a pair", "Dance well and penguins join your crew; on Freeze, don't move"],
+    },
+    game: () => import("../penguin-steps.js").then((m) => m.mountPenguinSteps),
+  },
   [`${STEM}/spectrum-slide`]: {
     colors: ["#ff3d7f", "#9b5cff", "#3de8ff"],
     look: "rainbow",
