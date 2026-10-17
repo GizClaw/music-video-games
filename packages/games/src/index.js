@@ -2,6 +2,7 @@ export { AudioClock, CATALOG_CDN, GamePostShader, glowTexture, songAudioUrl } fr
 export { mountBinaryBoogie } from "./binary-boogie.js";
 export { gameLang } from "./lang.js";
 export { backGuard, buzz, goFullscreen, isTouch, lockGestures, wakeLock } from "./mobile.js";
+export { mountPenguinSteps } from "./penguin-steps.js";
 export { mountPlanetParade } from "./planet-parade.js";
 export { mountPrimeTime } from "./prime-time.js";
 export { Sfx, sfx } from "./sfx.js";

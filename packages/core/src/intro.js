@@ -46,7 +46,7 @@ function snapToOnset(timing, t, step = timing.period) {
  * and the build takes the final beat before `drop`. Events snap to clear onsets.
  */
 const IGNITE_AT = 3.4;
-export function deriveIntro(timing, { drop, end, endTitle, endKicker, endFooter }) {
+export function deriveIntro(timing, { drop, end, tagline = "STEM INSTITUTE", endTitle, endKicker, endFooter }) {
   const dropBeat = timing.beatIndexAt(drop + 0.01);
   const dropT = timing.beatTime(dropBeat);
   if (dropT < IGNITE_AT + 1.6) throw new Error(`intro needs the drop at least ${(IGNITE_AT + 1.6).toFixed(1)} s in, got ${dropT.toFixed(2)}`);
@@ -84,6 +84,7 @@ export function deriveIntro(timing, { drop, end, endTitle, endKicker, endFooter 
     build: times[15],
     drop: timing.beatTime(dropBeat),
     end,
+    tagline,
     endTitle,
     endKicker,
     endFooter,
@@ -518,7 +519,7 @@ export class IntroScene {
     const pres = smooth(this.c.presents, this.c.presents + 0.35, t) * (1 - smooth(this.c.build - 0.1, this.c.build + 0.2, t));
     hud.text("P R E S E N T S", 540, logoBottom + 30, { size: 26, weight: 600, family: FONT_MONO, color: "#bfeaff", alpha: pres, glow: 14 });
     const tag = smooth(this.c.presents + 0.95, this.c.presents + 1.3, t) * (1 - smooth(this.c.build - 0.1, this.c.build + 0.2, t));
-    hud.text("STEM INSTITUTE", 540, logoBottom + 92, { size: 64, weight: 800, family: FONT_COND, color: "#ffffff", alpha: tag, glow: 22, tracking: 6 });
+    hud.text(this.c.tagline ?? "STEM INSTITUTE", 540, logoBottom + 92, { size: 64, weight: 800, family: FONT_COND, color: "#ffffff", alpha: tag, glow: 22, tracking: 6 });
   }
 
   updateEnd(t, post) {

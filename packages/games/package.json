@@ -1,6 +1,6 @@
 {
   "name": "@gizclaw/mvg-games",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Embeddable music universe, catalog and rhythm games for AIGC songs",
   "license": "BSD-3-Clause",
   "type": "module",
@@ -16,7 +16,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@gizclaw/mvg-core": "0.1.1",
+    "@gizclaw/mvg-core": "0.1.2",
     "three": "0.186.1"
   },
   "devDependencies": {

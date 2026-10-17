@@ -1,6 +1,6 @@
 {
   "name": "@gizclaw/mvg-video",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Render beat-synced vertical music videos for AIGC catalog songs in headless Chromium",
   "license": "BSD-3-Clause",
   "type": "module",
@@ -12,7 +12,7 @@
     "mvg-video": "bin/mvg-video.mjs"
   },
   "dependencies": {
-    "@gizclaw/mvg-core": "0.1.1",
+    "@gizclaw/mvg-core": "0.1.2",
     "playwright": "1.64.1",
     "three": "0.186.1"
   }

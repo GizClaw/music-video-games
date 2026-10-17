@@ -71,6 +71,7 @@ mvg-video --project /path/to/music-video-games --root /mounted/GizClaw --work sp
 | `songs/music/stem-institute/en-us/bone-zone` | moonlit beach, a surf-dancing skeleton: named bones glow with close-ups (skull, ribs, vertebrae, clavicles, femur), joints flex, 206 counter, bridge question-and-answer |
 | `songs/music/stem-institute/en-us/lab-rules` | school lab bench: each safety rule brings in a vivid 3D prop with an electric outline, stamped ✓ or ✗, filling a 17-box checklist; bridge question-and-answer cards |
 | `songs/music/stem-institute/en-us/science-method-shuffle` | school garden fair test led by a magnifying glass: on each sung step it glides to that subject and its lens shows a live close-up (seed sprouting, leaf cells, ruler marks, the notebook and chart); three bean pots differ only in sunlight |
+| `songs/music/animal-dance-en/en-us/penguin-steps` | night ice-floe disco under the aurora: a cartoon penguin crew steps, claps, waddles and flaps on the sung words while plates of the floe light up; verse close-ups (squawk, dark back, bright belly, a bow tie for the tidy suit, a failed flight), a dive under the ice for swimming, steering and a fish snack, freeze-and-sway, a lyric-free dance break and a final bow |
 
 ## Analysis
 
@@ -198,7 +199,8 @@ default. `encode --subtitles ...` is rejected: rerender to change the pixels.
 `aigc/<work>/video/song.js` exports `createSong(ctx)`, returning its scenes, a
 `pick(t)` that maps time to `[scene, section]`, and the intro configuration.
 Sections named `intro` and `end` use the shared haivivi scene; the end card
-starts at the song's `SECTIONS.end`.
+starts at the song's `SECTIONS.end`. The opening's tagline reads STEM INSTITUTE unless
+`deriveIntro` is given another album's `tagline`.
 
 Every published song opens with the catalog's 1.647 s audio mark
 (`gizclaw/catalogs/aigc/assets/music-mark.wav` in the catalog repository), which carries no song beats.
