@@ -4,8 +4,9 @@ import { COMMON, gameLang } from "./lang.js";
 import { backGuard, buzz, goFullscreen, isTouch, lockGestures, wakeLock } from "./mobile.js";
 import { sfx } from "./sfx.js";
 import analysis from "./polygon/analysis.json";
-import { EARLY, END, GOLD, SECTIONS, SHAPES, WINDOW, WORK, chart, phaseAt, wordColor } from "./polygon/song.js";
+import { EARLY, END, GOLD, SECTIONS, SHAPES, WINDOW, WORK, chart, phaseAt, shapeOf, wordColor } from "./polygon/song.js";
 import { createStage } from "./polygon/stage.js";
+import { LANE_AHEAD, createLane } from "./polygon/lane.js";
 import { TITLE, clip, polygonMarkup, polygonStyle } from "./polygon/style.js";
 
 const TEXT = {
@@ -113,6 +114,7 @@ export async function mountPolygonParty(target, options = {}) {
     tm.setDownbeat(SECTIONS.drop);
     const CHART = chart(tm);
     stage = createStage($("stage"));
+    const lane = createLane(root);
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
     audio = new Audio(params.get("audio") || songAudioUrl(WORK));
@@ -132,6 +134,7 @@ export async function mountPolygonParty(target, options = {}) {
     const tally = { perfect: 0, good: 0, miss: 0, early: 0, shapes: 0 };
     const got = new Set();
     let lastT = 0;
+    let lastHitAt = -1;
     let lastCall = -1;
     let tipShown = "";
     const auto = params.has("auto");
@@ -243,6 +246,9 @@ export async function mountPolygonParty(target, options = {}) {
       const err = Math.abs(t - n.t);
       const grade = err <= WINDOW.perfect ? "perfect" : "good";
       n.state = grade;
+      n.at = now();
+      n.sides = current().sides;
+      lastHitAt = n.at;
       tally[grade]++;
       combo++;
       maxCombo = Math.max(maxCombo, combo);
@@ -283,6 +289,8 @@ export async function mountPolygonParty(target, options = {}) {
     }
     function miss(n) {
       n.state = "miss";
+      n.at = now();
+      n.sides = current().sides;
       tally.miss++;
       combo = 0;
       stage.miss(current().sides, now());
@@ -416,6 +424,32 @@ export async function mountPolygonParty(target, options = {}) {
       $("result").hidden = false;
     }
 
+    // ---------- note lane ----------
+    const laneBeats = [];
+    const laneNotes = [];
+    /** The lane: beat lines in view, and notes in view with the shape each will draw (or drew). */
+    function drawLane(t, due) {
+      laneBeats.length = laneNotes.length = 0;
+      for (let i = Math.max(0, tm.beatIndexAt(t - 0.4)); i < tm.beats.length; i++) {
+        const bt = tm.beatTime(i);
+        if (bt > t + LANE_AHEAD) break;
+        laneBeats.push([bt, (((i - tm.dropBeat) % 4) + 4) % 4 === 0]);
+      }
+      let i = shapeI, e = edges;
+      for (const n of notes) {
+        if (n.state === "skip") continue;
+        if (n.state === "wait") {
+          const s = SHAPES[i];
+          const last = e + 1 === s.sides;
+          if (n.t - t > LANE_AHEAD) break;
+          if (n.t - t > -0.6) laneNotes.push({ t: n.t, sides: s.sides, color: s.color, last, state: "wait", at: 0 });
+          e = last ? 0 : e + 1;
+          if (last) i = (i + 1) % SHAPES.length;
+        } else if (now() - n.at < 0.5) laneNotes.push({ t: n.t, sides: n.sides, color: shapeOf(n.sides).color, last: false, state: n.state, at: n.at });
+      }
+      lane.draw(t, { beats: laneBeats, notes: laneNotes, now: now(), due, sides: current().sides, color: current().color, hitAt: lastHitAt });
+    }
+
     // ---------- lyrics ----------
     function drawLyric(t) {
       const el = $("lyric");
@@ -473,6 +507,7 @@ export async function mountPolygonParty(target, options = {}) {
       j.style.top = `${view.centre.y - 24}px`;
       const due = !!n && Math.abs(n.t - t) <= WINDOW.good;
       for (const pad of pads) pad.classList.toggle("due", due);
+      drawLane(t, due);
       const index = n ? notes.indexOf(n) - notes.findIndex((x) => x.state !== "skip") : Infinity;
       setTip(state === "play" && index < TIPS && n && n.t - t < n.lead * 2.5 ? (touch ? T.tipTouch : T.tipFirst) : "");
       if (state !== "play") return;

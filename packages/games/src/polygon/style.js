@@ -34,6 +34,20 @@ export const polygonStyle = `${spectrumStyle}
 .mvg-game.polygon .dock .lyric { position: static; align-self: stretch; min-height: 1.25em; font-size: clamp(18px, 3.2vh, 34px); }
 .mvg-game.polygon .tip { padding: 8px 16px; border: 2px solid #ffd23f; border-radius: 12px; background: rgba(18,4,30,0.86); color: #ffe6a8; font: 700 clamp(13px, 2.2vh, 19px) "Avenir Next", "PingFang SC", sans-serif; text-align: center; opacity: 0; transition: opacity 0.2s; }
 .mvg-game.polygon .tip.on { opacity: 1; }
+/* The note lane: notes slide in on the beat grid and are hit as they cross the target ring. */
+.mvg-game.polygon .lane { position: relative; width: min(100%, 780px); height: clamp(42px, 7vh, 58px); border-radius: 999px; background: linear-gradient(90deg, rgba(24,6,40,0.9), rgba(24,6,40,0.55)); border: 1px solid rgba(255,255,255,0.2); overflow: hidden; box-shadow: inset 0 0 18px rgba(0,0,0,0.6); }
+.mvg-game.polygon .lane .track { position: absolute; inset: 0; }
+.mvg-game.polygon .lane .track b { position: absolute; left: 0; top: 22%; bottom: 22%; width: 2px; margin-left: -1px; background: rgba(255,255,255,0.13); }
+.mvg-game.polygon .lane .track b.bar { top: 8%; bottom: 8%; background: rgba(255,255,255,0.32); }
+.mvg-game.polygon .lane .track i { position: absolute; left: 0; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; background: var(--c); clip-path: var(--shape); }
+.mvg-game.polygon .lane .track i.last { width: 36px; height: 36px; margin: -18px 0 0 -18px; background: linear-gradient(#fff6c8, var(--c) 55%); }
+.mvg-game.polygon .lane .track i.hit { background: #fff6c8; }
+.mvg-game.polygon .lane .track i.miss { background: #7a6a8c; }
+.mvg-game.polygon .lane .target { position: absolute; top: 50%; width: clamp(34px, 5.6vh, 46px); height: clamp(34px, 5.6vh, 46px); transform: translate(-50%, -50%); border-radius: 50%; border: 3px solid rgba(255,255,255,0.85); display: grid; place-items: center; box-shadow: 0 0 12px rgba(255,255,255,0.35); z-index: 1; transition: border-color 0.08s, box-shadow 0.08s; }
+.mvg-game.polygon .lane .target i { width: 58%; height: 58%; background: var(--c); clip-path: var(--shape); opacity: 0.35; }
+.mvg-game.polygon .lane .target.due { border-color: #ffd23f; box-shadow: 0 0 0 4px rgba(255,210,63,0.35), 0 0 24px #ffd23f; }
+.mvg-game.polygon .lane .target.hit { animation: mvg-lane-hit 0.25s ease-out; }
+@keyframes mvg-lane-hit { from { transform: translate(-50%, -50%) scale(1.4); } to { transform: translate(-50%, -50%) scale(1); } }
 /* Phones: drum pads to tap with the thumbs. They show the shape being drawn and light gold on the note; the whole screen still counts. */
 .mvg-game.polygon .pad { display: none; }
 @media (pointer: coarse) {
@@ -111,6 +125,7 @@ export const polygonMarkup = (lang) => {
     <div class="judge" id="judge"></div>
     <div class="dock">
       <div class="tip" id="tip"></div>
+      <div class="lane" id="lane"><div class="track"></div><div class="target"><i></i></div></div>
       <div class="lyric" id="lyric"></div>
     </div>
     <button class="pad left" id="padL" aria-label="tap"><i></i></button>
