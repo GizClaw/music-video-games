@@ -19,7 +19,7 @@ const ledShader = `
   float hash1(float n) { return fract(sin(n * 91.345) * 47453.5453); }
   float polyR(vec2 p, float n) {
     float seg = 6.2831853 / n;
-    float a = atan(p.x, -p.y);
+    float a = atan(p.x + 1e-5, -p.y);
     float k = mod(a + seg * .5, seg) - seg * .5;
     return length(p) * cos(k);
   }
@@ -62,7 +62,8 @@ const beamFragment = `
   uniform vec3 uColor; uniform float uIntensity;
   void main() {
     float facing = pow(abs(dot(vN, vV)), 2.2);
-    float fall = pow(vAlong, 1.4) * smoothstep(0., .25, vAlong);
+    float along = clamp(vAlong, 0., 1.);
+    float fall = pow(along, 1.4) * smoothstep(0., .25, along);
     float near = smoothstep(3., 10., vDepth);
     gl_FragColor = vec4(uColor * facing * fall * near * uIntensity, 1.);
   }`;

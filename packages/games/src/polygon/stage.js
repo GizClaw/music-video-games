@@ -19,10 +19,26 @@ const BUNTING = { radius: 8.2, y: 6.7, sag: 0.6, flags: 50, points: 121 };
 const CONFETTI = 500;
 
 const luminance = (c) => c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722;
-/** A colour bright enough to bloom however dark its hue: red and blue would otherwise read dimmer than yellow. */
-const glowing = (hex, floor = 1.5) => {
+/** A colour bright enough to bloom however dark its hue, without washing out to white: red and blue would otherwise read dimmer than yellow. */
+const glowing = (hex, floor = 1.15) => {
   const c = new THREE.Color(hex);
-  return c.multiplyScalar(Math.max(floor, 0.95 / Math.max(0.08, luminance(c))));
+  return c.multiplyScalar(clamp(0.7 / Math.max(0.08, luminance(c)), floor, 1.9));
+};
+/**
+ * Replaces any NaN or runaway value in the scene before bloom: the blur
+ * would otherwise spread a single bad pixel across the whole frame and the
+ * picture goes black on some GPUs.
+ */
+const SanitizeShader = {
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+  fragmentShader: `
+    uniform sampler2D tDiffuse; varying vec2 vUv;
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      bool bad = !(c.r == c.r && c.g == c.g && c.b == c.b) || max(max(c.r, c.g), c.b) > 6e4;
+      gl_FragColor = bad ? vec4(0., 0., 0., 1.) : vec4(min(c.rgb, vec3(24.)), 1.);
+    }`,
 };
 /** A ring in the shape of an n-gon, flat edge down, for cues and shock waves. */
 const polygonRing = (n, inner, outer) => new THREE.RingGeometry(inner, outer, n, 1, -Math.PI / 2 + Math.PI / n);
@@ -66,7 +82,7 @@ class Performer {
     this.ghost = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(this.points), new THREE.LineDashedMaterial({ color: shape.color, dashSize: 0.16, gapSize: 0.1, transparent: true, opacity: 0.5 }));
     this.ghost.computeLineDistances();
     this.coreMat = new THREE.MeshBasicMaterial({ color: this.bright });
-    this.haloMat = new THREE.MeshBasicMaterial({ color: this.bright, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false });
+    this.haloMat = new THREE.MeshBasicMaterial({ color: shape.color, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false });
     this.nextMat = new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
     this.group.add(this.fill, this.ghost);
     const up = new THREE.Vector3(0, 1, 0);
@@ -126,11 +142,11 @@ class Performer {
     const bloom = Math.exp(-Math.max(0, now - this.completeAt) / 0.5) * (now >= this.completeAt ? 1 : 0);
     const miss = Math.exp(-Math.max(0, now - this.missAt) / 0.25) * (now >= this.missAt ? 1 : 0);
     const light = 0.3 + 0.7 * focus;
-    this.coreMat.color.copy(this.bright).multiplyScalar(light * (1 + flash * 0.5 + bloom * 0.8));
-    this.haloMat.opacity = (0.12 + flash * 0.25 + bloom * 0.4 + pulse * 0.05) * light;
+    this.coreMat.color.copy(this.bright).multiplyScalar(light * (1 + flash * 0.4 + bloom * 0.35));
+    this.haloMat.opacity = (0.12 + flash * 0.2 + bloom * 0.2 + pulse * 0.05) * light;
     this.ghost.material.opacity = (active ? 0.55 + pulse * 0.2 : 0.28) * (done ? 0.3 : 1);
     this.ghost.material.color.copy(this.color).lerp(shared.red, miss);
-    this.fill.material.opacity = (done ? 0.14 + bloom * 0.35 : 0.035 + miss * 0.1) * light;
+    this.fill.material.opacity = (done ? 0.12 + bloom * 0.18 : 0.035 + miss * 0.1) * light;
     this.fill.material.color.copy(this.color).lerp(shared.red, miss);
     this.edges.forEach((e, k) => {
       const grow = k < this.count ? easeOutCubic(clamp((now - this.drawnAt[k]) / 0.14, 0, 1)) : 0;
@@ -176,9 +192,9 @@ export function createStage(host) {
   const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 200);
   const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 });
   const composer = new EffectComposer(renderer, target);
-  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.65, 0.5, 0.72);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.5, 0.45, 0.8);
   const post = new ShaderPass(GamePostShader);
-  [new RenderPass(scene, camera), bloom, post, new OutputPass()].forEach((p) => composer.addPass(p));
+  [new RenderPass(scene, camera), new ShaderPass(SanitizeShader), bloom, post, new OutputPass()].forEach((p) => composer.addPass(p));
   let view = { w: 1, h: 1 };
   const resize = () => {
     view = { w: Math.max(1, host.clientWidth), h: Math.max(1, host.clientHeight) };
@@ -273,9 +289,9 @@ export function createStage(host) {
   // The performers.
   const shared = {
     core: new THREE.CylinderGeometry(0.05, 0.05, 1, 10).translate(0, 0.5, 0),
-    halo: new THREE.CylinderGeometry(0.15, 0.15, 1, 10, 1, true).translate(0, 0.5, 0),
+    halo: new THREE.CylinderGeometry(0.11, 0.11, 1, 10, 1, true).translate(0, 0.5, 0),
     dot: new THREE.SphereGeometry(0.085, 16, 12),
-    lit: new THREE.MeshBasicMaterial({ color: new THREE.Color("#ffffff").multiplyScalar(1.8) }),
+    lit: new THREE.MeshBasicMaterial({ color: new THREE.Color("#ffffff").multiplyScalar(1.3) }),
     dim: new THREE.MeshBasicMaterial({ color: "#6d5a88" }),
     labels: numberLabels(),
     red: new THREE.Color("#ff2050"),
@@ -310,7 +326,7 @@ export function createStage(host) {
     waveHead = (waveHead + 1) % WAVES;
     p.group.add(w.mesh);
     w.mesh.geometry = cueGeometry.get(p.n);
-    w.mesh.material.color.copy(p.bright);
+    w.mesh.material.color.copy(p.color).multiplyScalar(big ? 1.2 : 1);
     Object.assign(w, { at: now, big });
   }
 
@@ -319,7 +335,7 @@ export function createStage(host) {
   const sparkGeo = new THREE.BufferGeometry();
   sparkGeo.setAttribute("position", new THREE.BufferAttribute(sparkPos, 3));
   sparkGeo.setAttribute("color", new THREE.BufferAttribute(sparkCol, 3));
-  const sparks = new THREE.Points(sparkGeo, new THREE.PointsMaterial({ size: 0.16, map: glow, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  const sparks = new THREE.Points(sparkGeo, new THREE.PointsMaterial({ size: 0.12, map: glow, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   sparks.frustumCulled = false;
   sparks.renderOrder = 8;
   scene.add(sparks);
@@ -333,7 +349,7 @@ export function createStage(host) {
       const s = speed * (0.35 + Math.random() * 0.8);
       sparkPos.set([at.x, at.y, at.z], i * 3);
       sparkVel.set([Math.cos(a) * Math.cos(b) * s, Math.sin(b) * s + speed * 0.3, Math.sin(a) * Math.cos(b) * s], i * 3);
-      tint.copy(color).multiplyScalar(0.7 + Math.random() * 0.6);
+      tint.copy(color).multiplyScalar(0.5 + Math.random() * 0.45);
       sparkCol.set([tint.r, tint.g, tint.b], i * 3);
       sparkLife[i] = 0.45 + Math.random() * 0.7;
     }
@@ -387,8 +403,8 @@ export function createStage(host) {
     complete(sides, now) {
       const p = ofSides(sides);
       p.group.updateMatrixWorld();
-      burst(subject.set(p.place.x, p.place.y, p.place.z), 220, p.bright, 6, 1.6);
-      burst(subject, 80, shared.lit.color, 4, 1.6);
+      burst(subject.set(p.place.x, p.place.y, p.place.z), 110, p.color, 6, 1.6);
+      burst(subject, 30, shared.dim.color, 4, 1.6);
       wave(p, now + 0.03, true);
       floorU.uWaveAt.value = now;
       floorU.uWave.value.set(p.place.x, p.place.z);
@@ -483,7 +499,7 @@ export function createStage(host) {
           p.group.position.y += Math.abs(Math.sin(Math.PI * beat + i * 0.5)) * 0.16 * dance;
           p.group.rotation.z = Math.sin(Math.PI * beat * 0.5 + i) * 0.06 * dance;
         } else p.group.rotation.z = 0;
-        pools[i].material.opacity = (0.08 + focus[i] * 0.35 + pulse * 0.08 * focus[i]) * (isActive ? 1.4 : 1);
+        pools[i].material.opacity = (0.04 + focus[i] * 0.16 + pulse * 0.05 * focus[i]) * (isActive ? 1.3 : 1);
       });
 
       // The cue closes from 2.6 times the shape's size onto it, and turns gold inside the hit window.
@@ -495,10 +511,10 @@ export function createStage(host) {
         const scale = 1 + close * 1.6;
         cue.scale.setScalar(scale);
         cueGlow.scale.setScalar(scale * 1.02);
-        cue.material.color.set(due ? "#ffd23f" : "#ffffff").multiplyScalar(due ? 1.6 : 1.1);
+        cue.material.color.set(due ? "#ffd23f" : "#ffffff").multiplyScalar(due ? 1.3 : 0.8);
         cue.material.opacity = clamp((1 - close) * 3, 0, 1) * (ahead < 0 ? clamp(1 + ahead / 0.25, 0, 1) : 1);
         cueGlow.material.color.copy(cue.material.color);
-        cueGlow.material.opacity = cue.material.opacity * 0.35;
+        cueGlow.material.opacity = cue.material.opacity * 0.2;
       }
       for (const w of waves) {
         const age = now - w.at;
@@ -506,7 +522,7 @@ export function createStage(host) {
         if (!w.mesh.visible) continue;
         const u = age / (w.big ? 0.9 : 0.5);
         w.mesh.scale.setScalar(1 + easeOutCubic(u) * (w.big ? 3.2 : 0.9));
-        w.mesh.material.opacity = (1 - u) ** 1.5 * (w.big ? 1 : 0.7);
+        w.mesh.material.opacity = (1 - u) ** 1.5 * (w.big ? 0.6 : 0.55);
       }
 
       // Sparks fall and fade.
@@ -553,10 +569,10 @@ export function createStage(host) {
       skyU.uKick.value = pulse;
       floorU.uTime.value = now;
       floorU.uKick.value = pulse;
-      bloom.strength = 0.6 + pulse * 0.12 + done * 0.35;
+      bloom.strength = 0.48 + pulse * 0.1 + done * 0.12;
       post.uniforms.uTime.value = t;
-      post.uniforms.uCA.value = 0.1 + pulse * 0.18 + done * 0.6;
-      post.uniforms.uFlash.value = done * 0.08;
+      post.uniforms.uCA.value = 0.1 + pulse * 0.18 + done * 0.5;
+      post.uniforms.uFlash.value = done * 0.04;
       post.uniforms.uFlashColor.value.copy(p.color);
       post.uniforms.uGlitch.value = 0;
       composer.render();
