@@ -15,6 +15,7 @@ export function createLane(root) {
   const el = root.querySelector("#lane");
   const track = el.querySelector(".track");
   const target = el.querySelector(".target");
+  const fx = el.querySelector(".fx");
   const make = (tag, n) => Array.from({ length: n }, () => track.appendChild(document.createElement(tag)));
   const ticks = make("b", TICKS);
   const chips = make("i", CHIPS);
@@ -51,10 +52,13 @@ export function createLane(root) {
           chip.style.setProperty("--c", n.color);
           chip.className = `${n.last ? "last " : ""}${n.state === "wait" ? "" : n.state === "miss" ? "miss" : "hit"}`;
         }
-        // A hit bursts on the target; a miss slides on past it and fades.
+        // A hit bursts on the target, above the track's clip; a miss slides on past it and fades.
+        const burst = n.state !== "wait" && n.state !== "miss";
+        const home = burst ? fx : track;
+        if (chip.parentNode !== home) home.appendChild(chip);
         const age = n.state === "wait" ? 0 : Math.max(0, now - n.at);
-        const x = n.state === "wait" || n.state === "miss" ? at(n.t) : x0;
-        const scale = n.state === "wait" || n.state === "miss" ? 1 : 1 + age * 5;
+        const x = burst ? x0 : at(n.t);
+        const scale = burst ? 1 + age * 3 : 1;
         chip.style.transform = `translateX(${x.toFixed(1)}px) scale(${scale.toFixed(2)})`;
         chip.style.opacity = n.state === "wait" ? "1" : String(Math.max(0, 1 - age / (n.state === "miss" ? 0.5 : 0.25)));
       });
