@@ -16,6 +16,15 @@ By default the CLI reads `aigc/<work>/video/` in the current directory; pass
 core and three.js from installed dependencies. `--root` still selects the
 mounted GizClaw media/cache/build root.
 
+Set the media root with `--root <directory>` or `GIZCLAW_ROOT`; there is no
+machine-specific default. The CLI also reads `GIZCLAW_ROOT` and optional
+`MVG_CATALOG` from `.env.local` in the choreography project (`--project`).
+Command-line options override environment variables, which override this local
+file. In this repository, copy `.env.example` to `.env.local` and edit the paths;
+the local file is ignored by Git and excluded from the npm package.
+`npm run universe:catalog` uses `--catalog`, `MVG_CATALOG`, or
+`<GIZCLAW_ROOT>/catalogs/aigc` from the same environment/local configuration.
+
 ## Run with npx
 
 The CLI can run directly from the release archives, without a manual `npm install`

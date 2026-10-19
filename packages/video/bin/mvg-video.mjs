@@ -23,6 +23,7 @@ import { parseArgs } from "node:util";
 import { startServer } from "../serve.mjs";
 import { formatSrt, parseSrt } from "../page/captions.js";
 import { readMasterMode, saveMasterMode, SUBTITLE_MODES, writeSubtitleOutput } from "./subtitle-mode.mjs";
+import { readLocalConfig } from "./local-config.mjs";
 
 const PKG = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PY = join(PKG, "python");
@@ -33,7 +34,7 @@ const H = 1920;
 const { values: opts, positionals } = parseArgs({
   allowPositionals: true,
   options: {
-    root: { type: "string", default: process.env.GIZCLAW_ROOT || "/Volumes/H002-R02T-APFS/GizClaw" },
+    root: { type: "string", default: process.env.GIZCLAW_ROOT },
     catalog: { type: "string", default: process.env.MVG_CATALOG },
     project: { type: "string", default: process.cwd() },
     help: { type: "boolean", default: false },
@@ -54,10 +55,18 @@ if (opts.version) {
 }
 if (opts.help) {
   console.log("usage: mvg-video [--project <choreography project>] --work <catalog work path or id> [--root <media root>] [--format mp4|webm|both] [--subtitles embed|external|none] prepare|snap|preview|game-data|render|encode|inspect|clearance|subtitles");
+  console.log("Media root: --root or GIZCLAW_ROOT is required. Optional <project>/.env.local supplies GIZCLAW_ROOT and MVG_CATALOG defaults; command-line options override environment variables, which override local defaults.");
   console.log("Chinese subtitles: embed (default) burns static text into render; external writes a companion .zh-CN.srt; none omits Chinese. Encode preserves the master's recorded mode; rerender to change it.");
   process.exit(0);
 }
 const MVG = resolve(opts.project);
+const local = readLocalConfig(MVG);
+opts.root ||= local.GIZCLAW_ROOT;
+opts.catalog ||= local.MVG_CATALOG;
+if (!opts.root) {
+  console.error("--root <media root> or GIZCLAW_ROOT (environment or <project>/.env.local) is required");
+  process.exit(64);
+}
 const [command, ...rest] = positionals;
 const SUBTITLE_MODE = opts.subtitles ?? "embed";
 if (!["mp4", "webm", "both"].includes(opts.format)) throw new Error("--format must be mp4, webm or both");

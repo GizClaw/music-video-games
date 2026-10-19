@@ -134,7 +134,12 @@ npm run dev        # games at http://localhost:5179/
 Music, lyrics and media stay with the catalog owner; this repository holds code
 only. The CLI reads a song from a mounted GizClaw root and writes back there:
 
-| What | Path under `--root` (default `/Volumes/H002-R02T-APFS/GizClaw`) |
+Set `--root <directory>` or `GIZCLAW_ROOT` to your mounted media/cache/build
+root. For local defaults, copy `.env.example` to `.env.local` and edit the path;
+`.env.local` is ignored by Git. Command-line options override environment
+variables, which override `.env.local` in the choreography project (`--project`).
+
+| What | Path under the configured media root |
 | --- | --- |
 | Song input | `catalogs/aigc/<work>.ogg`, `.srt` |
 | Analysis cache | `cache/aigc/<work>/analysis.json` |

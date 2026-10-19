@@ -5,18 +5,25 @@
 //
 //   node scripts/universe-catalog.mjs [--catalog <dir>] [--verify]
 //
-// --catalog defaults to the catalog root the video CLI reads from; --verify
-// checks every song's audio on the CDN.
+// --catalog defaults to MVG_CATALOG or <GIZCLAW_ROOT>/catalogs/aigc, configured
+// through the environment or the project's .env.local; --verify checks audio on the CDN.
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readLocalConfig } from "../packages/video/bin/local-config.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const CDN = "https://static-volc.gizclaw.com/aigc/v1";
 const args = process.argv.slice(2);
 const flag = (name) => args.includes(name);
 const option = (name, fallback) => (args.includes(name) ? args[args.indexOf(name) + 1] : fallback);
-const catalog = option("--catalog", "/Volumes/H002-R02T-APFS/GizClaw/catalogs/aigc");
+const local = readLocalConfig(ROOT);
+const mediaRoot = process.env.GIZCLAW_ROOT || local.GIZCLAW_ROOT;
+const catalog = option("--catalog", process.env.MVG_CATALOG || local.MVG_CATALOG || (mediaRoot && join(mediaRoot, "catalogs/aigc")));
+if (!catalog) {
+  console.error("--catalog <directory>, MVG_CATALOG or GIZCLAW_ROOT (environment or .env.local) is required");
+  process.exit(64);
+}
 /** Galaxies that lead the carousel; the rest follow in catalog order. */
 const FIRST = ["stem-institute"];
 
