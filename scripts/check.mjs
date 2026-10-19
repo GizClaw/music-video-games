@@ -55,3 +55,4 @@ console.log(`${works.size} songs, ${sources.length} modules ok`);
 await import("./check-subtitles.mjs");
 await import("./check-matter.mjs");
 await import("./check-polygon.mjs");
+await import("./check-angle.mjs");
