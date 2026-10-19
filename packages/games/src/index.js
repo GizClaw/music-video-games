@@ -1,4 +1,5 @@
 export { AudioClock, CATALOG_CDN, GamePostShader, glowTexture, songAudioUrl } from "./kit.js";
+export { mountAngleGang } from "./angle-gang.js";
 export { mountBinaryBoogie } from "./binary-boogie.js";
 export { gameLang } from "./lang.js";
 export { backGuard, buzz, goFullscreen, isTouch, lockGestures, wakeLock } from "./mobile.js";

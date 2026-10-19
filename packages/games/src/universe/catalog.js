@@ -30,6 +30,15 @@ const SERIES_EXTRA = {
 const STEM = "songs/music/stem-institute/en-us";
 const ANIMAL_EN = "songs/music/animal-dance-en/en-us";
 const WORK_EXTRA = {
+  [`${STEM}/angle-gang`]: {
+    colors: ["#ed7546", "#38bdb1", "#e8ad30"],
+    look: "facet", feature: "ellipse", preview: 31.41,
+    howto: {
+      zh: ["按住方向盘，转到标记的角度", "按住保持角度；松手后方向盘和飞机一起回到 0°", "可连续转圈，松手回轮；← → 每次调 15°，音乐保持原速"],
+      en: ["Hold and turn the wheel to the marked angle", "Hold to keep the angle; release to return both the wheel and plane to 0°", "Keep turning for full circles; release to recenter. Arrow keys adjust by 15°, music stays at 1×"],
+    },
+    game: () => import("../angle-gang.js").then((m) => m.mountAngleGang),
+  },
   [`${ANIMAL_EN}/frog-hop-stop`]: {
     colors: ["#3fc84a", "#ffb000", "#ff9cc4"],
     look: "swirl",

@@ -44,6 +44,12 @@ Every frame is a function of the song's time. No generative video model, no keyf
 
 Run locally with `npm run dev`, then `npm run play -- states-of-matter`. The game is also selectable from the States of Matter planet in the STEM galaxy. See the [game guide](packages/games/README.md#matter-run--states-of-matter) for scoring, audio sync and embedding.
 
+## Angle Gang
+
+**Set the angle. Let it fly.** Hold and turn the wheel to select an angle in *The Angle Gang*. While held, the aircraft approaches the chosen heading. Releasing the wheel returns its rim and centre readout to zero and commands the aircraft back to 0°. **A / D** and **← / →** adjust by 15°; continuous wheel rotation selects complete circles. Thirty musical checkpoints, a simple steering wheel with 0° on the right, the wheel angle in its hub and a labelled target mark on its rim accompany the original song and large sing-along lyrics.
+
+Run `npm run dev`, then `npm run play -- angle-gang`, or choose The Angle Gang in the STEM galaxy. See the [game guide](packages/games/README.md#angle-gang--sky-turn) for controls, scoring and embedding.
+
 ## The videos
 
 All twenty-five songs from the STEM Institute album, each 1080×1920 at 30 fps and cut to
@@ -186,7 +192,7 @@ the mouse works throughout.
 Games are reached through the universe only; there are no per-game pages, and
 hosts can mount the entire entrance with `mountUniverse(target)` (the bundled
 catalog and styles are included), or mount a single game from `@gizclaw/mvg-games`
-(`mountSpectrumSlide`, `mountPlanetParade`, `mountBinaryBoogie`, `mountPrimeTime`, `mountPenguinSteps`, `mountStatesOfMatter`, `mountPolygonParty`). A route
+(`mountSpectrumSlide`, `mountPlanetParade`, `mountBinaryBoogie`, `mountPrimeTime`, `mountPenguinSteps`, `mountStatesOfMatter`, `mountPolygonParty`, `mountFrogHopStop`, `mountAngleGang`). A route
 straight into a game skips the opening stage, and it can carry game options:
 `#/stem-institute/binary-boogie/play?start=31&auto`. From the browser console,
 `__universe.play("binary-boogie", { start: 31, auto: true })` jumps there and
