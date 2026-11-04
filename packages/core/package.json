@@ -4,12 +4,15 @@
   "description": "Shared timing, HUD, post-processing and haivivi intro for music videos and games",
   "license": "BSD-3-Clause",
   "type": "module",
-  "files": ["src", "assets"],
+  "files": [
+    "src",
+    "assets"
+  ],
   "exports": {
     "./assets/*": "./assets/*",
     "./*": "./src/*"
   },
   "peerDependencies": {
-    "three": "0.186.1"
+    "three": "^0.187.0"
   }
 }
